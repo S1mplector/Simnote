@@ -1,0 +1,44 @@
+{
+  "name": "simnote-desktop",
+  "version": "0.1.0",
+  "main": "js/electron/main-electron.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-packager . Simnote --platform=win32 --arch=x64 --out=dist",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^25.3.1",
+    "electron-packager": "^17.1.2",
+    "electron-builder": "^23.6.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "build": {
+    "appId": "com.yourname.simnote",
+    "productName": "Simnote",
+    "files": [
+      "**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "darkModeSupport": true,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ]
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
