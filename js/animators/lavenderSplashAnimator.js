@@ -24,9 +24,12 @@ export class LavenderSplashAnimator {
     document.body.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d');
 
-    // petals
-    this.numPetals = 32;
-    this.petalSize = 34;
+    // Optimized layered petals for depth (fewer particles for better performance)
+    this.layers = {
+      background: { count: 8, sizeRange: [20, 30], opacityRange: [0.3, 0.5], speedMultiplier: 0.7 },
+      midground: { count: 10, sizeRange: [28, 38], opacityRange: [0.5, 0.7], speedMultiplier: 0.85 },
+      foreground: { count: 7, sizeRange: [35, 45], opacityRange: [0.7, 0.9], speedMultiplier: 1.0 }
+    };
     this.petalImgs = [];
     let loaded = 0;
     const onLoad = () => {
@@ -59,20 +62,41 @@ export class LavenderSplashAnimator {
 
   initParticles() {
     const { innerWidth: w, innerHeight: h } = window;
+    this.particles = [];
 
-    this.particles = Array.from({ length: this.numPetals }, () => {
-      const img = this.petalImgs[Math.floor(Math.random() * this.petalImgs.length)];
-      const delay = Math.random() * 0.5; // stagger gust
-      const speed = 300 + Math.random() * 180; // px / sec
-      const amp = 40 + Math.random() * 60; // sine vertical amplitude
-      const wavelength = 180 + Math.random() * 220; // px
-      const phase = Math.random() * Math.PI * 2;
-      const rotationSpeed = (Math.random() - 0.5) * 1.5; // rad / sec
-      const startX = -100 - Math.random() * 150;
-      const startY = Math.random() * (h * 0.8) + h * 0.1;
+    // Create layered particles for enhanced depth
+    Object.entries(this.layers).forEach(([layerName, config]) => {
+      for (let i = 0; i < config.count; i++) {
+        const img = this.petalImgs[Math.floor(Math.random() * this.petalImgs.length)];
+        const delay = Math.random() * 0.8 * config.speedMultiplier; // Layer-based stagger
+        const speed = (300 + Math.random() * 180) * config.speedMultiplier; // px / sec
+        const amp = (40 + Math.random() * 60) * config.speedMultiplier; // sine vertical amplitude
+        const wavelength = 180 + Math.random() * 220; // px
+        const phase = Math.random() * Math.PI * 2;
+        const rotationSpeed = (Math.random() - 0.5) * 1.5 * config.speedMultiplier; // rad / sec
+        const startX = -150 - Math.random() * 100; // Vary start positions
+        const startY = Math.random() * (h * 0.8) + h * 0.1;
+        const size = config.sizeRange[0] + Math.random() * (config.sizeRange[1] - config.sizeRange[0]);
+        const opacity = config.opacityRange[0] + Math.random() * (config.opacityRange[1] - config.opacityRange[0]);
 
-      return { img, delay, speed, amp, wavelength, phase, rotationSpeed, startX, startY };
+        this.particles.push({ 
+          img, delay, speed, amp, wavelength, phase, rotationSpeed, startX, startY, 
+          size, baseOpacity: opacity, layer: layerName, speedMultiplier: config.speedMultiplier,
+          layerOrder: layerName === 'background' ? 0 : layerName === 'midground' ? 1 : 2 // Pre-calculate for sorting
+        });
+      }
     });
+
+    // Sort particles once during initialization instead of every frame
+    this.particles.sort((a, b) => a.layerOrder - b.layerOrder);
+
+    // Pre-create gradient for reuse
+    this.backgroundGradient = this.ctx.createRadialGradient(
+      window.innerWidth / 2, window.innerHeight / 2, 0,
+      window.innerWidth / 2, window.innerHeight / 2, Math.max(window.innerWidth, window.innerHeight) / 2
+    );
+    this.backgroundGradient.addColorStop(0, 'rgba(238,232,255,0.08)');
+    this.backgroundGradient.addColorStop(1, 'rgba(238,232,255,0.18)');
   }
 
   animate(ts) {
@@ -84,6 +108,7 @@ export class LavenderSplashAnimator {
 
     let allDone = true;
 
+    // Particles are already sorted - no need to sort every frame
     for (const p of this.particles) {
       const tLocal = elapsed - p.delay;
       if (tLocal < 0) {
@@ -101,26 +126,35 @@ export class LavenderSplashAnimator {
       }
 
       // Alpha: fade in first 0.3s, fade out last 0.4s of travel
-      let alpha = 1;
-      if (tLocal < 0.3) alpha = tLocal / 0.3;
+      let alpha = p.baseOpacity;
+      if (tLocal < 0.3) alpha *= tLocal / 0.3;
       const remainingX = (window.innerWidth + 100) - x;
       const estRemainingTime = remainingX / p.speed;
-      if (estRemainingTime < 0.4) alpha = Math.min(alpha, estRemainingTime / 0.4);
+      if (estRemainingTime < 0.4) alpha *= Math.min(1, estRemainingTime / 0.4);
 
       const rotate = tLocal * p.rotationSpeed;
       const scale = 0.8 + Math.sin(tLocal * 3) * 0.1;
 
       ctx.save();
+      
+      // Simplified depth effect - use alpha instead of expensive blur
+      let finalAlpha = alpha;
+      if (p.layer === 'background') {
+        finalAlpha *= 0.6; // More transparent for depth
+      } else if (p.layer === 'midground') {
+        finalAlpha *= 0.8; // Slightly transparent
+      }
+      
       ctx.translate(x, y);
       ctx.rotate(rotate);
-      ctx.globalAlpha = alpha;
-      const sz = this.petalSize * scale;
+      ctx.globalAlpha = finalAlpha;
+      const sz = p.size * scale;
       ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz);
       ctx.restore();
     }
 
-    // Slight lavender haze overlay to soften background
-    ctx.fillStyle = 'rgba(238,232,255,0.15)';
+    // Use pre-created gradient instead of creating new one every frame
+    ctx.fillStyle = this.backgroundGradient;
     ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
     if (!allDone) {

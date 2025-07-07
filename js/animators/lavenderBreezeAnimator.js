@@ -3,8 +3,12 @@ export class LavenderBreezeAnimator {
     this.canvas = document.getElementById('bg-canvas');
     this.ctx = this.canvas.getContext('2d');
 
-    // Petal properties
-    this.petalCount = 80;
+    // Optimized layered petal properties (reduced counts for better performance)
+    this.layers = {
+      background: { count: 15, sizeRange: [8, 15], opacityRange: [0.2, 0.4], speedMultiplier: 0.6 },
+      midground: { count: 20, sizeRange: [12, 20], opacityRange: [0.4, 0.7], speedMultiplier: 0.8 },
+      foreground: { count: 15, sizeRange: [16, 26], opacityRange: [0.6, 0.9], speedMultiplier: 1.0 }
+    };
     this.petals = [];
     this.petalImages = [];
     this.imagesLoaded = 0;
@@ -57,48 +61,67 @@ export class LavenderBreezeAnimator {
   }
 
   createPetals() {
-    for (let i = 0; i < this.petalCount; i++) {
-      this.petals.push({
-        // Start slightly below bottom so they can drift up
-        x: Math.random() * this.canvas.width,
-        y: this.canvas.height + Math.random() * this.canvas.height,
-        baseVX: (Math.random() - 0.5) * 0.3,
-        baseVY: -(0.4 + Math.random() * 0.4), // upward base
-        driftPhase: Math.random() * Math.PI * 2,
-        driftSpeed: 0.002 + Math.random() * 0.002,
-        size: 12 + Math.random() * 18,
-        opacity: 0.5 + Math.random() * 0.5,
-        rotationSpeed: (Math.random() - 0.5) * 0.02,
-        rotationAngle: Math.random() * Math.PI * 2,
-        swayPhase: Math.random() * Math.PI * 2,
-        swaySpeed: 0.002 + Math.random() * 0.003,
-        imageIndex: Math.floor(Math.random() * 8)
-      });
-    }
+    // Create layered petals for depth effect
+    Object.entries(this.layers).forEach(([layerName, config]) => {
+      for (let i = 0; i < config.count; i++) {
+        const size = config.sizeRange[0] + Math.random() * (config.sizeRange[1] - config.sizeRange[0]);
+        const opacity = config.opacityRange[0] + Math.random() * (config.opacityRange[1] - config.opacityRange[0]);
+        
+        this.petals.push({
+          // Start slightly below bottom so they can drift up
+          x: Math.random() * this.canvas.width,
+          y: this.canvas.height + Math.random() * this.canvas.height,
+          baseVX: (Math.random() - 0.5) * 0.3 * config.speedMultiplier,
+          baseVY: -(0.4 + Math.random() * 0.4) * config.speedMultiplier, // upward base
+          driftPhase: Math.random() * Math.PI * 2,
+          driftSpeed: (0.002 + Math.random() * 0.002) * config.speedMultiplier,
+          size: size,
+          opacity: opacity,
+          baseOpacity: opacity, // Store original opacity for effects
+          rotationSpeed: (Math.random() - 0.5) * 0.02 * config.speedMultiplier,
+          rotationAngle: Math.random() * Math.PI * 2,
+          swayPhase: Math.random() * Math.PI * 2,
+          swaySpeed: (0.002 + Math.random() * 0.003) * config.speedMultiplier,
+          imageIndex: Math.floor(Math.random() * 8),
+          layer: layerName,
+          parallaxFactor: config.speedMultiplier, // For mouse parallax effect
+          layerOrder: layerName === 'background' ? 0 : layerName === 'midground' ? 1 : 2 // Pre-calculate for sorting
+        });
+      }
+    });
+
+    // Sort petals once during initialization instead of every frame
+    this.petals.sort((a, b) => a.layerOrder - b.layerOrder);
   }
 
   updatePetals() {
+    // Cache mouse position for distance calculations
+    const mouseX = this.mouseX;
+    const mouseY = this.mouseY;
+    
     this.petals.forEach(p => {
-      // Sway motion (horizontal sine)
+      // Sway motion (horizontal sine) - affected by layer
       p.swayPhase += p.swaySpeed;
-      const swayX = Math.sin(p.swayPhase) * 1.2; // 1-2 px sway
+      const swayX = Math.sin(p.swayPhase) * 1.2 * p.parallaxFactor; // Layer-based sway
 
       // Organic drift variation on velocities
       p.driftPhase += p.driftSpeed;
       const varVX = Math.sin(p.driftPhase) * 0.12;
       const varVY = Math.cos(p.driftPhase * 0.9) * 0.08;
 
-      p.x += p.baseVX + varVX + this.windX + swayX;
-      p.y += p.baseVY + varVY + this.windY;
+      p.x += p.baseVX + varVX + this.windX * p.parallaxFactor + swayX;
+      p.y += p.baseVY + varVY + this.windY * p.parallaxFactor;
 
-      // Mouse gentle repulsion (keeps centre clear)
-      const dx = this.mouseX - p.x;
-      const dy = this.mouseY - p.y;
-      const dist2 = dx * dx + dy * dy;
-      if (dist2 < 90000) { // within 300px
-        const repulse = 0.0006;
-        p.x -= dx * repulse;
-        p.y -= dy * repulse;
+      // Optimized mouse repulsion - only calculate if mouse is active
+      if (mouseX > 0 && mouseY > 0) {
+        const dx = mouseX - p.x;
+        const dy = mouseY - p.y;
+        const dist2 = dx * dx + dy * dy;
+        if (dist2 < 90000) { // within 300px
+          const repulse = 0.0006 * p.parallaxFactor;
+          p.x -= dx * repulse;
+          p.y -= dy * repulse;
+        }
       }
 
       p.rotationAngle += p.rotationSpeed;
@@ -107,7 +130,10 @@ export class LavenderBreezeAnimator {
       if (p.y < -p.size || p.x < -p.size || p.x > this.canvas.width + p.size) {
         p.y = this.canvas.height + p.size;
         p.x = Math.random() * this.canvas.width;
-        p.opacity = 0.5 + Math.random() * 0.5;
+        // Maintain layer-specific opacity range
+        const layerConfig = this.layers[p.layer];
+        p.opacity = layerConfig.opacityRange[0] + Math.random() * (layerConfig.opacityRange[1] - layerConfig.opacityRange[0]);
+        p.baseOpacity = p.opacity;
         p.imageIndex = Math.floor(Math.random() * 8);
       }
     });
@@ -117,9 +143,19 @@ export class LavenderBreezeAnimator {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    // Petals are already sorted - no need to sort every frame
     this.petals.forEach(p => {
       ctx.save();
-      ctx.globalAlpha = p.opacity;
+      
+      // Simplified depth effect - use alpha instead of expensive blur
+      let finalOpacity = p.opacity;
+      if (p.layer === 'background') {
+        finalOpacity *= 0.6; // More transparent for depth
+      } else if (p.layer === 'midground') {
+        finalOpacity *= 0.8; // Slightly transparent
+      }
+      
+      ctx.globalAlpha = finalOpacity;
       ctx.translate(p.x + p.size / 2, p.y + p.size / 2);
       ctx.rotate(p.rotationAngle);
       ctx.drawImage(this.petalImages[p.imageIndex], -p.size / 2, -p.size / 2, p.size, p.size);

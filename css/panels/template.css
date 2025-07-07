@@ -7,7 +7,6 @@
 .template-card .icon{font-size:2rem;display:block;margin-bottom:10px;}
 
 /* Informative panel */
-#template-info{position:absolute;left:50%;bottom:25px;transform:translate(-50%,10px);width:80%;max-width:720px;background:rgba(255,255,255,0.08);backdrop-filter:blur(4px);border-radius:12px;padding:16px 20px;text-align:center;opacity:0;transition:opacity 0.3s ease, transform 0.3s ease;pointer-events:none;font-size:0.95rem;line-height:1.4;}
-#template-info.show{opacity:1;transform:translate(-50%,0);}
+#template-info{position:absolute;left:50%;bottom:25px;transform:translate(-50%,10px);width:80%;max-width:720px;background:rgba(255,255,255,0.08);backdrop-filter:blur(4px);border-radius:12px;padding:16px 20px;text-align:center;opacity:0;transition:opacity 0.3s ease, transform 0.3s ease;pointer-events:none;font-size:0.95rem;line-height:1.4;z-index:5;}
 
-#template-panel .tpl-back-btn{position:absolute;top:16px;right:20px;} 
+#template-panel .tpl-back-btn{position:absolute;top:16px;right:20px;}
