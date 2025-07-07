@@ -1,0 +1,82 @@
+/* menuButtons.css - interactive animations for main menu buttons */
+
+/* Settings gear spin – animate only the emoji/icon inside */
+.theme-settings-btn {
+  display: inline-block;
+}
+
+/* target inner span so label remains static */
+.theme-settings-btn .gear-icon {
+  display: inline-block;
+  transition: transform 0.4s ease;
+}
+
+.theme-settings-btn:hover .gear-icon {
+  animation: gearSpin 1.6s linear infinite;
+}
+
+@keyframes gearSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Manual button emoji swap */
+.manual-btn {
+  position: fixed; /* keep original placement */
+  top: 10px;
+  left: 10px;
+  display: inline-block;
+  /* keeps original font-size via existing CSS */
+}
+
+.manual-btn .book-open,
+.manual-btn .book-closed {
+  display: inline-block;
+  transition: opacity 0.35s ease;
+}
+
+.manual-btn .book-open { position: absolute; left: 0; top: 0; opacity: 0; }
+.manual-btn .book-closed { opacity: 1; }
+
+.manual-btn:hover .book-closed { opacity: 0; }
+.manual-btn:hover .book-open { opacity: 1; }
+
+/* hide when journal panel active */
+body.journal-open .manual-btn,
+body.journal-open .theme-settings-btn{display:none !important;}
+
+/* Fade-in labels for Manual and Settings buttons */
+.manual-btn,
+.theme-settings-btn {
+  /* ensure label isn't clipped */
+  overflow: visible;
+}
+
+.manual-btn::after,
+.theme-settings-btn::after {
+  content: ""; /* default, will be overridden per button */
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  white-space: nowrap;
+  font-size: 1rem;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.manual-btn::after {
+  content: "Manual";
+}
+
+.theme-settings-btn::after {
+  content: "Settings";
+}
+
+.manual-btn:hover::after,
+.theme-settings-btn:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}

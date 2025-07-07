@@ -1,0 +1,16 @@
+/* === Utility Classes & Keyframes === */
+.fade-in { opacity: 1 !important; }
+.fade-out { opacity: 0 !important; }
+
+.blur-overlay.instant { transition: none !important; }
+
+@keyframes slideIn {
+  0% { left: -300px; opacity: 0; }
+  100% { left: 20px; opacity: 1; }
+}
+@keyframes slideOut {
+  0% { left: 20px; opacity: 1; }
+  100% { left: -300px; opacity: 0; }
+}
+
+.typing-cursor{border-right:2px solid #fcd8ff;animation:caretBlink 0.8s step-end infinite;} 

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simnote</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <!-- Google Font for cursive logo -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Manual Button -->
+    <button id="manual-btn" class="manual-btn"><span class="book-closed">📘</span><span class="book-open">📖</span></button>
+    <!-- Theme Settings Button -->
+    <button id="theme-settings-btn" class="theme-settings-btn"><span class="gear-icon">⚙️</span></button>
+
+    <!-- Manual Popup (hidden by default) -->
+    <div id="manual-popup" class="manual-popup">
+      <h3>Simnote Manual (v0.1.0)</h3>
+      <p>
+        Welcome to Simnote, a modern journaling application designed for ease of use and aesthetics.
+        Current features include:
+      </p>
+      <ul>
+        <li>Create, edit, and save journal entries in a distraction free environment.</li>
+        <li>Load and view your saved entries in the journal panel.</li>
+        <li>Customize your experience via the settings panel (adjust font size and font family).</li>
+        <li>Enjoy beautifully animated backgrounds. We have a few themes to choose from!</li>
+      </ul>
+      <button id="manual-close-btn" class="button-33" data-emoji="❌">Close</button>
+    </div>
+
+    <!-- Theme Settings Popup (hidden by default) -->
+    <div id="theme-settings-popup" class="theme-settings-popup">
+      <h3>Theme Settings</h3>
+      <div class="settings-section">
+        <h4 style="margin:0 0 6px 0;">Theme</h4>
+        <div class="theme-settings-row">
+          <!-- Theme buttons / dropdown -->
+          <div class="custom-dropdown" id="theme-dropdown">
+            <div class="custom-dropdown-selected" id="theme-selected">Dark Sakura</div>
+            <ul class="custom-dropdown-list" id="theme-list">
+              <li data-value="dark-sakura">Dark Sakura</li>
+              <li data-value="light-sakura">Light Sakura</li>
+              <li data-value="plain-dark">Plain Dark</li>
+              <li data-value="plain-light">Plain White</li>
+              <li data-value="aurora">Aurora</li>
+              <li data-value="fireflies">Fireflies</li>
+              <li data-value="lavender-breeze">Lavender Breeze</li>
+            </ul>
+          </div>
+
+          <!-- New preview window -->
+          <div id="theme-preview-container" class="theme-preview-container">
+            <div id="preview-label" class="preview-label" style="position:absolute;top:-22px;left:0;width:100%;text-align:center;font-size:0.9rem;color:#ccc;"></div>
+            <canvas id="theme-preview-canvas" width="220" height="120" style="width:100%;height:100%;border-radius:8px;"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section" style="margin-top:60px;">
+        <h4 style="margin:0 0 6px 0;">Export Data</h4>
+        <button id="export-import-btn" class="button-33" role="button" data-emoji="📁">Export</button>
+      </div>
+
+      <!-- Close button -->
+      <button id="theme-settings-close-btn" class="button-33" data-emoji="❌" style="position:absolute;bottom:20px;right:20px;">Close</button>
+    </div>
+
+    <!-- Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Main Panel -->
+    <div id="main-panel">
+      <div class="blur-overlay"></div>
+      <div class="center-container">
+        <div class="logo-and-heart">
+          <div class="simnote-logo">
+            <span class="logo-text">Simnote</span>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button id="new-entry-btn" class="button-33" role="button" data-emoji="🖋️">Journal</button>
+          <button id="load-entry-btn" class="button-33" role="button" data-emoji="📚">All Entries</button>
+          <button id="chat-btn" class="button-33" role="button" data-emoji="💬">Wellness Chat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Journal Panel -->
+    <div id="journal-panel" style="display: none;">
+      <div class="entries-pane">
+        <div class="entries-header">
+          <h2 style="margin:0">Entries</h2>
+          <!-- Search (magnifying glass) toggle & input -->
+          <button id="search-toggle-btn" class="search-toggle-btn" title="Search">🔍</button>
+          <input id="entry-search" class="entry-search collapsed" type="text" placeholder="Search..." />
+          <!-- Sort dropdown -->
+          <div class="custom-dropdown sort-dropdown" id="sort-dropdown">
+            <div class="custom-dropdown-selected" id="sort-selected">Newest</div>
+            <ul class="custom-dropdown-list" id="sort-list">
+              <li data-value="newest">Newest First</li>
+              <li data-value="oldest">Oldest First</li>
+              <li data-value="az">A → Z</li>
+              <li data-value="mood">By Mood</li>
+            </ul>
+          </div>
+          <button id="date-picker-btn" class="calendar-btn" title="Filter by date">📅</button>
+          <div id="custom-calendar" class="custom-calendar" style="display:none;"></div>
+        </div>
+        <div class="entry-list"></div>
+        <button class="button-33 back-to-menu" role="button" data-emoji="🏠">Back to Menu</button>
+      </div>
+    </div>
+
+    <!-- Wellness Chat Panel -->
+    <div id="chat-panel" class="custom-panel chat-panel" style="display:none;">
+      <div class="chat-header">
+        <h2 style="margin:0">Serenity</h2>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row" id="chat-input-row">
+        <textarea id="chat-input" placeholder="Type a message..." rows="1"></textarea>
+      </div>
+      <!-- New chat bubble button (initial trigger) -->
+      <button id="chat-new-btn" class="chat-new-btn" title="New Chat">💬</button>
+      <button class="button-33 chat-back-btn" role="button" data-emoji="🏠" style="margin-top:10px;">Back</button>
+    </div>
+
+    <!-- New Entry Panel -->
+    <div id="new-entry-panel" class="custom-panel new-entry-panel" style="display: none;">
+      <!-- Settings Button (upper right) -->
+      <button class="settings-btn">⚙️</button>
+
+      <!-- Circular button container -->
+      <div class="new-entry-intro">
+        <button class="paint-circle-btn">🖋️</button>
+      </div>
+
+      <!-- Form contents (hidden until expanded) -->
+      <div class="new-entry-contents">
+        <div class="panel-title">
+          <input type="text" class="entry-name" placeholder="Title" />
+        </div>
+        <div class="entry-meta">
+          <span class="mood-badge"></span>
+          <span class="date-stamp"></span>
+        </div>
+        <div class="panel-content">
+          <textarea class="entry-content" placeholder="..."></textarea>
+        </div>
+        <div class="editor-buttons">
+          <button class="button-33 save-btn" role="button" data-emoji="💾">Save</button>
+          <button class="button-33 back-btn" role="button" data-emoji="🏠">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mood Panel (intermediary before New Entry) -->
+    <div id="mood-panel" class="custom-panel mood-panel" style="display:none;">
+      <!-- Date / Greeting Header -->
+      <div class="date-header" id="mood-date-header">
+        <div class="date-bg"></div>
+        <div class="greeting" id="greeting-text"></div>
+        <div class="current-date" id="current-date"></div>
+        <div class="date-row" id="date-strip"></div>
+      </div>
+      <h2 style="text-align:center;margin-top:0;">How are you feeling right now?</h2>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+        <div class="mood-input-row">
+          <span id="mood-prompt" class="mood-prompt"></span>
+          <input id="mood-input" type="text" placeholder="..." class="mood-input" />
+        </div>
+        <button class="button-33 mood-next-btn" role="button" data-emoji="📝">Start Writing</button>
+        <button class="button-33 back-btn" role="button" data-emoji="🏠">Back</button>
+      </div>
+    </div>
+
+    <!-- Template Picker Panel -->
+    <div id="template-panel" class="custom-panel template-panel" style="display:none;">
+      <h2>Choose a Template</h2>
+      <div class="template-grid"></div>
+      <button class="button-33 tpl-back-btn" role="button" data-emoji="🏠" style="position:absolute;">Back</button>
+      <div id="template-info"></div>
+    </div>
+
+    <!-- Edit Entry Panel -->
+    <div id="edit-entry-panel" class="custom-panel edit-entry-panel" style="display: none;">
+      <!-- Settings Button (upper right) -->
+      <button class="settings-btn">⚙️</button>
+      <div class="new-entry-contents">
+        <div class="panel-title">
+          <input type="text" class="entry-name" placeholder="Title" />
+        </div>
+        <div class="entry-meta">
+          <span class="mood-badge"></span>
+          <span class="date-stamp"></span>
+        </div>
+        <div class="panel-content">
+          <textarea class="entry-content" placeholder="..."></textarea>
+        </div>
+        <div class="editor-buttons">
+          <button class="button-33 save-btn" role="button" data-emoji="💾">Save Entry</button>
+          <button class="button-33 back-btn" role="button" data-emoji="🏠">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shared Settings Panel (slides in from the right) -->
+    <div id="settings-panel">
+      <h3>Settings</h3>
+      <button id="settings-close-btn" class="button-33" data-emoji="❌" style="position:absolute;top:20px;right:20px;">Close</button>
+      <label for="font-size-slider">Font Size:</label>
+      <input type="range" id="font-size-slider" min="12" max="24" value="16" />
+      <br />
+      <!-- Custom Dropdown for Font Family -->
+      <label>Font Family:</label>
+      <div class="custom-dropdown" id="font-dropdown">
+        <!-- Displayed "selected" item -->
+        <div class="custom-dropdown-selected" id="font-dropdown-selected">Arial</div>
+        <!-- The hidden list of options -->
+        <ul class="custom-dropdown-list" id="font-dropdown-list">
+          <li data-value="Arial, sans-serif">Arial</li>
+          <li data-value="'Times New Roman', serif">Times New Roman</li>
+          <li data-value="'Courier New', monospace">Courier New</li>
+          <li data-value="'Georgia', serif">Georgia</li>
+          <li data-value="'Verdana', sans-serif">Verdana</li>
+        </ul>
+      </div>
+
+      <!-- Autosave Settings -->
+      <div class="settings-separator"></div>
+      <div class="autosave-section">
+        <label><input type="checkbox" id="autosave-enabled" /> Enable Autosave (every 30s)</label>
+      </div>
+    </div>
+
+    <!-- NEW: Export/Import Popup Panel (hidden by default) -->
+    <div id="export-import-popup" class="export-import-popup" style="display: none;">
+      <button id="export-btn" class="button-33" data-emoji="⬆">Export Entries</button>
+      <button id="import-btn" class="button-33" data-emoji="⬇">Import Entries</button>
+      <button id="export-import-close-btn" class="button-33" data-emoji="❌">Close</button>
+    </div>
+
+    <!-- Custom Popup -->
+    <div id="custom-popup" class="custom-popup">Entry saved!</div>
+
+    <!-- Version Badge -->
+    <div class="version-badge" style="color:#fff;font-size:0.9rem;opacity:0.8;">v0.1.0</div>
+
+    <!-- JavaScript Modules -->
+    <script type="module" src="js/core/main.js"></script>
+    <script type="module" src="js/managers/chatManager.js"></script>
+  </body>
+</html>

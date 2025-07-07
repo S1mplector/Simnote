@@ -1,0 +1,89 @@
+/* === Mood Panel Styles === */
+/* Prompt typing and input slide */
+.mood-input-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: center;
+}
+.mood-prompt {
+  font-size: 1.5rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 2px solid #fcd8ff;
+  animation: caretBlink 0.8s step-end infinite;
+}
+@keyframes caretBlink {
+  from, to { border-color: transparent; }
+  50% { border-color: #fcd8ff; }
+}
+
+#mood-input {
+  transform: translateX(60px);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.5s ease, width 0.25s ease;
+}
+#mood-input.slide-in {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* === Date Header Styles === */
+.date-header {
+  width: 90%;
+  max-width: 800px;
+  margin: 0 auto 30px auto;
+  padding: 20px 30px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-align: center;
+  color: #fff;
+}
+
+.date-header .greeting {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.date-header .current-date {
+  font-size: 1.1rem;
+  color: #ccc;
+  margin-bottom: 12px;
+}
+
+.date-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.date-row::-webkit-scrollbar { display: none; }
+.date-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 36px;
+  color: #999;
+  font-size: 0.9rem;
+}
+.date-cell .num {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.date-cell.selected {
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.08);
+}
+.date-cell.selected .num {
+  color: #fff;
+} 

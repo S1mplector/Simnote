@@ -1,0 +1,14 @@
+/* Container that stacks prompt boxes */
+.guided-prompt-container{display:flex;flex-direction:column;gap:12px;margin:0;width:100%;max-width:100%;box-sizing:border-box;position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:2;}
+
+/* Provide a smooth slide-down when container first appears */
+.guided-prompt-container.entering{animation:gpSlide 0.3s ease-out forwards;}
+@keyframes gpSlide{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);} }
+
+/* Individual prompt box */
+.guided-prompt-box{background:rgba(255,255,255,0.08);backdrop-filter:blur(6px);padding:18px 24px;border-radius:14px;color:#fff;font-size:1.05rem;text-align:center;animation:fadePrompt 0.3s ease forwards;width:calc(100% - 20px);margin:0 10px;max-width:100%;pointer-events:auto;}
+
+@keyframes fadePrompt{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);} }
+
+.guided-prompt-btn{margin-top:14px;background:var(--accent,#fcd8ff);border:none;border-radius:8px;padding:6px 14px;font-size:0.95rem;color:#000;cursor:pointer;transition:background 0.25s;}
+.guided-prompt-btn:hover{background:#fff;} 

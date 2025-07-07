@@ -1,0 +1,70 @@
+@keyframes sunriseSlide {
+  0%   { background-position: 0% 100%; }
+  100% { background-position: 0% 0%;   }
+}
+
+@keyframes skyDrift {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: -200% 0%; }
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 0.2; }
+}
+
+.date-header {
+  position: relative; /* enable absolute bg layer */
+  overflow: hidden;
+}
+
+.date-header .date-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Morning */
+.date-header.morning .date-bg {
+  background: linear-gradient(180deg, #ffebb7 0%, #ffe8a3 40%, #ffd38a 100%);
+  background-size: 100% 200%;
+  animation: sunriseSlide 12s ease-in-out infinite alternate;
+}
+
+/* Afternoon */
+.date-header.afternoon .date-bg {
+  background: linear-gradient(180deg, #d8f1ff 0%, #b6e6ff 50%, #a0d6ff 100%);
+  background-size: 400% 100%;
+  animation: skyDrift 30s linear infinite;
+}
+
+.date-header.afternoon .cloud {
+  position: absolute;
+  fill: rgba(255,255,255,0.6);
+  opacity: 0.9;
+  animation: cloudDrift linear infinite;
+}
+@keyframes cloudDrift {
+  0%   { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+
+/* Evening */
+.date-header.evening .date-bg {
+  background: linear-gradient(180deg, #ffdfb5 0%, #ffb58e 50%, #ff9e8d 100%);
+  background-size: 100% 100%; /* static sunset */
+}
+
+/* Night */
+.date-header.night .date-bg {
+  background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.1) 0%, rgba(30,30,60,0.0) 40%),
+              linear-gradient(180deg, #0d1b35 0%, #090e1a 60%, #04060c 100%);
+}
+.date-header.night .star {
+  position: absolute;
+  width: 2px; height: 2px;
+  background:#ffffff;
+  border-radius: 50%;
+  animation: starTwinkle 4s ease-in-out infinite;
+} 

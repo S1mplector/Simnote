@@ -1,0 +1,1104 @@
+/* ===== Global Reset & Body ===== */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #2c2c2c;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+/* ===== Background Canvas ===== */
+#bg-canvas {
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%; 
+  height: 100%;
+  z-index: 0;
+}
+
+/* ===== Main Panel ===== */
+#main-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  transition: opacity 0.6s ease-in-out;
+}
+
+/* ===== Blur Overlay ===== */
+.blur-overlay {
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%; 
+  height: 100%;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2s ease;
+  z-index: 5;
+}
+
+/* ===== Center Container ===== */
+.center-container {
+  position: absolute;
+  top: 50%; 
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 7;
+}
+
+/* Logo + Heart side by side */
+.logo-and-heart {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ===== Simnote Logo ===== */
+.simnote-logo {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+/* ===== Heart ===== */
+.heart-next {
+  width: 30px;
+  height: 30px;
+  background: #fcbdd7;
+  position: relative;
+  transform: rotate(-45deg);
+  overflow: visible;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.heart-next::before,
+.heart-next::after {
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: #fcbdd7;
+  border-radius: 50%;
+}
+.heart-next::before {
+  top: -15px; 
+  left: 0;
+}
+.heart-next::after {
+  top: 0;
+  left: 15px;
+}
+@keyframes fadeInHeart {
+  from { opacity: 0; }
+  to   { opacity: 0.8; }
+}
+@keyframes beat {
+  0%, 100% { transform: scale(1) rotate(-45deg); }
+  50%      { transform: scale(1.2) rotate(-45deg); }
+}
+
+/* ===== Nav Buttons Container ===== */
+.nav-buttons {
+  opacity: 0;
+  transition: opacity 1s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.nav-buttons.visible {
+  opacity: 1;
+}
+
+/* ===== Button-33 Styling ===== */
+.button-33 {
+  background-color: #fcd8ff;
+  border-radius: 100px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0 -25px 18px -14px inset,
+              rgba(0, 0, 0, 0.15) 0 1px 2px,
+              rgba(0, 0, 0, 0.15) 0 2px 4px,
+              rgba(0, 0, 0, 0.15) 0 4px 8px,
+              rgba(0, 0, 0, 0.15) 0 8px 16px,
+              rgba(0, 0, 0, 0.15) 0 16px 32px;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: CerebriSans-Regular, -apple-system, system-ui, Roboto, sans-serif;
+  padding: 7px 20px 7px 20px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 250ms;
+  border: 0;
+  font-size: 16px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  position: relative;
+}
+.button-33:hover {
+  padding-right: 60px;
+}
+
+.button-33::after {
+  content: attr(data-emoji);
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%) scale(0) rotate(0deg);
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  font-size: 1.3rem;
+  pointer-events: none;
+}
+
+.button-33:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  animation: emojiWiggle 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes emojiWiggle {
+  from { transform: translateY(-50%) translateX(0) rotate(-12deg); }
+  to   { transform: translateY(-50%) translateX(0) rotate(12deg); }
+}
+
+/* ===== Journal Panel ===== */
+#journal-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(44, 44, 44, 0.95);
+  display: none;
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+  z-index: 20;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Entries Pane */
+.entries-pane {
+  background: #333;
+  opacity: 0.95;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: #fff;
+}
+.entries-pane h2 {
+  margin-top: 0;
+}
+.entry-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.entry-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #444;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.entry-item:hover {
+  background: #444;
+}
+.entry-item .delete-entry {
+  background: none;
+  border: none;
+  color: #f00;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+/* Removal animation for entry items */
+.entry-item.removing {
+  animation: fadeOutPop 0.5s forwards;
+}
+@keyframes fadeOutPop {
+  0% {
+    opacity: 1; 
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0; 
+    transform: scale(0.5);
+  }
+}
+
+/* Style for the date/time display in each entry item */
+.entry-date-display {
+  font-size: 0.8rem;
+  color: #ccc;
+  margin-left: 10px;
+}
+
+/* ===== Custom Panel Styling (used for New & Edit Entry Panels) ===== */
+.custom-panel {
+  background: #2e2e2e;
+  border-radius: 20px;
+  padding: 20px;
+  width: 70%;
+  max-width: 800px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+  z-index: 25;
+}
+
+.custom-panel.fade-in {
+  opacity: 0.95;
+}
+
+.custom-panel .panel-title,
+.custom-panel .panel-content {
+  background: #3a3a3a;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.custom-panel .panel-content {
+  margin-top: 10px;
+}
+
+.custom-panel input.entry-name,
+.custom-panel textarea.entry-content {
+  width: 200%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+}
+
+.custom-panel textarea.entry-content {
+  resize: yes;
+  height: 500px;
+  max-height: 450px;
+  min-width: 600px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* Buttons inside custom panel */
+.custom-panel .editor-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ===== Fade Helpers ===== */
+.fade-in {
+  opacity: 1 !important;
+}
+.fade-out {
+  opacity: 0 !important;
+}
+
+.blur-overlay.instant {
+  transition: none !important;
+}
+
+/* ===== "Paint Drop" for New Entry Panel ===== */
+.new-entry-panel {
+  position: relative;
+  overflow: hidden;
+  min-height: 600px;
+}
+
+/* Circular button container (fills the panel) */
+.new-entry-intro {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+/* Round 🖋️ button */
+.paint-circle-btn {
+  background-color: #fcd8ff;
+  border: none;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+.paint-circle-btn:hover {
+  transform: scale(1.1);
+}
+
+/* The hidden form area that expands in "paint drop" style */
+.new-entry-contents {
+  position: absolute; 
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transform: scale(0);
+  transition: transform 0.5s ease 0.4s, opacity 0.5s ease 0.4s;
+}
+
+.new-entry-panel.expand .paint-circle-btn {
+  opacity: 0;
+  transform: scale(0.1);
+}
+.new-entry-panel.expand .new-entry-contents {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Make the new entry panel a bit wider */
+#new-entry-panel.custom-panel {
+  width: 90%;
+  max-width: 2000px;
+}
+
+/* Hide the intro area when expanded */
+.new-entry-panel.expand .new-entry-intro {
+  display: none;
+}
+
+.custom-panel input.entry-name {
+  box-sizing: border-box;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Custom Popup Notification ===== */
+.custom-popup {
+  position: fixed;
+  top: 20%;
+  left: -300px; /* Start off-screen to the left */
+  padding: 15px 30px;
+  background: #4caf50;
+  color: #fff;
+  font-size: 1.2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 100;
+  opacity: 0;
+}
+
+/* Slide in animation */
+@keyframes slideIn {
+  0% {
+    left: -300px;
+    opacity: 0;
+  }
+  100% {
+    left: 20px;
+    opacity: 1;
+  }
+}
+/* Slide out animation */
+@keyframes slideOut {
+  0% {
+    left: 20px;
+    opacity: 1;
+  }
+  100% {
+    left: -300px;
+    opacity: 0;
+  }
+}
+/* Trigger classes */
+.custom-popup.show {
+  animation: slideIn 0.5s forwards;
+}
+.custom-popup.hide {
+  animation: slideOut 0.5s forwards;
+}
+
+/* Logo sizing */
+.simnote-logo img {
+  max-width: 300px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Version Badge */
+.version-badge {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 999;
+}
+.version-badge img {
+  width: 150px;
+  height: auto;
+  display: block;
+}
+
+/* Settings Button & Panel */
+.settings-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 31;
+  color: #fff;
+}
+#settings-panel {
+  position: fixed;
+  top: 0;
+  left: -100%; /* start fully off-screen */
+  width: 100%;
+  height: 100%;
+  background: var(--settings-bg, #3a3a3a);
+  padding: 40px 20px;
+  box-sizing: border-box;
+  transition: left 0.6s cubic-bezier(0.6, 0.04, 0.3, 1);
+  z-index: 200; /* above most elements but below splash */
+  overflow-y: auto;
+}
+#settings-panel.visible {
+  left: 0; /* slide in */
+}
+#settings-panel input[type="range"] {
+  width: 100%;
+}
+
+/* === Custom Dropdown (only once) === */
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  width: 200px;
+  user-select: none;
+  margin-top: 5px;
+}
+.custom-dropdown-selected {
+  background: #fcd8ff;
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  transition: background 0.3s, border-color 0.3s;
+}
+.custom-dropdown-selected:hover {
+  background: #fbcdfb;
+  border-color: #bbb;
+}
+.custom-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #3a3a3a;
+  border-radius: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  z-index: 999;
+}
+.custom-dropdown-list.open {
+  max-height: 200px;
+}
+.custom-dropdown-list li {
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.custom-dropdown-list li:hover {
+  background: #444;
+}
+
+/* === Manual Popup Styles === */
+.manual-btn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: none;
+  border: none;
+  /* Increase to make the emoji bigger */
+  font-size: 2.5rem;
+  cursor: pointer;
+  z-index: 110;
+  color: #fff;
+}
+.manual-popup {
+  position: fixed;
+  top: 0;
+  /* Move it further left so the bar is not visible at all */
+  left: -350px;
+  width: 300px;
+  height: 100%;
+  background: #3a3a3a;
+  color: #fff;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+  transition: left 0.5s ease;
+  z-index: 120;
+  overflow-y: auto;
+}
+.manual-popup.visible {
+  left: 0;
+}
+
+/* Theme Settings Button */
+.theme-settings-btn {
+  position: fixed;
+  top: 60px; /* or wherever you want it below the manual button */
+  left: 10px;
+  background: none;
+  border: none;
+  /* Increase the font-size for a bigger icon */
+  font-size: 2.0rem;
+  cursor: pointer;
+  z-index: 110;
+  color: #fff;
+}
+
+/* Hide the panel more completely offscreen by default */
+.theme-settings-popup {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--settings-bg, #3a3a3a);
+  color: #fff;
+  padding: 40px 20px;
+  box-sizing: border-box;
+  transition: left 0.6s cubic-bezier(0.6, 0.04, 0.3, 1);
+  z-index: 200;
+  overflow-y: auto;
+}
+
+.theme-settings-popup.visible {
+  left: 0;
+}
+
+.theme-selector {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  border-radius: 5px;
+  border: none;
+  background: #fcd8ff;
+  color: #333;
+  cursor: pointer;
+}
+
+/* Added spacing below the dropdown inside the Theme Settings panel */
+#theme-settings-close-btn {
+  margin-top: 20px;
+}
+
+/* ===== Themes ===== */
+/* Default Theme */
+body[data-theme="default"] {
+  background-color: #9be4ff;
+  color: #ffffff;
+}
+
+/* Dark Theme */
+body[data-theme="dark"] {
+  background-color: #2b2b2b;
+  color: #e0e0e0;
+}
+
+/* Light Theme */
+body[data-theme="light"] {
+  background-color: #ffffff;
+  color: #333333;
+}
+
+/* ===== NEW: Export/Import Popup Styles ===== */
+.export-import-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: #3a3a3a;
+  border-radius: 10px;
+  padding: 20px 30px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  z-index: 300;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.export-import-popup.visible {
+  opacity: 0.97;
+  transform: translate(-50%, -50%) scale(1);
+}
+.export-import-popup button {
+  margin: 10px;
+}
+
+/* === Home Button CSS Vector === */
+.home-btn {
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+/* square body */
+.home-btn::before {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 10px;
+  width: 28px;
+  height: 24px;
+  background: #fcd8ff;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset;
+}
+
+/* roof */
+.home-btn::after {
+  content: "";
+  position: absolute;
+  bottom: 26px;
+  left: 4px;
+  width: 40px;
+  height: 20px;
+  background: #fcd8ff;
+  transform: skewX(-45deg);
+  transform-origin: bottom left;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset;
+}
+.home-btn:hover::before,
+.home-btn:hover::after {
+  background: #fbcdfb;
+}
+
+.logo-text {
+  font-family: 'Pacifico', cursive;
+  font-size: 7rem;
+  line-height: 1;
+  background: linear-gradient(90deg, #000 0 0) no-repeat;
+  background-size: 0% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Class added via JS when logo should start drawing */
+.logo-text.animate-draw {
+  animation: drawLogo 3s forwards ease-out;
+}
+
+@keyframes drawLogo {
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+/* === Heart Beat === */
+.heart-beat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,105,180,0.35);
+  transform: translate(-50%, -50%) rotate(-45deg) scale(0.8);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+}
+.heart-beat::before,
+.heart-beat::after {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,105,180,0.35);
+  border-radius: 50%;
+}
+.heart-beat::before {
+  left: 0;
+  top: -20px;
+}
+.heart-beat::after {
+  top: 0;
+  left: 20px;
+}
+.heart-beat.visible {
+  opacity: 1;
+  animation: beatHeart 1.5s infinite ease-in-out;
+}
+@keyframes beatHeart {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-45deg) scale(0.8); }
+  50% { transform: translate(-50%, -50%) rotate(-45deg) scale(1.1); }
+}
+
+/* === ECG Line === */
+.ecg-line {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 400px;
+  height: 60px;
+  transform: translate(-50%, -30%);
+  stroke: #ff7fbf;
+  stroke-width: 4;
+  fill: none;
+  opacity: 0;
+  pointer-events: none;
+}
+.ecg-line.animate {
+  opacity: 1;
+  animation: drawECG 2s linear infinite;
+}
+@keyframes drawECG {
+  0% {
+    stroke-dasharray: 400;
+    stroke-dashoffset: 400;
+  }
+  100% {
+    stroke-dasharray: 400;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Journal panel header with date filter */
+.entries-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  position: relative;
+}
+#entry-date-filter {
+  background: #fcd8ff;
+  border: none;
+  border-radius: 5px;
+  padding: 6px 10px;
+  color: #333;
+  font-family: inherit;
+}
+#entry-date-filter:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+}
+
+/* New styles for calendar button and custom popup calendar */
+.calendar-btn {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #fff;
+}
+
+/* Custom calendar popup */
+.custom-calendar {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  width: 240px;
+  background: #2e2e2e;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  padding: 15px;
+  z-index: 150;
+  user-select: none;
+  opacity: 0;
+  transform: scale(0.85);
+  transform-origin: top right;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.custom-calendar.open {
+  opacity: 1;
+  transform: scale(1);
+}
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.calendar-nav {
+  background: none;
+  border: none;
+  color: #fcd8ff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.calendar-cell {
+  text-align: center;
+  padding: 4px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+.calendar-cell.header {
+  font-weight: bold;
+  cursor: default;
+}
+.calendar-cell:hover:not(.header) {
+  background: #444;
+}
+.calendar-cell.selected {
+  background: #fcd8ff;
+  color: #333;
+}
+
+/* Mood panel styles */
+.mood-panel input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: #fcd8ff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor:pointer;
+  margin-top: -6px; /* center thumb */
+}
+.mood-panel input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: #555;
+  border-radius: 3px;
+}
+.mood-panel input[type="range"] {
+  appearance: none;
+  background: transparent;
+}
+
+#mood-emoji {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Mood face SVG */
+.face-bg {
+  fill: #ffcf48;
+  transition: fill .25s ease;
+  stroke: none;
+}
+.eye {
+  fill: #000;
+  transition: transform .25s ease;
+}
+.mouth {
+  stroke: #000;
+  stroke-width: 6;
+  fill: none;
+  transition: d .25s ease;
+}
+
+.mood-text {
+  font-size: 2rem;
+  color: #fff;
+  min-height: 2.5rem;
+  transition: opacity .2s;
+}
+
+.mood-wheel {
+  position: relative;
+  width: 260px;
+  height: 130px; /* semi-circle */
+}
+.mood-sector {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  transform-origin: bottom center;
+  transition: transform .2s;
+}
+.mood-sector:hover, .mood-sector.active { transform: scale(1.3) translateY(-6px); }
+
+/* position sectors by rotation */
+.mood-sector[data-val="1"] { left:50%; top:100%; transform: translate(-50%,-50%) rotate(-80deg) translateY(-100%); }
+.mood-sector[data-val="2"] { left:50%; top:100%; transform: translate(-50%,-50%) rotate(-40deg) translateY(-100%); }
+.mood-sector[data-val="3"] { left:50%; top:100%; transform: translate(-50%,-50%) rotate(0deg) translateY(-100%); }
+.mood-sector[data-val="4"] { left:50%; top:100%; transform: translate(-50%,-50%) rotate(40deg) translateY(-100%); }
+.mood-sector[data-val="5"] { left:50%; top:100%; transform: translate(-50%,-50%) rotate(80deg) translateY(-100%); }
+
+/* smooth rotation on hover maintain scale */
+.mood-sector[data-val="1"]:hover { transform: translate(-50%,-50%) rotate(-80deg) translateY(-100%) scale(1.3) translateY(-6px); }
+/* same for others implicit by base rule */
+
+.mood-input {
+  width: 160px; /* shorter default */
+  min-width: 120px;
+  max-width: 350px;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  background:#3a3a3a;
+  color:#fff;
+  text-align:center;
+}
+.mood-input::placeholder { color:#bbb; }
+
+/* === Mood Prompt Typing & Slide === */
+.mood-input-row {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* more space between prompt and box */
+  justify-content: center;
+}
+.mood-prompt {
+  font-size: 1.5rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 2px solid #fcd8ff;
+  animation: caretBlink 0.8s step-end infinite;
+}
+@keyframes caretBlink {
+  from, to { border-color: transparent; }
+  50% { border-color: #fcd8ff; }
+}
+
+#mood-input {
+  transform: translateX(60px);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.5s ease, width 0.25s ease;
+}
+#mood-input.slide-in {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* === Entry Meta (Mood + Date) === */
+.entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.mood-badge {
+  background: #fcd8ff;
+  color: #333;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.date-stamp {
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+/* === Glass Card Backdrop for Entry Panels === */
+#new-entry-panel.custom-panel,
+#edit-entry-panel.custom-panel {
+  background: rgba(255, 255, 255, 0.08); /* frosted glass */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  width: 90%;
+  max-width: 900px; /* keep panel at a comfortable width */
+  padding: 40px 30px;
+}
+
+/* Remove inner blocks' dark backgrounds so glass shows through */
+#new-entry-panel .panel-title,
+#edit-entry-panel .panel-title,
+#new-entry-panel .panel-content,
+#edit-entry-panel .panel-content {
+  background: transparent;
+  padding: 0; /* we add spacing separately */
+}
+
+/* === Emphasised Title Field === */
+#new-entry-panel input.entry-name,
+#edit-entry-panel input.entry-name {
+  width: 60%;
+  font-size: 1.3rem;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255,255,255,0.3);
+  color: #fff;
+  outline: none;
+  transition: border-color 0.3s;
+  display: block;
+  margin: 0 auto; /* center horizontally */
+}
+#new-entry-panel input.entry-name:focus,
+#edit-entry-panel input.entry-name:focus {
+  border-bottom-color: #fcd8ff;
+}
+
+/* Spacing adjustments */
+#new-entry-panel .entry-meta,
+#edit-entry-panel .entry-meta {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  justify-content: flex-start; /* align left */
+}
+#new-entry-panel .panel-content textarea,
+#edit-entry-panel .panel-content textarea {
+  border-radius: 16px;
+  background: rgba(0,0,0,0.25);
+  padding: 16px;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+}
+
+/* Button hover lift */
+.custom-panel .button-33 {
+  transition: all 250ms ease;
+}
+.custom-panel .button-33:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* Ensure edit-entry-panel behaves like new-entry-panel when expanded */
+.edit-entry-panel.expand .new-entry-contents {
+  opacity: 1;
+  transform: scale(1);
+}
+/* Optionally hide invisible elements (not present) but maintain consistency */
+.edit-entry-panel.expand .paint-circle-btn,
+.edit-entry-panel.expand .new-entry-intro {
+  display: none;
+}
