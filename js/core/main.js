@@ -13,6 +13,7 @@ import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 import { PlainSplashAnimator } from '../animators/plainSplashAnimator.js';
 import { PlainDarkSweepSplashAnimator } from '../animators/plainDarkSweepSplashAnimator.js';
 import { PlainLightSweepSplashAnimator } from '../animators/plainLightSweepSplashAnimator.js';
+import { SepiaSweepSplashAnimator } from '../animators/sepiaSweepSplashAnimator.js';
 import { DateHeaderAnimator } from '../animators/dateHeaderAnimator.js';
 import { FirefliesAnimator } from '../animators/firefliesAnimator.js';
 import { FirefliesSplashAnimator } from '../animators/firefliesSplashAnimator.js';
@@ -85,6 +86,8 @@ function launchSplash(theme) {
     new PlainDarkSweepSplashAnimator(startMainApp);
   } else if (theme === 'plain-light') {
     new PlainLightSweepSplashAnimator(startMainApp);
+  } else if (theme === 'sepia') {
+    new SepiaSweepSplashAnimator(startMainApp);
   } else if (theme === 'lavender-breeze') {
     new LavenderSplashAnimator(startMainApp);
   } else {

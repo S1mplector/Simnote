@@ -43,13 +43,16 @@ body[data-theme="light-sakura"]{background:#ffffff;color:#333;}
 /* Plain themes switch accent to gray and hide petals */
 body[data-theme="plain-dark"]{background:#2b2b2b;color:#e0e0e0;--accent:#888;}
 body[data-theme="plain-light"]{background:#ffffff;color:#333;--accent:#888;}
+body[data-theme="sepia"]{background:#f4ecd8;color:#5b4636;--accent:#8b7355;--settings-bg:#d4c4a8;}
 
 body[data-theme="plain-dark"] #bg-canvas,
-body[data-theme="plain-light"] #bg-canvas{display:none;}
+body[data-theme="plain-light"] #bg-canvas,
+body[data-theme="sepia"] #bg-canvas{display:none;}
 
 /* Use var(--accent) in common components overrides */
 body[data-theme="plain-dark"] .button-33,
-body[data-theme="plain-light"] .button-33{background-color:var(--accent);}
+body[data-theme="plain-light"] .button-33,
+body[data-theme="sepia"] .button-33{background-color:var(--accent);}
 
 /* Aurora theme overrides */
 body[data-theme="aurora"]{background:#001010;color:#e0e0e0;--accent:#66ffcc;}
