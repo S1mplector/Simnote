@@ -73,6 +73,7 @@
   border: none;
   border-bottom: 2px solid rgba(255,255,255,0.3);
   color: #fff;
+  font-family: var(--entry-font, Arial, sans-serif);
   outline: none;
   transition: border-color 0.3s, width 0.25s ease;
   display: block;
@@ -96,6 +97,13 @@
   background: rgba(0,0,0,0.25);
   padding: 16px;
   box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+}
+
+#new-entry-panel .entry-content,
+#edit-entry-panel .entry-content,
+#new-entry-panel .rich-editor,
+#edit-entry-panel .rich-editor {
+  font-family: var(--entry-font, Arial, sans-serif);
 }
 
 /* Button hover lift inside panels */

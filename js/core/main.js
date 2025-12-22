@@ -371,7 +371,11 @@ dropdownList.querySelectorAll('li').forEach(item => {
   item.addEventListener('click', () => {
     const newFont = item.getAttribute('data-value');
     dropdownSelected.textContent = item.textContent;
+    document.documentElement.style.setProperty('--entry-font', newFont);
     document.querySelectorAll('.entry-content').forEach(el => {
+      el.style.fontFamily = newFont;
+    });
+    document.querySelectorAll('input.entry-name').forEach(el => {
       el.style.fontFamily = newFont;
     });
     dropdownList.classList.remove('open');

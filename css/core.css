@@ -16,7 +16,7 @@ html, body {
   height: 100%;
   background: #2c2c2c;
   overflow: hidden;
-  font-family: Arial, sans-serif;
+  font-family: var(--ui-font);
 }
 
 /* ===== Background Canvas ===== */
@@ -78,6 +78,9 @@ html, body {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 1s ease, transform 1s ease;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
 }
 
 /* ===== Heart ===== */
@@ -143,7 +146,7 @@ html, body {
   color: var(--accent-contrast);
   cursor: pointer;
   display: inline-block;
-  font-family: CerebriSans-Regular, -apple-system, system-ui, Roboto, sans-serif;
+  font-family: var(--ui-font);
   padding: 7px 20px 7px 20px;
   text-align: center;
   text-decoration: none;
@@ -851,14 +854,24 @@ body[data-theme="light"] {
 }
 
 .logo-text {
-  font-family: 'Pacifico', cursive;
-  font-size: 7rem;
-  line-height: 1;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 6.6rem;
+  line-height: 0.95;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   background: linear-gradient(90deg, #000 0 0) no-repeat;
   background-size: 0% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+
+.logo-version {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Class added via JS when logo should start drawing */

@@ -24,6 +24,7 @@
 @import url("animations/moodsSmiley.css");
 @import url("animations/journalPen.css");
 @import url("animations/entriesBook.css");
+@import url("components/checkbox.css");
 
 /* ===== Global Reset & Body ===== */
 html, body {
@@ -33,11 +34,13 @@ html, body {
   height: 100%;
   background: #2c2c2c;
   overflow: hidden;
-  font-family: Arial, sans-serif;
+  font-family: var(--ui-font);
 }
 
 /* Theme accent defaults */
 :root{
+  --ui-font:'Space Grotesk', sans-serif;
+  --entry-font: Arial, sans-serif;
   --accent:#fcd8ff;
   --accent-hover:#fbcdfb;
   --accent-secondary:#c9a0dc;

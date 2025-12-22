@@ -21,7 +21,7 @@ export class PlainSplashAnimator {
       justifyContent: 'center',
       color: '#fff',
       fontSize: '3rem',
-      fontFamily: 'Pacifico, cursive',
+      fontFamily: 'Space Grotesk, sans-serif',
       letterSpacing: '2px',
       zIndex: 9999,
       pointerEvents: 'none',
