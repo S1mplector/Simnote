@@ -1,13 +1,26 @@
 /* menuButtons.css - interactive animations for main menu buttons */
 
-/* Settings gear spin – animate only the emoji/icon inside */
-.theme-settings-btn {
-  display: inline-block;
+/* Menu button icon base */
+.menu-icon-svg {
+  display: block;
+  width: 32px;
+  height: 32px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: filter 0.3s ease, transform 0.3s ease;
 }
 
-/* target inner span so label remains static */
+/* Settings gear spin – animate only the icon inside */
+.theme-settings-btn {
+  display: inline-flex;
+}
+
 .theme-settings-btn .gear-icon {
-  display: inline-block;
+  display: block;
+  transform-origin: center;
   transition: transform 0.4s ease;
 }
 
@@ -15,31 +28,24 @@
   animation: gearSpin 1.6s linear infinite;
 }
 
+.theme-settings-btn:hover .menu-icon-svg {
+  filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.28));
+}
+
 @keyframes gearSpin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
 
-/* Manual button emoji swap */
+/* Manual button hover polish */
 .manual-btn {
-  position: fixed; /* keep original placement */
-  top: 10px;
-  left: 10px;
-  display: inline-block;
-  /* keeps original font-size via existing CSS */
+  display: inline-flex;
 }
 
-.manual-btn .book-open,
-.manual-btn .book-closed {
-  display: inline-block;
-  transition: opacity 0.35s ease;
+.manual-btn:hover .menu-icon-svg {
+  filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.28));
+  transform: translateY(-1px);
 }
-
-.manual-btn .book-open { position: absolute; left: 0; top: 0; opacity: 0; }
-.manual-btn .book-closed { opacity: 1; }
-
-.manual-btn:hover .book-closed { opacity: 0; }
-.manual-btn:hover .book-open { opacity: 1; }
 
 /* hide when journal panel active */
 body.journal-open .manual-btn,

@@ -26,9 +26,19 @@
   </head>
   <body>
     <!-- Manual Button -->
-    <button id="manual-btn" class="manual-btn"><span class="book-closed">📘</span><span class="book-open">📖</span></button>
+    <button id="manual-btn" class="manual-btn" aria-label="Manual">
+      <svg class="menu-icon-svg book-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+      </svg>
+    </button>
     <!-- Theme Settings Button -->
-    <button id="theme-settings-btn" class="theme-settings-btn"><span class="gear-icon">⚙️</span></button>
+    <button id="theme-settings-btn" class="theme-settings-btn" aria-label="Settings">
+      <svg class="menu-icon-svg gear-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
 
     <!-- Manual Popup (hidden by default) -->
     <div id="manual-popup" class="manual-popup">
@@ -121,28 +131,26 @@
         </div>
         <div class="nav-icons">
           <button id="new-entry-btn" class="nav-icon-btn" title="Journal">
-            <div class="icon-pen">
-              <div class="pen-body"></div>
-              <div class="pen-tip"></div>
-              <div class="pen-band"></div>
-            </div>
+            <svg class="nav-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
             <span class="icon-label">Journal</span>
           </button>
           <button id="load-entry-btn" class="nav-icon-btn" title="All Entries">
-            <div class="icon-book">
-              <div class="book-cover"></div>
-              <div class="book-pages"></div>
-              <div class="book-spine"></div>
-            </div>
+            <svg class="nav-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M2 3h7a4 4 0 0 1 4 4v14a3 3 0 0 0-4-3H2z"></path>
+              <path d="M22 3h-7a4 4 0 0 0-4 4v14a3 3 0 0 1 4-3h7z"></path>
+            </svg>
             <span class="icon-label">Entries</span>
           </button>
           <button id="stats-btn" class="nav-icon-btn" title="Mood Tracking">
-            <div class="icon-smiley">
-              <div class="smiley-face"></div>
-              <div class="smiley-eye left"></div>
-              <div class="smiley-eye right"></div>
-              <div class="smiley-mouth"></div>
-            </div>
+            <svg class="nav-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
             <span class="icon-label">Moods</span>
           </button>
         </div>

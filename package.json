@@ -9,11 +9,12 @@
   },
   "devDependencies": {
     "electron": "^25.3.1",
-    "electron-packager": "^17.1.2",
-    "electron-builder": "^23.6.0"
+    "electron-builder": "^23.6.0",
+    "electron-packager": "^17.1.2"
   },
   "dependencies": {
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "react-icons": "^5.5.0"
   },
   "build": {
     "appId": "com.yourname.simnote",
@@ -33,7 +34,9 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ]
     },
