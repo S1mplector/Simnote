@@ -59,8 +59,9 @@
 
 /* Rich Editor Content Area */
 .rich-editor {
-  min-height: 350px;
-  max-height: 450px;
+  min-height: 420px;
+  max-height: none;
+  flex: 1 1 auto;
   overflow-y: auto;
   padding: 16px;
   background: rgba(0, 0, 0, 0.25);
@@ -262,7 +263,7 @@
   }
   
   .rich-editor {
-    min-height: 250px;
+    min-height: 260px;
     padding: 12px;
   }
 }

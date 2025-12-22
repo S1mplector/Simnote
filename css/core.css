@@ -328,11 +328,37 @@ html, body {
   transition: none !important;
 }
 
+.panel-exit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.panel-exit-overlay.visible {
+  opacity: 1;
+}
+
 /* ===== "Paint Drop" for New Entry Panel ===== */
 .new-entry-panel {
   position: relative;
   overflow: hidden;
-  min-height: 600px;
+  min-height: 620px;
+}
+
+.edit-entry-panel {
+  position: relative;
+  min-height: 620px;
+}
+
+.new-entry-panel.expand,
+.edit-entry-panel {
+  overflow: visible;
 }
 
 /* Circular button container (fills the panel) */
@@ -371,8 +397,11 @@ html, body {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 16px;
+  padding: 24px;
+  box-sizing: border-box;
   opacity: 0;
   transform: scale(0);
   transition: transform 0.5s ease 0.4s, opacity 0.5s ease 0.4s;
@@ -388,9 +417,12 @@ html, body {
 }
 
 /* Make the new entry panel a bit wider */
-#new-entry-panel.custom-panel {
-  width: 90%;
-  max-width: 2000px;
+#new-entry-panel.custom-panel,
+#edit-entry-panel.custom-panel {
+  width: 92%;
+  max-width: 1200px;
+  height: 82vh;
+  max-height: 940px;
 }
 
 /* Hide the intro area when expanded */
@@ -482,6 +514,7 @@ html, body {
   font-size: 1.5rem;
   cursor: pointer;
   z-index: 31;
+  color: #fff;
 }
 #settings-panel {
   position: fixed;
@@ -565,7 +598,7 @@ html, body {
   justify-content: center;
   cursor: pointer;
   z-index: 110;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.7);
 }
 .manual-popup {
   position: fixed;
@@ -601,7 +634,7 @@ html, body {
   justify-content: center;
   cursor: pointer;
   z-index: 110;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Hide the panel more completely offscreen by default */
@@ -1051,8 +1084,10 @@ body[data-theme="light"] {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.45);
-  width: 90%;
-  max-width: 900px; /* keep panel at a comfortable width */
+  width: 92%;
+  max-width: 1200px; /* keep panel at a comfortable width */
+  height: 82vh;
+  max-height: 940px;
   padding: 40px 30px;
 }
 
@@ -1063,6 +1098,26 @@ body[data-theme="light"] {
 #edit-entry-panel .panel-content {
   background: transparent;
   padding: 0; /* we add spacing separately */
+}
+
+#new-entry-panel .panel-title,
+#edit-entry-panel .panel-title,
+#new-entry-panel .entry-meta,
+#edit-entry-panel .entry-meta,
+#new-entry-panel .panel-content,
+#edit-entry-panel .panel-content {
+  width: 100%;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#new-entry-panel .panel-content,
+#edit-entry-panel .panel-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* === Emphasised Title Field === */
@@ -1090,7 +1145,7 @@ body[data-theme="light"] {
 #edit-entry-panel .entry-meta {
   margin-top: 10px;
   margin-bottom: 20px;
-  justify-content: flex-start; /* align left */
+  justify-content: center; /* align center */
 }
 #new-entry-panel .panel-content textarea,
 #edit-entry-panel .panel-content textarea {

@@ -30,6 +30,9 @@ export class EditorManager {
 
     // Autosave timer reference
     this.autosaveTimer = null;
+    this.liveAutosaveTimers = new Map();
+    this.lastAutosaveState = new Map();
+    this.newEntryDraftId = null;
 
     // Current entry tags (for editing)
     this.currentTags = [];
@@ -63,6 +66,9 @@ export class EditorManager {
 
     // Initialize rich text editors
     this.initRichEditors();
+
+    // Set up live autosave as the user types
+    this.setupLiveAutosave();
 
     // Remove delete button listener from edit panel:
     // (This was previously registered with querySelectorAll('.delete-btn') and handled in handleDeleteButton)
@@ -184,6 +190,10 @@ export class EditorManager {
     const panel = btn.closest('#journal-panel, #new-entry-panel, #edit-entry-panel');
     if (!panel) return;
 
+    if (panel.id === 'new-entry-panel' || panel.id === 'edit-entry-panel') {
+      this.showExitOverlay();
+    }
+
     // Clear text fields if leaving new/edit panel
     const nameInput = panel.querySelector('input.entry-name');
     if (nameInput) nameInput.value = '';
@@ -194,10 +204,11 @@ export class EditorManager {
 
     // Clear tags
     this.currentTags = [];
-    this.renderTagsUI(panel);
+    this.renderTagsUI(panel, { autosave: false });
 
     this.currentEntryId = null;
     this.currentEntryIndex = null;
+    this.clearAutosaveState(panel.id);
 
     // Use smooth exit for journal panel, regular transition for others
     const transitionMethod = panel.id === 'journal-panel' 
@@ -211,6 +222,7 @@ export class EditorManager {
       : PanelManager.transitionPanels(panel, this.mainPanel);
 
     transitionMethod.then(() => {
+      this.hideExitOverlay();
       if (panel.id === 'journal-panel') {
         // Make sure the entries pane is shown if needed
         const entriesPane = document.querySelector('.entries-pane');
@@ -241,38 +253,34 @@ export class EditorManager {
     const content = richEditor ? richEditor.getContent() : '';
     const plainText = richEditor ? richEditor.getPlainText().trim() : '';
   
-    if (!name || !plainText) {
-      this.showPopup("Please enter both a name and content.");
-      return;
-    }
-
     const contentArea = panel.querySelector('.rich-editor') || panel.querySelector('.entry-content');
     const fontStyle = window.getComputedStyle(contentArea);
     const fontFamily = fontStyle.fontFamily;
     const fontSize = fontStyle.fontSize;
   
-    if (panel.id === 'edit-entry-panel' && this.currentEntryId) {
-      // Editing existing entry by ID
-      const mood = this.editEntryPanel.dataset.mood;
-      StorageManager.updateEntry(this.currentEntryId, name, content, mood, fontFamily, fontSize, this.currentTags);
-      this.showPopup("Entry updated!");
-    } else if (panel.id === 'edit-entry-panel' && this.currentEntryIndex !== null) {
-      // Fallback to index for backward compatibility
-      const mood = this.editEntryPanel.dataset.mood;
-      StorageManager.updateEntry(this.currentEntryIndex, name, content, mood, fontFamily, fontSize, this.currentTags);
-      this.showPopup("Entry updated!");
+    const mood = panel.dataset.mood || '';
+    if (panel.id === 'edit-entry-panel') {
+      const entryId = this.currentEntryId ?? this.currentEntryIndex;
+      if (entryId !== null && entryId !== undefined) {
+        StorageManager.updateEntry(entryId, name || 'Untitled', content, mood, fontFamily, fontSize, this.currentTags);
+        this.showPopup("Entry saved!");
+        this.lastAutosaveState.delete(panel.id);
+      }
     } else {
-      // Creating new entry
-      const mood = this.newEntryPanel.dataset.mood || '';
-      StorageManager.saveEntry(name, content, mood, fontFamily, fontSize, this.currentTags);
+      const hasContent = name || plainText;
+      if (!hasContent) {
+        this.showPopup("Nothing to save yet.");
+        return;
+      }
+      if (!this.newEntryDraftId) {
+        const saved = StorageManager.saveEntry(name || 'Untitled', content, mood, fontFamily, fontSize, this.currentTags);
+        this.newEntryDraftId = saved?.id || null;
+      } else {
+        StorageManager.updateEntry(this.newEntryDraftId, name || 'Untitled', content, mood, fontFamily, fontSize, this.currentTags);
+      }
       this.showPopup("Entry saved!");
-      // Clear tags after saving new entry
-      this.currentTags = [];
-      this.renderTagsUI(panel);
-      // Clear the rich editor
-      if (richEditor) richEditor.clear();
+      this.lastAutosaveState.delete(panel.id);
     }
-    this.displayEntries();
   }
   
 
@@ -398,7 +406,7 @@ export class EditorManager {
         }
 
         // Render tags in edit panel
-        this.renderTagsUI(this.editEntryPanel);
+      this.renderTagsUI(this.editEntryPanel, { autosave: false });
 
         // Ensure edit panel shows its contents immediately, mirroring new-entry-panel behaviour
         this.editEntryPanel.classList.add('expand');
@@ -557,8 +565,6 @@ export class EditorManager {
 
   setupAutosave() {
     if(this.autosaveTimer){ clearInterval(this.autosaveTimer); this.autosaveTimer=null; }
-    const enabled = JSON.parse(localStorage.getItem('autosaveEnabled') || 'false');
-    if(!enabled) return;
     const intervalSec = parseInt(localStorage.getItem('autosaveInterval') || '30');
     if(isNaN(intervalSec) || intervalSec<=0) return;
     this.autosaveTimer = setInterval(()=> this.performAutosave(), intervalSec*1000);
@@ -567,24 +573,7 @@ export class EditorManager {
   performAutosave(){
     // Only autosave in edit-entry-panel for simplicity
     if(!this.editEntryPanel || this.editEntryPanel.style.display==='none') return;
-    const nameInput = this.editEntryPanel.querySelector('input.entry-name');
-    const contentArea = this.editEntryPanel.querySelector('textarea.entry-content');
-    if(!nameInput || !contentArea) return;
-    const name = nameInput.value.trim();
-    const content = contentArea.value.trim();
-    if(!name || !content) return;
-    
-    if(this.currentEntryId || this.currentEntryIndex !== null){
-      const mood = this.editEntryPanel.dataset.mood;
-      const fontStyle = window.getComputedStyle(contentArea);
-      StorageManager.updateEntry(
-        this.currentEntryId || this.currentEntryIndex, 
-        name, content, mood, 
-        fontStyle.fontFamily, fontStyle.fontSize,
-        this.currentTags
-      );
-      console.log('Autosaved entry');
-    }
+    this.performLiveAutosave(this.editEntryPanel);
   }
 
   // Setup tag input functionality
@@ -647,7 +636,7 @@ export class EditorManager {
             const tag = el.getAttribute('data-tag');
             if (!this.currentTags.includes(tag)) {
               this.currentTags.push(tag);
-              this.renderTagsUI(panel);
+            this.renderTagsUI(panel);
             }
             tagInput.value = '';
             suggestions.innerHTML = '';
@@ -665,7 +654,7 @@ export class EditorManager {
   }
 
   // Render tags in a panel
-  renderTagsUI(panel) {
+  renderTagsUI(panel, { autosave = true } = {}) {
     if (!panel) return;
     const tagsList = panel.querySelector('.tags-list');
     if (!tagsList) return;
@@ -686,6 +675,10 @@ export class EditorManager {
         this.renderTagsUI(panel);
       });
     });
+
+    if (autosave) {
+      this.scheduleAutosave(panel);
+    }
   }
 
   // Setup favorites filter toggle
@@ -743,5 +736,106 @@ export class EditorManager {
         this.richEditors.set(panel.id, editor);
       }
     });
+  }
+
+  setupLiveAutosave() {
+    const panels = [this.newEntryPanel, this.editEntryPanel];
+    panels.forEach(panel => {
+      if (!panel) return;
+      const nameInput = panel.querySelector('input.entry-name');
+      const richEditor = panel.querySelector('.rich-editor');
+      const schedule = () => this.scheduleAutosave(panel);
+
+      nameInput?.addEventListener('input', schedule);
+      richEditor?.addEventListener('input', schedule);
+      richEditor?.addEventListener('keyup', schedule);
+      richEditor?.addEventListener('paste', schedule);
+    });
+  }
+
+  scheduleAutosave(panel) {
+    if (!panel || !this.isAutosaveEnabled()) return;
+    const panelId = panel.id;
+    if (!panelId) return;
+    const existing = this.liveAutosaveTimers.get(panelId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => this.performLiveAutosave(panel), 300);
+    this.liveAutosaveTimers.set(panelId, timer);
+  }
+
+  performLiveAutosave(panel) {
+    if (!panel || !this.isAutosaveEnabled()) return;
+    const panelId = panel.id;
+    if (!panelId) return;
+
+    const nameInput = panel.querySelector('input.entry-name');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const richEditor = this.richEditors.get(panelId);
+    const content = richEditor ? richEditor.getContent() : '';
+    const plainText = richEditor ? richEditor.getPlainText().trim() : '';
+    const mood = panel.dataset.mood || '';
+    const tags = Array.isArray(this.currentTags) ? this.currentTags : [];
+
+    if (panelId === 'new-entry-panel' && !name && !plainText) return;
+
+    const snapshot = JSON.stringify({
+      name: name || 'Untitled',
+      content,
+      mood,
+      tags
+    });
+    if (this.lastAutosaveState.get(panelId) === snapshot) return;
+
+    const contentArea = panel.querySelector('.rich-editor') || panel.querySelector('.entry-content');
+    const fontStyle = contentArea ? window.getComputedStyle(contentArea) : null;
+    const fontFamily = fontStyle ? fontStyle.fontFamily : '';
+    const fontSize = fontStyle ? fontStyle.fontSize : '';
+
+    if (panelId === 'edit-entry-panel') {
+      const entryId = this.currentEntryId ?? this.currentEntryIndex;
+      if (entryId !== null && entryId !== undefined) {
+        StorageManager.updateEntry(entryId, name || 'Untitled', content, mood, fontFamily, fontSize, tags);
+      }
+    } else {
+      if (!this.newEntryDraftId) {
+        const saved = StorageManager.saveEntry(name || 'Untitled', content, mood, fontFamily, fontSize, tags);
+        this.newEntryDraftId = saved?.id || null;
+      } else {
+        StorageManager.updateEntry(this.newEntryDraftId, name || 'Untitled', content, mood, fontFamily, fontSize, tags);
+      }
+    }
+
+    this.lastAutosaveState.set(panelId, snapshot);
+  }
+
+  clearAutosaveState(panelId) {
+    if (!panelId) return;
+    const timer = this.liveAutosaveTimers.get(panelId);
+    if (timer) clearTimeout(timer);
+    this.liveAutosaveTimers.delete(panelId);
+    this.lastAutosaveState.delete(panelId);
+    if (panelId === 'new-entry-panel') {
+      this.newEntryDraftId = null;
+    }
+  }
+
+  showExitOverlay() {
+    if (document.getElementById('panel-exit-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'panel-exit-overlay';
+    overlay.className = 'panel-exit-overlay';
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+  }
+
+  hideExitOverlay() {
+    const overlay = document.getElementById('panel-exit-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('visible');
+    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+  }
+
+  isAutosaveEnabled() {
+    return true;
   }
 }

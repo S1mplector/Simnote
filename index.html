@@ -42,17 +42,23 @@
 
     <!-- Manual Popup (hidden by default) -->
     <div id="manual-popup" class="manual-popup">
-      <h3>Simnote Manual (v0.1.0)</h3>
+      <h3>Simnote Manual</h3>
       <p>
-        Welcome to Simnote, a modern journaling application designed for ease of use and aesthetics.
-        Current features include:
+        Simnote is your calm journaling space. Notes save as you type, so you can focus on writing.
       </p>
       <ul>
-        <li>Create, edit, and save journal entries in a distraction free environment.</li>
-        <li>Load and view your saved entries in the journal panel.</li>
-        <li>Customize your experience via the settings panel (adjust font size and font family).</li>
-        <li>Enjoy beautifully animated backgrounds. We have a few themes to choose from!</li>
+        <li>Start a new entry from Journal, or open past entries from Entries.</li>
+        <li>Everything autosaves while you type. Press Esc to return to the main menu.</li>
+        <li>Add moods, tags, and templates to organize your thoughts.</li>
+        <li>Customize themes, fonts, and preferences in Settings.</li>
       </ul>
+      <p>Want a refresher? Run the quick tour anytime.</p>
+      <button id="manual-tour-btn" class="nav-icon-btn" title="Start Tour">
+        <svg class="nav-icon-svg" viewBox="0 0 24 24">
+          <path d="M8 5l11 7-11 7z"></path>
+        </svg>
+        <span class="icon-label">Start Tour</span>
+      </button>
       <button id="manual-close-btn" class="nav-icon-btn" title="Close">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -79,8 +85,6 @@
       <div class="settings-section" style="margin-top:20px;">
         <h4 style="margin:0 0 8px 0;">Data & Storage</h4>
         <div class="storage-info-compact">
-          <span class="storage-stat-inline"><span id="storage-type">SQLite</span></span>
-          <span class="storage-divider">•</span>
           <span class="storage-stat-inline"><span id="storage-entries">0</span> entries</span>
           <span class="storage-divider">•</span>
           <span class="storage-stat-inline"><span id="storage-images">0</span> images</span>
@@ -330,7 +334,12 @@
     <!-- New Entry Panel -->
     <div id="new-entry-panel" class="custom-panel new-entry-panel" style="display: none;">
       <!-- Settings Button (upper right) -->
-      <button class="settings-btn">⚙️</button>
+      <button class="settings-btn" aria-label="Editor Settings">
+        <svg class="menu-icon-svg gear-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
 
       <!-- Circular button container -->
       <div class="new-entry-intro">
@@ -457,7 +466,12 @@
     <!-- Edit Entry Panel -->
     <div id="edit-entry-panel" class="custom-panel edit-entry-panel" style="display: none;">
       <!-- Settings Button (upper right) -->
-      <button class="settings-btn">⚙️</button>
+      <button class="settings-btn" aria-label="Editor Settings">
+        <svg class="menu-icon-svg gear-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
       <div class="new-entry-contents">
         <div class="panel-title">
           <input type="text" class="entry-name" placeholder="Title" />
@@ -509,7 +523,7 @@
     <!-- Shared Settings Panel (slides in from the right) -->
     <div id="settings-panel">
       <h3>Settings</h3>
-      <button id="settings-close-btn" class="nav-icon-btn" title="Close" style="position:absolute;top:20px;right:20px;">
+      <button id="settings-close-btn" class="nav-icon-btn" title="Close" style="position:absolute;bottom:20px;right:20px;">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -534,18 +548,6 @@
         </ul>
       </div>
 
-      <!-- Autosave Settings -->
-      <div class="settings-separator"></div>
-      <div class="autosave-section">
-        <label><input type="checkbox" id="autosave-enabled" /> Enable Autosave (every 30s)</label>
-      </div>
-
-      <!-- Daily Mood Check-in Settings -->
-      <div class="settings-separator"></div>
-      <div class="mood-checkin-section">
-        <label><input type="checkbox" id="mood-checkin-enabled" checked /> Daily Mood Check-in</label>
-        <p class="settings-hint">Ask how you're feeling when you open the app each day</p>
-      </div>
     </div>
 
     <!-- NEW: Export/Import Popup Panel (hidden by default) -->
@@ -577,9 +579,6 @@
 
     <!-- Custom Popup -->
     <div id="custom-popup" class="custom-popup">Entry saved!</div>
-
-    <!-- Version Badge -->
-    <div class="version-badge" style="color:#fff;font-size:0.9rem;opacity:0.8;">v0.2.0</div>
 
     <!-- JavaScript Modules -->
     <script type="module" src="js/core/main.js"></script>

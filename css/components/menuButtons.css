@@ -56,6 +56,12 @@ body.journal-open .theme-settings-btn{display:none !important;}
 .theme-settings-btn {
   /* ensure label isn't clipped */
   overflow: visible;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.manual-btn:hover,
+.theme-settings-btn:hover {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .manual-btn::after,
@@ -67,7 +73,7 @@ body.journal-open .theme-settings-btn{display:none !important;}
   transform: translateY(-50%) translateX(-6px);
   white-space: nowrap;
   font-size: 1rem;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.7);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s ease;
@@ -84,5 +90,6 @@ body.journal-open .theme-settings-btn{display:none !important;}
 .manual-btn:hover::after,
 .theme-settings-btn:hover::after {
   opacity: 1;
+  color: rgba(255, 255, 255, 0.95);
   transform: translateY(-50%) translateX(0);
 }

@@ -405,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize onboarding for first-time users
   const onboarding = new OnboardingManager();
   onboarding.start();
+  window.onboardingManager = onboarding;
 
   // Initialize daily mood check-in (shows after splash if enabled and not yet logged today)
   window.dailyMoodManager = new DailyMoodManager();
@@ -500,6 +501,7 @@ function showPopup(message) {
 -------------------------------------- */
 const manualPopup = document.getElementById('manual-popup');
 const manualCloseBtn = document.getElementById('manual-close-btn');
+const manualTourBtn = document.getElementById('manual-tour-btn');
 
 manualBtn.addEventListener('click', () => {
   manualPopup.classList.add('visible');
@@ -508,6 +510,16 @@ manualBtn.addEventListener('click', () => {
 manualCloseBtn.addEventListener('click', () => {
   manualPopup.classList.remove('visible');
 });
+
+if (manualTourBtn) {
+  manualTourBtn.addEventListener('click', () => {
+    manualPopup.classList.remove('visible');
+    if (window.onboardingManager) {
+      window.onboardingManager.reset();
+      window.onboardingManager.showStep(0);
+    }
+  });
+}
 
 /* -------------------------------------
    NEW: Export/Import Functionality
@@ -741,7 +753,7 @@ moodInput.addEventListener('keydown', (event) => {
 const autosaveEnabledCheckbox = document.getElementById('autosave-enabled');
 
 function loadAutosaveSettings(){
-  const enabled = JSON.parse(localStorage.getItem('autosaveEnabled') || 'false');
+  const enabled = JSON.parse(localStorage.getItem('autosaveEnabled') || 'true');
   if(autosaveEnabledCheckbox) autosaveEnabledCheckbox.checked = enabled;
 }
 
@@ -755,30 +767,6 @@ if(autosaveEnabledCheckbox){
 }
 
 document.addEventListener('DOMContentLoaded', loadAutosaveSettings);
-
-/* -------------------------------------
-   Daily Mood Check-in Settings
--------------------------------------- */
-const moodCheckinCheckbox = document.getElementById('mood-checkin-enabled');
-
-function loadMoodCheckinSettings(){
-  const enabled = localStorage.getItem('simnote_mood_checkin_enabled');
-  // Default to true if not set
-  const isEnabled = enabled === null ? true : enabled === 'true';
-  if(moodCheckinCheckbox) moodCheckinCheckbox.checked = isEnabled;
-}
-
-function saveMoodCheckinSettings(){
-  if(moodCheckinCheckbox){
-    localStorage.setItem('simnote_mood_checkin_enabled', moodCheckinCheckbox.checked.toString());
-  }
-}
-
-if(moodCheckinCheckbox){
-  moodCheckinCheckbox.addEventListener('change', saveMoodCheckinSettings);
-}
-
-document.addEventListener('DOMContentLoaded', loadMoodCheckinSettings);
 
 /* -------------------------------------
    Storage Settings

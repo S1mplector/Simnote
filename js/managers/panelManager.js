@@ -6,10 +6,13 @@ export class PanelManager {
      * @param {HTMLElement} showPanel - Panel to show
      * @param {Object} options - Animation options
      */
-    static smoothEntrance(hidePanel, showPanel, options = {}) {
+  static smoothEntrance(hidePanel, showPanel, options = {}) {
       const { fadeDuration = 300 } = options;
 
       return new Promise((resolve) => {
+        // Ensure any stray custom panels are hidden before transitioning
+        PanelManager.hideOtherPanels([hidePanel, showPanel]);
+
         // Fade out current panel
         hidePanel.style.transition = `opacity ${fadeDuration}ms ease-out`;
         hidePanel.style.opacity = '0';
@@ -32,6 +35,20 @@ export class PanelManager {
             resolve();
           }, fadeDuration);
         }, fadeDuration);
+      });
+    }
+
+    /**
+     * Hide any custom panels not part of the current transition.
+     * @param {HTMLElement[]} keepPanels
+     */
+    static hideOtherPanels(keepPanels = []) {
+      const keepSet = new Set(keepPanels.filter(Boolean));
+      document.querySelectorAll('.custom-panel').forEach(panel => {
+        if (!keepSet.has(panel)) {
+          panel.style.display = 'none';
+          panel.style.opacity = '0';
+        }
       });
     }
 
