@@ -279,11 +279,7 @@ function startMoodPanelAnimation() {
    }
 
    PanelManager.smoothEntrance(moodReturnPanel, moodPanel, {
-     direction: 'up',
-     distance: 50,
-     scale: 0.96,
-     hideDuration: 350,
-     showDuration: 550
+     fadeDuration: 300
    }).then(() => {
      blurOverlay.style.opacity = 0;
      startMoodPanelAnimation();
@@ -305,11 +301,7 @@ loadEntryBtn.addEventListener('click', () => {
   themeSettingsBtn.style.display = 'none';
   document.body.classList.add('journal-open');
   PanelManager.smoothEntrance(mainPanel, journalPanel, {
-    direction: 'up',
-    distance: 50,
-    scale: 0.96,
-    hideDuration: 350,
-    showDuration: 550
+    fadeDuration: 300
   }).then(() => {
     blurOverlay.style.opacity = 0;
     const entriesPane = document.querySelector('.entries-pane');
@@ -456,11 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(tplBackBtn){
       tplBackBtn.addEventListener('click', ()=>{
         PanelManager.smoothExit(templatePanel, mainPanel, {
-          direction: 'down',
-          distance: 40,
-          scale: 0.97,
-          hideDuration: 400,
-          showDuration: 350
+          fadeDuration: 300
         }).then(()=>{
           blurOverlay.style.opacity = 1;
           manualBtn.style.display = 'block';
@@ -530,54 +518,62 @@ const exportBtn = document.getElementById('export-btn');
 const importBtn = document.getElementById('import-btn');
 const exportImportCloseBtn = document.getElementById('export-import-close-btn');
 
-exportImportBtn.addEventListener('click', () => {
-  const rect = exportImportBtn.getBoundingClientRect();
-  exportImportPopup.style.top = `${rect.top}px`;
-  exportImportPopup.style.left = `${rect.right + 20}px`;
-  exportImportPopup.style.display = 'block';
-  // ensure starting state
-  exportImportPopup.classList.remove('visible');
-  void exportImportPopup.offsetWidth;
-  exportImportPopup.classList.add('side-visible');
-});
+if (exportImportBtn && exportImportPopup) {
+  exportImportBtn.addEventListener('click', () => {
+    const rect = exportImportBtn.getBoundingClientRect();
+    exportImportPopup.style.top = `${rect.top}px`;
+    exportImportPopup.style.left = `${rect.right + 20}px`;
+    exportImportPopup.style.display = 'block';
+    // ensure starting state
+    exportImportPopup.classList.remove('visible');
+    void exportImportPopup.offsetWidth;
+    exportImportPopup.classList.add('side-visible');
+  });
+}
 
-exportImportCloseBtn.addEventListener('click', () => {
-  exportImportPopup.classList.remove('side-visible');
-  setTimeout(() => { exportImportPopup.style.display = 'none'; }, 300);
-});
+if (exportImportCloseBtn && exportImportPopup) {
+  exportImportCloseBtn.addEventListener('click', () => {
+    exportImportPopup.classList.remove('side-visible');
+    setTimeout(() => { exportImportPopup.style.display = 'none'; }, 300);
+  });
+}
 
-exportBtn.addEventListener('click', () => {
-  // Export all entries
-  const content = StorageManager.generateExportContent();
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'simnote-entries.mynote';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showPopup('Entries exported successfully!');
-});
+if (exportBtn) {
+  exportBtn.addEventListener('click', () => {
+    // Export all entries
+    const content = StorageManager.generateExportContent();
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'simnote-entries.mynote';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showPopup('Entries exported successfully!');
+  });
+}
 
-importBtn.addEventListener('click', () => {
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.mynote,.txt';
-  fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const fileContent = event.target.result;
-      const importedCount = StorageManager.importEntries(fileContent);
-      showPopup(`${importedCount} entries imported!`);
-      window.dispatchEvent(new Event('loadEntries'));
+if (importBtn) {
+  importBtn.addEventListener('click', () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.mynote,.txt';
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileContent = event.target.result;
+        const importedCount = StorageManager.importEntries(fileContent);
+        showPopup(`${importedCount} entries imported!`);
+        window.dispatchEvent(new Event('loadEntries'));
+      };
+      reader.readAsText(file);
     };
-    reader.readAsText(file);
-  };
-  fileInput.click();
-});
+    fileInput.click();
+  });
+}
 
 // Initialize mood attributes manager
 let moodAttributesManager = null;
@@ -600,12 +596,14 @@ if (moodNextBtn) {
     }
     
     // Normal flow: go to attributes panel
-    PanelManager.smoothEntrance(moodPanel, moodAttributesPanel, {
-      direction: 'up',
-      distance: 50,
-      scale: 0.96,
-      hideDuration: 350,
-      showDuration: 550
+    const attrPanel = document.getElementById('mood-attributes-panel');
+    if (!attrPanel) {
+      console.error('Mood attributes panel not found');
+      return;
+    }
+    
+    PanelManager.smoothEntrance(moodPanel, attrPanel, {
+      fadeDuration: 300
     }).then(() => {
       if (moodAttributesManager) {
         moodAttributesManager.show();
@@ -622,24 +620,22 @@ window.addEventListener('moodAttributesSelected', (e) => {
 
 window.addEventListener('moodAttributesBack', () => {
   // Go back to mood panel
-  PanelManager.smoothExit(moodAttributesPanel, moodPanel, {
-    direction: 'down',
-    distance: 40,
-    scale: 0.97,
-    hideDuration: 400,
-    showDuration: 350
+  const attrPanel = document.getElementById('mood-attributes-panel');
+  if (!attrPanel) return;
+  
+  PanelManager.smoothExit(attrPanel, moodPanel, {
+    fadeDuration: 300
   }).then(() => {
     startMoodPanelAnimation();
   });
 });
 
 function goToEntryPanel() {
-  PanelManager.smoothEntrance(moodAttributesPanel, newEntryPanel, {
-    direction: 'up',
-    distance: 50,
-    scale: 0.96,
-    hideDuration: 350,
-    showDuration: 550
+  const attrPanel = document.getElementById('mood-attributes-panel');
+  if (!attrPanel) return;
+  
+  PanelManager.smoothEntrance(attrPanel, newEntryPanel, {
+    fadeDuration: 300
   }).then(() => {
     newEntryPanel.dataset.mood = currentMood;
     newEntryPanel.dataset.attributes = JSON.stringify(currentAttributes.map(a => a.name));
@@ -698,17 +694,14 @@ function goToEntryPanel() {
 const moodBackBtn = moodPanel.querySelector('.back-btn');
 if (moodBackBtn) {
   moodBackBtn.addEventListener('click', () => {
-    // Skip if in daily check-in mode (handled by DailyMoodManager)
+    // In daily check-in mode, hand off to DailyMoodManager
     if (moodPanel.classList.contains('daily-checkin')) {
+      window.dailyMoodManager?.hideMoodCheckin();
       return;
     }
     const returnPanel = moodReturnPanel || mainPanel;
     PanelManager.smoothExit(moodPanel, returnPanel, {
-      direction: 'down',
-      distance: 40,
-      scale: 0.97,
-      hideDuration: 400,
-      showDuration: 350
+      fadeDuration: 300
     }).then(() => {
       if (returnPanel === mainPanel) {
         blurOverlay.style.opacity = 1;
