@@ -701,53 +701,55 @@ html, body {
   margin-top: 8px;
 }
 
-/* Settings Icon Button - matches nav-icon-btn style */
+/* Settings Icon Button - matches nav-icon-btn style exactly */
 .settings-icon-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 16px;
   transition: transform 0.3s ease, background 0.3s ease;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .settings-icon-btn:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.95);
 }
 
 .settings-icon-btn:active {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .settings-icon-svg {
   display: block;
-  width: 32px;
-  height: 32px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  width: 56px;
+  height: 56px;
+  fill: currentColor;
+  stroke: none;
   transition: filter 0.3s ease, transform 0.3s ease;
 }
 
 .settings-icon-btn:hover .settings-icon-svg {
-  filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.2));
+  filter: drop-shadow(0 6px 14px rgba(255, 255, 255, 0.25));
+  transform: translateY(-1px);
 }
 
 .settings-icon-label {
-  font-size: 0.75rem;
-  color: inherit;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 500;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   transition: color 0.3s ease;
+}
+
+.settings-icon-btn:hover .settings-icon-label {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Danger variant for Clear/Delete buttons */
