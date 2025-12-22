@@ -697,31 +697,71 @@ html, body {
 .theme-settings-popup .storage-actions {
   display: flex;
   flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* Settings Icon Button - matches nav-icon-btn style */
+.settings-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
-}
-
-.theme-settings-popup .settings-action-btn {
-  padding: 8px 16px;
+  background: none;
   border: none;
-  border-radius: 6px;
-  font-size: 0.8rem;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  transition: background 0.2s;
+  padding: 12px;
+  border-radius: 12px;
+  transition: transform 0.3s ease, background 0.3s ease;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.theme-settings-popup .settings-action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+.settings-icon-btn:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
 }
 
-.theme-settings-popup .settings-action-btn.danger {
-  background: rgba(220, 53, 69, 0.3);
+.settings-icon-btn:active {
+  transform: translateY(-1px);
+}
+
+.settings-icon-svg {
+  display: block;
+  width: 32px;
+  height: 32px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.settings-icon-btn:hover .settings-icon-svg {
+  filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.2));
+}
+
+.settings-icon-label {
+  font-size: 0.75rem;
+  color: inherit;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+}
+
+/* Danger variant for Clear/Delete buttons */
+.settings-icon-btn.danger {
+  color: rgba(255, 107, 107, 0.7);
+}
+
+.settings-icon-btn.danger:hover {
   color: #ff6b6b;
+  background: rgba(220, 53, 69, 0.15);
 }
 
-.theme-settings-popup .settings-action-btn.danger:hover {
-  background: rgba(220, 53, 69, 0.5);
+.settings-icon-btn.danger:hover .settings-icon-svg {
+  filter: drop-shadow(0 4px 10px rgba(255, 107, 107, 0.3));
 }
 
 /* Compact view mode for entry list */
