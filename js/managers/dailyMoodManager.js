@@ -12,7 +12,8 @@ export class DailyMoodManager {
     this.headingEl = this.moodPanel ? this.moodPanel.querySelector('.mood-panel-title') : null;
     this.originalHeadingText = this.headingEl ? this.headingEl.textContent : '';
     const backBtn = this.moodPanel ? this.moodPanel.querySelector('.back-btn') : null;
-    this.originalBackLabel = backBtn ? backBtn.textContent : '';
+    const backLabel = backBtn ? (backBtn.querySelector('.icon-label') || backBtn.querySelector('.settings-icon-label')) : null;
+    this.originalBackLabel = backLabel ? backLabel.textContent : '';
     this.originalBackEmoji = backBtn ? backBtn.dataset.emoji : '';
     this.skipHandler = null;
     
@@ -109,22 +110,28 @@ export class DailyMoodManager {
     // Update back button to skip
     const backBtn = this.moodPanel.querySelector('.back-btn');
     if (backBtn) {
-      backBtn.textContent = 'Skip';
-      backBtn.dataset.emoji = '⏭️';
+      const backLabel = backBtn.querySelector('.icon-label') || backBtn.querySelector('.settings-icon-label');
+      if (backLabel) {
+        backLabel.textContent = 'Skip';
+      }
       if (this.skipHandler) {
         backBtn.removeEventListener('click', this.skipHandler, true);
       }
       this.skipHandler = (event) => {
         if (!this.moodPanel || !this.moodPanel.classList.contains('daily-checkin')) return;
         event.stopImmediatePropagation();
-        const moodInput = document.getElementById('mood-input');
-        const mood = moodInput ? moodInput.value.trim() : '';
-        if (mood) {
-          this.setTodaysMood(mood);
-        }
         this.hideMoodCheckin();
       };
       backBtn.addEventListener('click', this.skipHandler, true);
+    }
+    
+    // Update Write button label to "Done"
+    const writeBtn = this.moodPanel.querySelector('.mood-next-btn');
+    if (writeBtn) {
+      const writeLabel = writeBtn.querySelector('.icon-label') || writeBtn.querySelector('.settings-icon-label');
+      if (writeLabel) {
+        writeLabel.textContent = 'Done';
+      }
     }
 
     // Smooth slide-up + fade + scale entrance animation using CSS classes
@@ -197,9 +204,21 @@ export class DailyMoodManager {
         if (this.skipHandler) {
           backBtn.removeEventListener('click', this.skipHandler, true);
         }
-        backBtn.textContent = this.originalBackLabel || 'Back';
+        const backLabel = backBtn.querySelector('.icon-label') || backBtn.querySelector('.settings-icon-label');
+        if (backLabel) {
+          backLabel.textContent = this.originalBackLabel || 'Menu';
+        }
         if (this.originalBackEmoji) {
           backBtn.dataset.emoji = this.originalBackEmoji;
+        }
+      }
+      
+      // Restore Write button label
+      const writeBtn = this.moodPanel.querySelector('.mood-next-btn');
+      if (writeBtn) {
+        const writeLabel = writeBtn.querySelector('.icon-label') || writeBtn.querySelector('.settings-icon-label');
+        if (writeLabel) {
+          writeLabel.textContent = 'Write';
         }
       }
       

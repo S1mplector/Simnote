@@ -77,6 +77,20 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* Danger variant for destructive actions */
+.nav-icon-btn.danger {
+  color: rgba(255, 107, 107, 0.7);
+}
+
+.nav-icon-btn.danger:hover {
+  color: #ff6b6b;
+  background: rgba(220, 53, 69, 0.15);
+}
+
+.nav-icon-btn.danger:hover .nav-icon-svg {
+  filter: drop-shadow(0 4px 10px rgba(255, 107, 107, 0.3));
+}
+
 /* Responsive adjustments */
 @media (max-width: 500px) {
   .nav-icons {

@@ -1,8 +1,9 @@
 /* === Entry Panel Styles === */
 
-/* Entry Meta (Mood + Date) */
+/* Entry Meta (Mood + Date + Attributes) */
 .entry-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
@@ -17,6 +18,23 @@
 .date-stamp {
   font-size: 0.8rem;
   color: #ccc;
+}
+
+/* Attribute Tags */
+.attribute-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.attribute-tag {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ddd;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* Glass Card Backdrop */

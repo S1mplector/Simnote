@@ -15,9 +15,7 @@
   margin: 0;
   width: calc(100% - 40px);
 }
-.mood-panel.daily-checkin .mood-next-btn {
-  display: none;
-}
+/* In daily check-in mode, Write button stays visible but text changes via JS */
 
 /* Prompt typing and input slide */
 .mood-input-row {

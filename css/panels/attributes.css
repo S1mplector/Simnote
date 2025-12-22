@@ -1,0 +1,334 @@
+/* === Mood Attributes Panel - iOS-style icon grid === */
+
+#mood-attributes-panel {
+  display: none;
+}
+
+#mood-attributes-panel.custom-panel {
+  width: 90%;
+  max-width: 500px;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.attributes-title {
+  text-align: center;
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.attributes-subtitle {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.9rem;
+  margin: 0 0 24px 0;
+}
+
+/* === iOS-style Grid === */
+.attributes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.attributes-grid::-webkit-scrollbar {
+  display: none;
+}
+
+/* === Individual Attribute Item === */
+.attribute-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 12px 8px;
+  border-radius: 16px;
+  transition: transform 0.15s ease, background 0.2s ease;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.attribute-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.attribute-item:active {
+  transform: scale(0.95);
+}
+
+/* Icon container */
+.attribute-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attribute-name {
+  font-size: 0.75rem;
+  color: #ccc;
+  text-align: center;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === Selected State === */
+.attribute-item.selected .attribute-icon {
+  background: rgba(252, 216, 255, 0.3);
+  box-shadow: 0 0 0 3px #fcd8ff, 0 4px 12px rgba(252, 216, 255, 0.4);
+}
+
+.attribute-item.selected .attribute-name {
+  color: #fcd8ff;
+  font-weight: 600;
+}
+
+/* === Add New Button === */
+.attribute-item.add-new .attribute-icon {
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  font-size: 1.5rem;
+  color: #888;
+}
+
+.attribute-item.add-new:hover .attribute-icon {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* === Delete Badge (hidden by default) === */
+.delete-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  background: #ff4757;
+  border: 2px solid #2e2e2e;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.delete-badge:hover {
+  background: #ff6b7a;
+  transform: scale(1.1) !important;
+}
+
+/* === Edit Mode (Wiggle Animation) === */
+#mood-attributes-panel.edit-mode .attribute-item:not(.add-new) {
+  animation: wiggle 0.3s ease-in-out infinite alternate;
+}
+
+#mood-attributes-panel.edit-mode .attribute-item:nth-child(even) {
+  animation-delay: 0.15s;
+}
+
+#mood-attributes-panel.edit-mode .delete-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#mood-attributes-panel.edit-mode .attribute-item.add-new {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+@keyframes wiggle {
+  0% {
+    transform: rotate(-1.5deg);
+  }
+  100% {
+    transform: rotate(1.5deg);
+  }
+}
+
+/* Dragging state */
+.attribute-item.dragging {
+  z-index: 100;
+  animation: none !important;
+  opacity: 0.9;
+}
+
+.attribute-item.dragging .attribute-icon {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* === Navigation Buttons === */
+.attributes-nav {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+/* === Add Attribute Dialog === */
+.attribute-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  animation: fadeIn 0.2s ease;
+}
+
+.attribute-dialog-overlay.closing {
+  animation: fadeOut 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.attribute-dialog {
+  background: #2e2e2e;
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  animation: dialogSlideUp 0.25s ease;
+}
+
+@keyframes dialogSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.attribute-dialog h3 {
+  margin: 0 0 20px 0;
+  color: #fff;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.dialog-field {
+  margin-bottom: 16px;
+}
+
+.dialog-field label {
+  display: block;
+  color: #aaa;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.dialog-field input {
+  width: 100%;
+  padding: 12px;
+  background: #3a3a3a;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.dialog-field input:focus {
+  outline: none;
+  border-color: #fcd8ff;
+}
+
+.dialog-field .emoji-input {
+  text-align: center;
+  font-size: 1.8rem;
+  padding: 8px;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.dialog-buttons button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.dialog-buttons button:active {
+  transform: scale(0.97);
+}
+
+.dialog-buttons .cancel-btn {
+  background: #444;
+  color: #ccc;
+}
+
+.dialog-buttons .cancel-btn:hover {
+  background: #555;
+}
+
+.dialog-buttons .save-btn {
+  background: #fcd8ff;
+  color: #333;
+  font-weight: 600;
+}
+
+.dialog-buttons .save-btn:hover {
+  background: #f9c5fd;
+}
+
+/* === Responsive adjustments === */
+@media (max-width: 400px) {
+  .attributes-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  
+  .attribute-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+  }
+}

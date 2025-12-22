@@ -2,6 +2,7 @@
 @import url("components/buttons.css");
 @import url("panels/entry.css");
 @import url("panels/mood.css");
+@import url("panels/attributes.css");
 @import url("panels/main.css");
 @import url("panels/journal.css");
 @import url("animations/panelTransitions.css");

@@ -24,6 +24,7 @@ import { StatsManager } from '../managers/statsManager.js';
 import { KeyboardManager } from '../managers/keyboardManager.js';
 import { OnboardingManager } from '../managers/onboardingManager.js';
 import { DailyMoodManager, getTodaysMood } from '../managers/dailyMoodManager.js';
+import { MoodAttributesManager } from '../managers/moodAttributesManager.js';
 
 // Grab key panels from the DOM
 const mainPanel = document.getElementById('main-panel');
@@ -31,11 +32,13 @@ const journalPanel = document.getElementById('journal-panel');
 const newEntryPanel = document.getElementById('new-entry-panel');
 const moodPanel = document.getElementById('mood-panel');
 const templatePanel = document.getElementById('template-panel');
+const moodAttributesPanel = document.getElementById('mood-attributes-panel');
 const moodSlider = document.getElementById('mood-slider');
 const moodTextEl = document.getElementById('mood-text');
 const moodInput = document.getElementById('mood-input');
 const moodPrompt = document.getElementById('mood-prompt');
 let currentMood = '';
+let currentAttributes = [];
 
 // Initialize the editor logic immediately (it doesn't interfere with the splash)
 const editorManager = new EditorManager();
@@ -258,53 +261,43 @@ function startMoodPanelAnimation() {
   }, 80);
 }
 
+ let moodReturnPanel = mainPanel;
+
+ function showMoodPanel(fromPanel) {
+   if (!moodPanel) return;
+
+   moodReturnPanel = fromPanel || mainPanel;
+
+   // Ensure we're not in daily check-in mode (that mode is managed by DailyMoodManager)
+   moodPanel.classList.remove('daily-checkin');
+   const headingEl = moodPanel.querySelector('.mood-panel-title');
+   if (headingEl) headingEl.textContent = 'How are you feeling right now?';
+   const backBtn = moodPanel.querySelector('.back-btn');
+   if (backBtn) {
+     const backLabel = backBtn.querySelector('.icon-label') || backBtn.querySelector('.settings-icon-label');
+     if (backLabel) backLabel.textContent = 'Menu';
+   }
+
+   PanelManager.smoothEntrance(moodReturnPanel, moodPanel, {
+     direction: 'up',
+     distance: 50,
+     scale: 0.96,
+     hideDuration: 350,
+     showDuration: 550
+   }).then(() => {
+     blurOverlay.style.opacity = 0;
+     startMoodPanelAnimation();
+   });
+ }
+
 // New entry button - go directly to blank entry (skip templates)
 newEntryBtn.addEventListener('click', () => {
   manualBtn.style.display = 'none';
   themeSettingsBtn.style.display = 'none';
-  
-  // Get today's mood from daily check-in
-  const todaysMood = getTodaysMood() || '';
-  
-  PanelManager.smoothEntrance(mainPanel, newEntryPanel, {
-    direction: 'up',
-    distance: 50,
-    scale: 0.96,
-    hideDuration: 350,
-    showDuration: 550
-  }).then(() => {
-    blurOverlay.style.opacity = 0;
-    newEntryPanel.dataset.mood = todaysMood;
-    
-    // Update mood badge
-    const meta = newEntryPanel.querySelector('.entry-meta');
-    if (meta) {
-      const moodEl = meta.querySelector('.mood-badge');
-      const dateEl = meta.querySelector('.date-stamp');
-      if (moodEl) {
-        if (todaysMood) {
-          const emoji = MoodEmojiMapper.getEmoji(todaysMood);
-          moodEl.textContent = emoji ? `${emoji} ${todaysMood}` : todaysMood;
-          moodEl.style.display = 'inline-block';
-        } else {
-          moodEl.style.display = 'none';
-        }
-      }
-      if (dateEl) {
-        dateEl.textContent = new Date().toLocaleString();
-      }
-    }
-    
-    // Expand panel and clear fields
-    if (!newEntryPanel.classList.contains('expand')) {
-      newEntryPanel.classList.add('expand');
-    }
-    
-    const titleInput = newEntryPanel.querySelector('input.entry-name');
-    const richEditor = newEntryPanel.querySelector('.rich-editor');
-    if (titleInput) titleInput.value = '';
-    if (richEditor) richEditor.innerHTML = '';
-  });
+
+  window.selectedTemplate = null;
+  window.selectedTemplateBackup = null;
+  showMoodPanel(mainPanel);
 });
 
 loadEntryBtn.addEventListener('click', () => {
@@ -454,58 +447,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!card) return;
       window.selectedTemplate = TEMPLATES[card.dataset.key];
       window.selectedTemplateBackup = TEMPLATES[card.dataset.key];
-      
-      // Skip mood panel - go directly to new entry with today's mood
-      const todaysMood = getTodaysMood() || '';
-      PanelManager.smoothEntrance(templatePanel, newEntryPanel, {
-        direction: 'up',
-        distance: 50,
-        scale: 0.96,
-        hideDuration: 350,
-        showDuration: 550
-      }).then(()=>{
-        newEntryPanel.dataset.mood = todaysMood;
-        
-        const meta = newEntryPanel.querySelector('.entry-meta');
-        if (meta) {
-          const moodEl = meta.querySelector('.mood-badge');
-          const dateEl = meta.querySelector('.date-stamp');
-          if (moodEl) {
-            if (todaysMood) {
-              const emoji = MoodEmojiMapper.getEmoji(todaysMood);
-              moodEl.textContent = emoji ? `${emoji} ${todaysMood}` : todaysMood;
-              moodEl.style.display = 'inline-block';
-            } else {
-              moodEl.style.display = 'none';
-            }
-          }
-          if (dateEl) {
-            dateEl.textContent = new Date().toLocaleString();
-          }
-        }
-        
-        // Expand panel
-        if (!newEntryPanel.classList.contains('expand')) {
-          newEntryPanel.classList.add('expand');
-        }
-        
-        const titleInput = newEntryPanel.querySelector('input.entry-name');
-        const richEditor = newEntryPanel.querySelector('.rich-editor');
-        if(window.selectedTemplate){
-          titleInput.value = window.selectedTemplate.name;
-          if (richEditor) {
-            richEditor.innerHTML = window.selectedTemplate.content || '';
-          }
-          window.selectedTemplate = null;
-          if(window._guidedPromptMgr){window._guidedPromptMgr.destroy();}
-          if(window.selectedTemplateBackup && window.selectedTemplateBackup.prompts){
-             window._guidedPromptMgr = new GuidedPromptManager(newEntryPanel, window.selectedTemplateBackup);
-          }
-        } else {
-          titleInput.value = '';
-          if (richEditor) richEditor.innerHTML = '';
-        }
-      });
+
+      showMoodPanel(templatePanel);
     });
 
     // Back button to main menu
@@ -636,74 +579,142 @@ importBtn.addEventListener('click', () => {
   fileInput.click();
 });
 
+// Initialize mood attributes manager
+let moodAttributesManager = null;
+document.addEventListener('DOMContentLoaded', () => {
+  moodAttributesManager = new MoodAttributesManager();
+});
+
 const moodNextBtn = document.querySelector('.mood-next-btn');
 if (moodNextBtn) {
   moodNextBtn.addEventListener('click', () => {
     currentMood = moodInput.value.trim();
-    PanelManager.smoothEntrance(moodPanel, newEntryPanel, {
+    
+    // In daily check-in mode, save mood and return to main menu
+    if (moodPanel.classList.contains('daily-checkin')) {
+      if (currentMood && window.dailyMoodManager) {
+        window.dailyMoodManager.setTodaysMood(currentMood);
+      }
+      window.dailyMoodManager?.hideMoodCheckin();
+      return;
+    }
+    
+    // Normal flow: go to attributes panel
+    PanelManager.smoothEntrance(moodPanel, moodAttributesPanel, {
       direction: 'up',
       distance: 50,
       scale: 0.96,
       hideDuration: 350,
       showDuration: 550
     }).then(() => {
-      newEntryPanel.dataset.mood = currentMood;
-
-      const meta = newEntryPanel.querySelector('.entry-meta');
-      if (meta) {
-        const moodEl = meta.querySelector('.mood-badge');
-        const dateEl = meta.querySelector('.date-stamp');
-        if (moodEl) {
-          if (currentMood) {
-            const emoji = MoodEmojiMapper.getEmoji(currentMood);
-            moodEl.textContent = emoji ? `${emoji} ${currentMood}` : currentMood;
-            moodEl.style.display = 'inline-block';
-          } else {
-            moodEl.style.display = 'none';
-          }
-        }
-        if (dateEl) {
-          dateEl.textContent = new Date().toLocaleString();
-        }
-      }
-      // Guarantee the panel is expanded and content visible on every open
-      if (!newEntryPanel.classList.contains('expand')) {
-        newEntryPanel.classList.add('expand');
-      }
-      const titleInput = newEntryPanel.querySelector('input.entry-name');
-      const richEditor = newEntryPanel.querySelector('.rich-editor');
-      if(window.selectedTemplate){
-        titleInput.value = window.selectedTemplate.name;
-        if (richEditor) {
-          richEditor.innerHTML = window.selectedTemplate.content || '';
-        }
-        window.selectedTemplate = null;
-        // Start guided prompts if template has them
-        if(window._guidedPromptMgr){window._guidedPromptMgr.destroy();}
-        if(window.selectedTemplateBackup && window.selectedTemplateBackup.prompts){
-           window._guidedPromptMgr = new GuidedPromptManager(newEntryPanel, window.selectedTemplateBackup);
-        }
-      } else {
-        titleInput.value = '';
-        if (richEditor) richEditor.innerHTML = '';
+      if (moodAttributesManager) {
+        moodAttributesManager.show();
       }
     });
+  });
+}
+
+// Handle attributes panel events
+window.addEventListener('moodAttributesSelected', (e) => {
+  currentAttributes = e.detail.attributes || [];
+  goToEntryPanel();
+});
+
+window.addEventListener('moodAttributesBack', () => {
+  // Go back to mood panel
+  PanelManager.smoothExit(moodAttributesPanel, moodPanel, {
+    direction: 'down',
+    distance: 40,
+    scale: 0.97,
+    hideDuration: 400,
+    showDuration: 350
+  }).then(() => {
+    startMoodPanelAnimation();
+  });
+});
+
+function goToEntryPanel() {
+  PanelManager.smoothEntrance(moodAttributesPanel, newEntryPanel, {
+    direction: 'up',
+    distance: 50,
+    scale: 0.96,
+    hideDuration: 350,
+    showDuration: 550
+  }).then(() => {
+    newEntryPanel.dataset.mood = currentMood;
+    newEntryPanel.dataset.attributes = JSON.stringify(currentAttributes.map(a => a.name));
+
+    const meta = newEntryPanel.querySelector('.entry-meta');
+    if (meta) {
+      const moodEl = meta.querySelector('.mood-badge');
+      const dateEl = meta.querySelector('.date-stamp');
+      if (moodEl) {
+        if (currentMood) {
+          const emoji = MoodEmojiMapper.getEmoji(currentMood);
+          moodEl.textContent = emoji ? `${emoji} ${currentMood}` : currentMood;
+          moodEl.style.display = 'inline-block';
+        } else {
+          moodEl.style.display = 'none';
+        }
+      }
+      if (dateEl) {
+        dateEl.textContent = new Date().toLocaleString();
+      }
+      // Show attribute tags if any
+      let attrContainer = meta.querySelector('.attribute-tags');
+      if (!attrContainer) {
+        attrContainer = document.createElement('div');
+        attrContainer.className = 'attribute-tags';
+        meta.appendChild(attrContainer);
+      }
+      attrContainer.innerHTML = currentAttributes.map(a => 
+        `<span class="attribute-tag">${a.emoji} ${a.name}</span>`
+      ).join('');
+    }
+    // Guarantee the panel is expanded and content visible on every open
+    if (!newEntryPanel.classList.contains('expand')) {
+      newEntryPanel.classList.add('expand');
+    }
+    const titleInput = newEntryPanel.querySelector('input.entry-name');
+    const richEditor = newEntryPanel.querySelector('.rich-editor');
+    if(window.selectedTemplate){
+      titleInput.value = window.selectedTemplate.name;
+      if (richEditor) {
+        richEditor.innerHTML = window.selectedTemplate.content || '';
+      }
+      window.selectedTemplate = null;
+      // Start guided prompts if template has them
+      if(window._guidedPromptMgr){window._guidedPromptMgr.destroy();}
+      if(window.selectedTemplateBackup && window.selectedTemplateBackup.prompts){
+         window._guidedPromptMgr = new GuidedPromptManager(newEntryPanel, window.selectedTemplateBackup);
+      }
+    } else {
+      titleInput.value = '';
+      if (richEditor) richEditor.innerHTML = '';
+    }
   });
 }
 
 const moodBackBtn = moodPanel.querySelector('.back-btn');
 if (moodBackBtn) {
   moodBackBtn.addEventListener('click', () => {
-    PanelManager.smoothExit(moodPanel, mainPanel, {
+    // Skip if in daily check-in mode (handled by DailyMoodManager)
+    if (moodPanel.classList.contains('daily-checkin')) {
+      return;
+    }
+    const returnPanel = moodReturnPanel || mainPanel;
+    PanelManager.smoothExit(moodPanel, returnPanel, {
       direction: 'down',
       distance: 40,
       scale: 0.97,
       hideDuration: 400,
       showDuration: 350
     }).then(() => {
-      blurOverlay.style.opacity = 1;
-      manualBtn.style.display = 'block';
-      themeSettingsBtn.style.display = 'block';
+      if (returnPanel === mainPanel) {
+        blurOverlay.style.opacity = 1;
+        manualBtn.style.display = 'block';
+        themeSettingsBtn.style.display = 'block';
+      }
     });
   });
 }
