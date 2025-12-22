@@ -62,14 +62,14 @@
 
 .pen-body {
   position: absolute;
-  width: 12px;
-  height: 40px;
+  width: 10px;
+  height: 32px;
   background: rgba(255, 255, 255, 0.25);
-  border-radius: 3px 3px 0 0;
-  top: 4px;
+  border-radius: 3px 3px 1px 1px;
+  top: 6px;
   left: 50%;
-  transform: translateX(-50%) rotate(-30deg);
-  transform-origin: bottom center;
+  transform: translateX(-50%) rotate(-45deg);
+  transform-origin: center;
   transition: background 0.4s ease, box-shadow 0.4s ease;
 }
 
@@ -77,25 +77,26 @@
   position: absolute;
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 16px solid rgba(255, 255, 255, 0.25);
-  bottom: 8px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 14px solid rgba(255, 255, 255, 0.25);
+  top: 34px;
   left: 50%;
-  transform: translateX(-50%) rotate(-30deg);
-  transform-origin: top center;
+  transform: translateX(-50%) rotate(-45deg);
+  transform-origin: center;
   transition: border-top-color 0.4s ease;
 }
 
 .pen-band {
   position: absolute;
-  width: 14px;
-  height: 4px;
+  width: 12px;
+  height: 3px;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 1px;
-  top: 32px;
+  top: 28px;
   left: 50%;
-  transform: translateX(-50%) rotate(-30deg);
+  transform: translateX(-50%) rotate(-45deg);
+  transform-origin: center;
   transition: background 0.4s ease;
 }
 

@@ -9,6 +9,12 @@ export class DailyMoodManager {
     this.settingsKey = 'simnote_mood_checkin_enabled';
     this.moodPanel = document.getElementById('mood-panel');
     this.mainPanel = document.getElementById('main-panel');
+    this.headingEl = this.moodPanel ? this.moodPanel.querySelector('.mood-panel-title') : null;
+    this.originalHeadingText = this.headingEl ? this.headingEl.textContent : '';
+    const backBtn = this.moodPanel ? this.moodPanel.querySelector('.back-btn') : null;
+    this.originalBackLabel = backBtn ? backBtn.textContent : '';
+    this.originalBackEmoji = backBtn ? backBtn.dataset.emoji : '';
+    this.skipHandler = null;
     
     this.init();
   }
@@ -95,54 +101,44 @@ export class DailyMoodManager {
     if (!this.moodPanel || !this.mainPanel) return;
     
     // Update the mood panel for daily check-in mode
-    const heading = this.moodPanel.querySelector('h2');
-    if (heading) {
-      heading.textContent = 'How are you feeling today?';
+    if (this.headingEl) {
+      this.headingEl.textContent = 'How are you feeling today?';
     }
-
-    // Change the "Start Writing" button to "Continue"
-    const nextBtn = this.moodPanel.querySelector('.mood-next-btn');
-    if (nextBtn) {
-      nextBtn.textContent = 'Continue';
-      nextBtn.dataset.emoji = '✨';
-      
-      // Remove old listeners and add new one
-      const newBtn = nextBtn.cloneNode(true);
-      nextBtn.parentNode.replaceChild(newBtn, nextBtn);
-      
-      newBtn.addEventListener('click', () => {
-        const moodInput = document.getElementById('mood-input');
-        const mood = moodInput ? moodInput.value.trim() : '';
-        
-        if (mood) {
-          this.setTodaysMood(mood);
-        }
-        
-        this.hideMoodCheckin();
-      });
-    }
+    this.moodPanel.classList.add('daily-checkin');
 
     // Update back button to skip
     const backBtn = this.moodPanel.querySelector('.back-btn');
     if (backBtn) {
       backBtn.textContent = 'Skip';
       backBtn.dataset.emoji = '⏭️';
-      
-      const newBackBtn = backBtn.cloneNode(true);
-      backBtn.parentNode.replaceChild(newBackBtn, backBtn);
-      
-      newBackBtn.addEventListener('click', () => {
+      if (this.skipHandler) {
+        backBtn.removeEventListener('click', this.skipHandler, true);
+      }
+      this.skipHandler = (event) => {
+        if (!this.moodPanel || !this.moodPanel.classList.contains('daily-checkin')) return;
+        event.stopImmediatePropagation();
+        const moodInput = document.getElementById('mood-input');
+        const mood = moodInput ? moodInput.value.trim() : '';
+        if (mood) {
+          this.setTodaysMood(mood);
+        }
         this.hideMoodCheckin();
-      });
+      };
+      backBtn.addEventListener('click', this.skipHandler, true);
     }
 
-    // Show the mood panel
+    // Simple fade-in animation centered on screen
     this.mainPanel.style.display = 'none';
-    this.moodPanel.style.display = 'flex';
-    this.moodPanel.classList.add('fade-in');
+    this.moodPanel.style.opacity = '0';
+    this.moodPanel.style.display = 'block';
+    this.moodPanel.style.transition = 'opacity 0.5s ease';
     
-    // Trigger the mood input animation
-    this.animateMoodInput();
+    // Trigger fade in
+    requestAnimationFrame(() => {
+      this.moodPanel.style.opacity = '1';
+      // Start typing animation after fade completes
+      setTimeout(() => this.animateMoodInput(), 400);
+    });
   }
 
   animateMoodInput() {
@@ -179,14 +175,33 @@ export class DailyMoodManager {
   hideMoodCheckin() {
     if (!this.moodPanel || !this.mainPanel) return;
     
-    this.moodPanel.classList.remove('fade-in');
-    this.moodPanel.style.display = 'none';
-    this.mainPanel.style.display = 'block';
+    // Simple fade-out animation
+    this.moodPanel.style.transition = 'opacity 0.4s ease';
+    this.moodPanel.style.opacity = '0';
     
-    // Trigger main panel animation
-    if (window.animateMainPanelBack) {
-      window.animateMainPanelBack();
-    }
+    setTimeout(() => {
+      this.moodPanel.style.display = 'none';
+      this.mainPanel.style.display = 'block';
+      this.moodPanel.classList.remove('daily-checkin');
+      if (this.headingEl && this.originalHeadingText) {
+        this.headingEl.textContent = this.originalHeadingText;
+      }
+      const backBtn = this.moodPanel.querySelector('.back-btn');
+      if (backBtn) {
+        if (this.skipHandler) {
+          backBtn.removeEventListener('click', this.skipHandler, true);
+        }
+        backBtn.textContent = this.originalBackLabel || 'Back';
+        if (this.originalBackEmoji) {
+          backBtn.dataset.emoji = this.originalBackEmoji;
+        }
+      }
+      
+      // Trigger main panel animation
+      if (window.animateMainPanelBack) {
+        window.animateMainPanelBack();
+      }
+    }, 400);
   }
 }
 

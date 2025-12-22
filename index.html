@@ -74,9 +74,33 @@
         </div>
       </div>
 
-      <div class="settings-section" style="margin-top:60px;">
-        <h4 style="margin:0 0 6px 0;">Export Data</h4>
-        <button id="export-import-btn" class="button-33" role="button" data-emoji="📁">Export</button>
+      <!-- Storage Settings -->
+      <div class="settings-section" style="margin-top:30px;">
+        <h4 style="margin:0 0 10px 0;">Storage</h4>
+        <div class="storage-info">
+          <div class="storage-stat">
+            <span class="storage-label">Database</span>
+            <span class="storage-value" id="storage-type">SQLite</span>
+          </div>
+          <div class="storage-stat">
+            <span class="storage-label">Entries</span>
+            <span class="storage-value" id="storage-entries">0</span>
+          </div>
+          <div class="storage-stat">
+            <span class="storage-label">Size</span>
+            <span class="storage-value" id="storage-size">0 KB</span>
+          </div>
+          <div class="storage-stat">
+            <span class="storage-label">Images</span>
+            <span class="storage-value" id="storage-images">0</span>
+          </div>
+        </div>
+        <div class="storage-actions">
+          <button id="export-data-btn" class="settings-action-btn">Export</button>
+          <button id="import-data-btn" class="settings-action-btn">Import</button>
+          <button id="clear-data-btn" class="settings-action-btn danger">Clear All</button>
+        </div>
+        <input type="file" id="import-file-input" accept=".json" style="display:none;" />
       </div>
 
       <!-- Close button -->
@@ -296,7 +320,7 @@
         <div class="current-date" id="current-date"></div>
         <div class="date-row" id="date-strip"></div>
       </div>
-      <h2 style="text-align:center;margin-top:0;">How are you feeling right now?</h2>
+      <h2 class="mood-panel-title">How are you feeling right now?</h2>
       <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
         <div class="mood-input-row">
           <span id="mood-prompt" class="mood-prompt"></span>
@@ -387,36 +411,6 @@
       <div class="mood-checkin-section">
         <label><input type="checkbox" id="mood-checkin-enabled" checked /> Daily Mood Check-in</label>
         <p class="settings-hint">Ask how you're feeling when you open the app each day</p>
-      </div>
-
-      <!-- Storage Settings -->
-      <div class="settings-separator"></div>
-      <div class="storage-section">
-        <h4>Storage</h4>
-        <div class="storage-info">
-          <div class="storage-stat">
-            <span class="storage-label">Database</span>
-            <span class="storage-value" id="storage-type">SQLite</span>
-          </div>
-          <div class="storage-stat">
-            <span class="storage-label">Entries</span>
-            <span class="storage-value" id="storage-entries">0</span>
-          </div>
-          <div class="storage-stat">
-            <span class="storage-label">Size</span>
-            <span class="storage-value" id="storage-size">0 KB</span>
-          </div>
-          <div class="storage-stat">
-            <span class="storage-label">Images</span>
-            <span class="storage-value" id="storage-images">0</span>
-          </div>
-        </div>
-        <div class="storage-actions">
-          <button id="export-data-btn" class="settings-action-btn">Export Data</button>
-          <button id="import-data-btn" class="settings-action-btn">Import Data</button>
-          <button id="clear-data-btn" class="settings-action-btn danger">Clear All Data</button>
-        </div>
-        <input type="file" id="import-file-input" accept=".json" style="display:none;" />
       </div>
     </div>
 

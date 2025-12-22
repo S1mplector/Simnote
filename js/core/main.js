@@ -255,12 +255,46 @@ function startMoodPanelAnimation() {
   }, 80);
 }
 
-// Override the original handler so we can kick off the animation
+// New entry button - go directly to blank entry (skip templates)
 newEntryBtn.addEventListener('click', () => {
   manualBtn.style.display = 'none';
   themeSettingsBtn.style.display = 'none';
-  PanelManager.transitionPanels(mainPanel, templatePanel).then(() => {
+  
+  // Get today's mood from daily check-in
+  const todaysMood = getTodaysMood() || '';
+  
+  PanelManager.transitionPanels(mainPanel, newEntryPanel).then(() => {
     blurOverlay.style.opacity = 0;
+    newEntryPanel.dataset.mood = todaysMood;
+    
+    // Update mood badge
+    const meta = newEntryPanel.querySelector('.entry-meta');
+    if (meta) {
+      const moodEl = meta.querySelector('.mood-badge');
+      const dateEl = meta.querySelector('.date-stamp');
+      if (moodEl) {
+        if (todaysMood) {
+          const emoji = MoodEmojiMapper.getEmoji(todaysMood);
+          moodEl.textContent = emoji ? `${emoji} ${todaysMood}` : todaysMood;
+          moodEl.style.display = 'inline-block';
+        } else {
+          moodEl.style.display = 'none';
+        }
+      }
+      if (dateEl) {
+        dateEl.textContent = new Date().toLocaleString();
+      }
+    }
+    
+    // Expand panel and clear fields
+    if (!newEntryPanel.classList.contains('expand')) {
+      newEntryPanel.classList.add('expand');
+    }
+    
+    const titleInput = newEntryPanel.querySelector('input.entry-name');
+    const richEditor = newEntryPanel.querySelector('.rich-editor');
+    if (titleInput) titleInput.value = '';
+    if (richEditor) richEditor.innerHTML = '';
   });
 });
 
@@ -646,6 +680,17 @@ function autoResizeMoodInput() {
 }
 
 moodInput.addEventListener('input', autoResizeMoodInput);
+moodInput.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' || event.shiftKey) return;
+  event.preventDefault();
+  if (moodPanel.classList.contains('daily-checkin')) {
+    const skipBtn = moodPanel.querySelector('.back-btn');
+    skipBtn?.click();
+    return;
+  }
+  const nextBtn = moodPanel.querySelector('.mood-next-btn');
+  nextBtn?.click();
+});
 
 /* -------------------------------------
    Autosave Settings
@@ -793,13 +838,10 @@ if (clearDataBtn) {
   });
 }
 
-// Update storage info when settings panel opens
-const themeSettingsBtn2 = document.getElementById('theme-settings-btn');
-if (themeSettingsBtn2) {
-  themeSettingsBtn2.addEventListener('click', () => {
-    setTimeout(updateStorageInfo, 100);
-  });
-}
+// Update storage info when theme settings popup opens
+themeSettingsBtn.addEventListener('click', () => {
+  setTimeout(updateStorageInfo, 100);
+});
 
 // Initial storage info update
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,4 +1,24 @@
 /* === Mood Panel Styles === */
+/* Mood panel heading */
+.mood-panel-title {
+  text-align: center;
+  margin: 0 0 18px;
+  color: #f5f5f5;
+  font-size: 1.9rem;
+  font-weight: 600;
+}
+.mood-panel.daily-checkin .mood-panel-title {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -140%);
+  margin: 0;
+  width: calc(100% - 40px);
+}
+.mood-panel.daily-checkin .mood-next-btn {
+  display: none;
+}
+
 /* Prompt typing and input slide */
 .mood-input-row {
   display: flex;
