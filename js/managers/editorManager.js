@@ -220,7 +220,7 @@ export class EditorManager {
           showDuration: 350
         })
       : PanelManager.smoothExit(panel, this.mainPanel, {
-          fadeDuration: 450
+          fadeDuration: 1000
         });
 
     transitionMethod.then(() => {
