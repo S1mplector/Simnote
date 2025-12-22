@@ -1,5 +1,79 @@
 /* menuButtons.css - interactive animations for main menu buttons */
 
+/* Utility button reveal zone */
+.utility-buttons {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 110;
+  width: 72px;
+  height: 120px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.utility-buttons::before {
+  content: "<";
+  position: absolute;
+  left: 6px;
+  top: 10px;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+body.main-menu-active .utility-buttons::before {
+  opacity: 1;
+}
+
+.utility-buttons .manual-btn,
+.utility-buttons .theme-settings-btn {
+  position: relative;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-6px) scale(0.92);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+}
+
+.utility-buttons:hover .manual-btn,
+.utility-buttons:hover .theme-settings-btn,
+.utility-buttons:focus-within .manual-btn,
+.utility-buttons:focus-within .theme-settings-btn {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+}
+
+body.main-menu-active .utility-buttons:hover::before,
+body.main-menu-active .utility-buttons:focus-within::before {
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
+@media (hover: none) {
+  .utility-buttons .manual-btn,
+  .utility-buttons .theme-settings-btn {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .utility-buttons::before {
+    opacity: 0;
+  }
+}
+
 /* Menu button icon base */
 .menu-icon-svg {
   display: block;
@@ -50,6 +124,8 @@
 /* hide when journal panel active */
 body.journal-open .manual-btn,
 body.journal-open .theme-settings-btn{display:none !important;}
+body.journal-open .utility-buttons{pointer-events:none;}
+body.journal-open .utility-buttons::before{opacity:0;}
 
 /* Fade-in labels for Manual and Settings buttons */
 .manual-btn,

@@ -1,0 +1,196 @@
+/* === Animated Moods Smiley === */
+.moods-smiley {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+}
+
+.moods-smiley-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.15;
+}
+
+.moods-smiley-eye {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  border-radius: 50%;
+  top: 12px;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.moods-smiley-eye.left {
+  left: 9px;
+}
+
+.moods-smiley-eye.right {
+  right: 9px;
+}
+
+/* Sleeping state - eyes are closed (horizontal lines) */
+.moods-smiley.sleeping .moods-smiley-eye {
+  height: 2px;
+  width: 5px;
+  border-radius: 1px;
+  animation: sleepingBreath 3s ease-in-out infinite;
+}
+
+/* Waking up animation */
+.moods-smiley.waking .moods-smiley-eye {
+  animation: wakeUp 0.6s ease-out forwards;
+}
+
+/* Awake state - normal round eyes */
+.moods-smiley.awake .moods-smiley-eye {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+/* Mouth */
+.moods-smiley-mouth {
+  position: absolute;
+  width: 14px;
+  height: 7px;
+  border: 2px solid currentColor;
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  transition: all 0.3s ease;
+}
+
+/* Sleeping mouth - centered line */
+.moods-smiley.sleeping .moods-smiley-mouth {
+  width: 8px;
+  height: 0;
+  border: none;
+  border-top: 2px solid currentColor;
+  border-radius: 0;
+  bottom: 12px;
+  opacity: 0.5;
+  animation: sleepingBreath 3s ease-in-out infinite;
+}
+
+/* Awake mouth - bigger smile */
+.moods-smiley.awake .moods-smiley-mouth {
+  width: 16px;
+  height: 8px;
+}
+
+/* Pupil tracking */
+.moods-smiley-pupil {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: all 0.15s ease-out;
+}
+
+.moods-smiley.awake .moods-smiley-pupil {
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes sleepingBreath {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes wakeUp {
+  0% {
+    height: 2px;
+    width: 5px;
+    border-radius: 1px;
+  }
+  30% {
+    height: 5px;
+    width: 5px;
+  }
+  60% {
+    height: 3px;
+    width: 4px;
+  }
+  100% {
+    height: 4px;
+    width: 4px;
+    border-radius: 50%;
+  }
+}
+
+/* Hover effect on the button */
+#stats-btn:hover .moods-smiley-face {
+  opacity: 0.2;
+  transform: scale(1.05);
+}
+
+/* Sleeping zzz animation */
+.moods-smiley-zzz {
+  position: absolute;
+  font-size: 10px;
+  color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  font-weight: bold;
+}
+
+.moods-smiley.sleeping .moods-smiley-zzz {
+  animation: floatZzz 3s ease-in-out infinite;
+}
+
+.moods-smiley-zzz:nth-child(5) {
+  left: 24px;
+  top: 2px;
+  animation-delay: 0s;
+  font-size: 8px;
+}
+
+.moods-smiley-zzz:nth-child(6) {
+  left: 28px;
+  top: -2px;
+  animation-delay: 1s;
+  font-size: 10px;
+}
+
+.moods-smiley-zzz:nth-child(7) {
+  left: 32px;
+  top: -6px;
+  animation-delay: 2s;
+  font-size: 12px;
+}
+
+@keyframes floatZzz {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  20% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.4;
+    transform: translateY(-8px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px) scale(1.1);
+  }
+}

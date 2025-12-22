@@ -95,14 +95,14 @@
 .tooltip-btn.next,
 .tooltip-btn.finish {
   background: var(--accent, #fcd8ff);
-  color: #333;
+  color: var(--accent-contrast);
   font-weight: 500;
 }
 
 .tooltip-btn.next:hover,
 .tooltip-btn.finish:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(252, 216, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
 
 .tooltip-skip {
@@ -171,10 +171,10 @@
 
 @keyframes pulse-highlight {
   0%, 100% {
-    box-shadow: 0 0 0 4px rgba(252, 216, 255, 0.4);
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.4);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(252, 216, 255, 0.2);
+    box-shadow: 0 0 0 8px rgba(var(--accent-rgb), 0.2);
   }
 }
 

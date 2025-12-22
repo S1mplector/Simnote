@@ -1,5 +1,5 @@
 .custom-dropdown-selected {
   background: var(--accent) !important;
   /* Ensure readable text on light/dark accents */
-  color: #333;
-} 
+  color: var(--accent-contrast);
+}

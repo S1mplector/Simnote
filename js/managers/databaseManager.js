@@ -1,14 +1,115 @@
 // databaseManager.js
 // SQLite-based persistence using sql.js (WebAssembly)
+// Hybrid storage: SQLite + IndexedDB + localStorage + .simnote files
 
 const DB_NAME = 'simnote.db';
 const DB_VERSION = 1;
+const ENTRIES_BACKUP_KEY = 'entries';
+const META_BACKUP_KEY = 'simnote_meta';
+
+// File storage will be lazy-loaded to avoid circular dependencies
+let fileStorage = null;
+
+// Check if running in Electron
+const isElectron = typeof window !== 'undefined' && window.electronAPI;
 
 class DatabaseManager {
   constructor() {
     this.db = null;
     this.ready = false;
     this.initPromise = null;
+    this.fileStorageEnabled = false;
+  }
+
+  // Enable file storage (call after user selects directory in browser, or auto in Electron)
+  async enableFileStorage() {
+    if (isElectron) {
+      // Electron handles file storage via IPC
+      this.fileStorageEnabled = true;
+      console.log('[DB] File storage enabled via Electron');
+      return true;
+    }
+    
+    // Browser: use File System Access API
+    try {
+      if (!fileStorage) {
+        const module = await import('./fileStorageBrowser.js');
+        fileStorage = module.browserFileStorage;
+      }
+      
+      // Try to restore previously selected directory
+      const restored = await fileStorage.restoreDirectory();
+      if (restored) {
+        this.fileStorageEnabled = true;
+        console.log('[DB] File storage restored');
+        return true;
+      }
+    } catch (err) {
+      console.warn('[DB] File storage not available:', err.message);
+    }
+    return false;
+  }
+
+  // Prompt user to select file storage directory (browser only)
+  async selectFileStorageDirectory() {
+    if (isElectron) return true;
+    
+    try {
+      if (!fileStorage) {
+        const module = await import('./fileStorageBrowser.js');
+        fileStorage = module.browserFileStorage;
+      }
+      
+      const selected = await fileStorage.selectDirectory();
+      if (selected) {
+        this.fileStorageEnabled = true;
+        // Sync existing entries to the new directory
+        const entries = this.getEntries();
+        await fileStorage.syncAllEntries(entries);
+        return true;
+      }
+    } catch (err) {
+      console.error('[DB] Error selecting directory:', err);
+    }
+    return false;
+  }
+
+  // Sync single entry to file storage
+  async _syncEntryToFile(entry) {
+    if (!this.fileStorageEnabled) return;
+    
+    if (isElectron && window.electronAPI?.saveEntryFile) {
+      try {
+        await window.electronAPI.saveEntryFile(entry);
+      } catch (err) {
+        console.warn('[DB] Electron file sync failed:', err);
+      }
+    } else if (fileStorage?.isEnabled) {
+      try {
+        await fileStorage.saveEntry(entry);
+      } catch (err) {
+        console.warn('[DB] Browser file sync failed:', err);
+      }
+    }
+  }
+
+  // Delete entry from file storage
+  async _deleteEntryFile(id) {
+    if (!this.fileStorageEnabled) return;
+    
+    if (isElectron && window.electronAPI?.deleteEntryFile) {
+      try {
+        await window.electronAPI.deleteEntryFile(id);
+      } catch (err) {
+        console.warn('[DB] Electron file delete failed:', err);
+      }
+    } else if (fileStorage?.isEnabled) {
+      try {
+        await fileStorage.deleteEntryById(id);
+      } catch (err) {
+        console.warn('[DB] Browser file delete failed:', err);
+      }
+    }
   }
 
   async init() {
@@ -20,9 +121,9 @@ class DatabaseManager {
 
   async _initialize() {
     try {
-      // Load sql.js from CDN
+      // Load sql.js from local files (for offline support)
       const SQL = await initSqlJs({
-        locateFile: file => `https://sql.js.org/dist/${file}`
+        locateFile: file => `/js/lib/${file}`
       });
 
       // Try to load existing database from IndexedDB
@@ -42,8 +143,17 @@ class DatabaseManager {
 
       this.ready = true;
       
-      // Auto-save periodically
-      setInterval(() => this._saveToIndexedDB(), 30000);
+      // Sync to localStorage backup after successful load
+      this._syncToLocalStorage();
+      
+      // Try to enable file storage (restore previous directory or auto-enable in Electron)
+      this.enableFileStorage().catch(() => {});
+      
+      // Auto-save periodically (both IndexedDB and localStorage)
+      setInterval(() => {
+        this._saveToIndexedDB();
+        this._syncToLocalStorage();
+      }, 30000);
       
       return true;
     } catch (error) {
@@ -278,7 +388,12 @@ class DatabaseManager {
     `, [id, name, content, mood, JSON.stringify(tags), wordCount, fontFamily, fontSize, now, now]);
     
     this._saveToIndexedDB();
+    this._syncToLocalStorage();
     this._updateStreak();
+    
+    // Sync to file storage (async, non-blocking)
+    const entry = this.getEntryById(id);
+    if (entry) this._syncEntryToFile(entry);
     
     return id;
   }
@@ -297,14 +412,24 @@ class DatabaseManager {
     `, [name, content, mood, JSON.stringify(tags), wordCount, fontFamily, fontSize, now, id]);
     
     this._saveToIndexedDB();
+    this._syncToLocalStorage();
+    
+    // Sync to file storage (async, non-blocking)
+    const entry = this.getEntryById(id);
+    if (entry) this._syncEntryToFile(entry);
+    
     return true;
   }
 
   deleteEntry(id) {
     if (!this.ready) return false;
     
+    // Delete from file storage first (before we lose the ID)
+    this._deleteEntryFile(id);
+    
     this.db.run('DELETE FROM entries WHERE id = ?', [id]);
     this._saveToIndexedDB();
+    this._syncToLocalStorage();
     return true;
   }
 
@@ -317,6 +442,11 @@ class DatabaseManager {
     const newFavorite = entry.favorite ? 0 : 1;
     this.db.run('UPDATE entries SET favorite = ? WHERE id = ?', [newFavorite, id]);
     this._saveToIndexedDB();
+    this._syncToLocalStorage();
+    
+    // Sync to file storage (async, non-blocking)
+    const updatedEntry = this.getEntryById(id);
+    if (updatedEntry) this._syncEntryToFile(updatedEntry);
     
     return newFavorite === 1;
   }
@@ -600,6 +730,17 @@ class DatabaseManager {
     }
     
     this.setMetadata('streak', { current: currentStreak, longest: longestStreak });
+  }
+
+  // Sync entries to localStorage as backup (dual-write strategy)
+  _syncToLocalStorage() {
+    try {
+      const entries = this.getEntries();
+      localStorage.setItem(ENTRIES_BACKUP_KEY, JSON.stringify(entries));
+      console.log(`[DB] Synced ${entries.length} entries to localStorage backup`);
+    } catch (error) {
+      console.warn('[DB] Failed to sync to localStorage:', error);
+    }
   }
 
   // Force save

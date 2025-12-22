@@ -1,6 +1,6 @@
 // main-electron.js (CommonJS style)
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -16,9 +16,10 @@ const { FileStorageManager } = require('../managers/fileStorageManager.js');
 let fileStorageManager = null;
 
 function createWindow() {
-  // Example: store entries in the app's userData folder
-  const storageDir = path.join(app.getPath('userData'), 'entries');
+  // Store entries in ~/Documents/Simnote for easy access and cloud sync
+  const storageDir = path.join(app.getPath('home'), 'Documents', 'Simnote');
   fileStorageManager = new FileStorageManager(storageDir);
+  console.log(`[Electron] Storage directory: ${storageDir}`);
 
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -47,13 +48,70 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Handle IPC calls from the renderer to save entries
+// Handle IPC calls from the renderer to save entries (legacy)
 ipcMain.handle('save-entry', (event, { entryName, entryContent }) => {
   if (!fileStorageManager) {
     throw new Error("FileStorageManager not initialized!");
   }
-  fileStorageManager.saveEntry(entryName, entryContent);
+  fileStorageManager.saveEntry({ name: entryName, content: entryContent, id: `${Date.now()}` });
   return "Entry saved successfully!";
+});
+
+// Save entry as .simnote file (new hybrid storage)
+ipcMain.handle('save-entry-file', (event, entry) => {
+  if (!fileStorageManager) {
+    throw new Error("FileStorageManager not initialized!");
+  }
+  return fileStorageManager.saveEntry(entry);
+});
+
+// Update entry .simnote file
+ipcMain.handle('update-entry-file', (event, entry) => {
+  if (!fileStorageManager) {
+    throw new Error("FileStorageManager not initialized!");
+  }
+  return fileStorageManager.updateEntry(entry);
+});
+
+// Delete entry .simnote file
+ipcMain.handle('delete-entry-file', (event, id) => {
+  if (!fileStorageManager) {
+    throw new Error("FileStorageManager not initialized!");
+  }
+  return fileStorageManager.deleteEntryById(id);
+});
+
+// Get all entries from .simnote files
+ipcMain.handle('get-file-entries', () => {
+  if (!fileStorageManager) {
+    return [];
+  }
+  return fileStorageManager.getEntries();
+});
+
+// Sync all entries to .simnote files
+ipcMain.handle('sync-all-entries', (event, entries) => {
+  if (!fileStorageManager) {
+    throw new Error("FileStorageManager not initialized!");
+  }
+  return fileStorageManager.syncAllEntries(entries);
+});
+
+// Get storage directory path
+ipcMain.handle('get-storage-dir', () => {
+  if (!fileStorageManager) return null;
+  return fileStorageManager.getStorageDir();
+});
+
+// Open storage folder in Finder
+ipcMain.handle('open-storage-folder', () => {
+  if (!fileStorageManager) return false;
+  const storageDir = fileStorageManager.getStorageDir();
+  if (storageDir && fs.existsSync(storageDir)) {
+    shell.openPath(storageDir);
+    return true;
+  }
+  return false;
 });
 
 // Chat IPC handler – routes prompts to OpenAI Chat Completion API

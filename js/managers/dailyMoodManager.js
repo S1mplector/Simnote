@@ -160,7 +160,7 @@ export class DailyMoodManager {
     
     // Reset state
     moodPrompt.textContent = '';
-    moodPrompt.style.borderRight = '2px solid #fcd8ff';
+    moodPrompt.style.borderRight = '2px solid var(--accent)';
     moodInput.classList.remove('slide-in');
     moodInput.value = '';
     

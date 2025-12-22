@@ -1,0 +1,169 @@
+/* === Animated Entries Book === */
+.entries-book {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+}
+
+/* Book cover (left side) */
+.entries-book-cover-left {
+  position: absolute;
+  width: 14px;
+  height: 24px;
+  left: 4px;
+  top: 4px;
+  border: 1.5px solid currentColor;
+  border-right: none;
+  border-radius: 2px 0 0 2px;
+  background: currentColor;
+  opacity: 0.15;
+  transition: all 0.3s ease;
+}
+
+/* Book cover (right side) */
+.entries-book-cover-right {
+  position: absolute;
+  width: 14px;
+  height: 24px;
+  right: 4px;
+  top: 4px;
+  border: 1.5px solid currentColor;
+  border-left: none;
+  border-radius: 0 2px 2px 0;
+  background: currentColor;
+  opacity: 0.15;
+  transition: all 0.3s ease;
+}
+
+/* Book spine */
+.entries-book-spine {
+  position: absolute;
+  width: 3px;
+  height: 24px;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  background: currentColor;
+  opacity: 0.3;
+}
+
+/* Pages (multiple layers for depth) */
+.entries-book-page {
+  position: absolute;
+  width: 12px;
+  height: 22px;
+  left: 50%;
+  top: 5px;
+  transform: translateX(-50%);
+  border: 1px solid currentColor;
+  border-radius: 0 1px 1px 0;
+  opacity: 0.2;
+  transform-origin: left center;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.entries-book-page:nth-child(4) {
+  z-index: 3;
+}
+
+.entries-book-page:nth-child(5) {
+  z-index: 2;
+  left: calc(50% - 1px);
+}
+
+.entries-book-page:nth-child(6) {
+  z-index: 1;
+  left: calc(50% - 2px);
+}
+
+/* Idle state */
+.entries-book.idle .entries-book-page {
+  transform: translateX(-50%) rotateY(0deg);
+}
+
+/* Flipping animation */
+.entries-book.flipping .entries-book-page:nth-child(4) {
+  animation: pageFlip 2s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.entries-book.flipping .entries-book-page:nth-child(5) {
+  animation: pageFlip 2s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+.entries-book.flipping .entries-book-page:nth-child(6) {
+  animation: pageFlip 2s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+.entries-book.flipping .entries-book-cover-right {
+  opacity: 0.25;
+}
+
+@keyframes pageFlip {
+  0%, 100% {
+    transform: translateX(-50%) rotateY(0deg);
+    opacity: 0.2;
+  }
+  25% {
+    transform: translateX(-50%) rotateY(90deg);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translateX(-50%) rotateY(180deg);
+    opacity: 0.05;
+  }
+  75% {
+    transform: translateX(-50%) rotateY(90deg);
+    opacity: 0.1;
+  }
+}
+
+/* Bookmark ribbon */
+.entries-book-bookmark {
+  position: absolute;
+  width: 2px;
+  height: 12px;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  background: currentColor;
+  opacity: 0.4;
+  border-radius: 0 0 1px 1px;
+}
+
+.entries-book-bookmark::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+  border-top: 3px solid currentColor;
+  opacity: 0.6;
+}
+
+/* Hover effect */
+#load-entry-btn:hover .entries-book-cover-left,
+#load-entry-btn:hover .entries-book-cover-right {
+  opacity: 0.25;
+}
+
+#load-entry-btn:hover .entries-book-bookmark {
+  opacity: 0.6;
+  animation: bookmarkSway 1s ease-in-out infinite;
+}
+
+@keyframes bookmarkSway {
+  0%, 100% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  50% {
+    transform: translateX(-50%) rotate(3deg);
+  }
+}

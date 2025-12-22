@@ -29,6 +29,7 @@ export class StatsManager {
     const themeSettingsBtn = document.getElementById('theme-settings-btn');
     if (manualBtn) manualBtn.style.display = 'none';
     if (themeSettingsBtn) themeSettingsBtn.style.display = 'none';
+    document.body.classList.remove('main-menu-active');
 
     PanelManager.transitionPanels(this.mainPanel, this.statsPanel).then(() => {
       this.renderStats();
@@ -136,14 +137,26 @@ export class StatsManager {
       });
     }
     
-    // Render month labels
+    const style = getComputedStyle(grid);
+    const cellSize = parseInt(style.getPropertyValue('--heatmap-cell')) || 12;
+    const gap = parseInt(style.getPropertyValue('--heatmap-gap')) || 3;
+    const step = cellSize + gap;
+    const minLabelSpacing = Math.max(step * 2, 28);
+
+    // Render month labels with spacing guard
     const sortedMonths = [...monthLabels.entries()].sort((a, b) => a[1] - b[1]);
+    let lastLabelLeft = -Infinity;
     sortedMonths.forEach(([month, weekIndex]) => {
+      const left = weekIndex * step;
+      if (left - lastLabelLeft < minLabelSpacing) {
+        return;
+      }
       const label = document.createElement('span');
       label.className = 'month-label';
       label.textContent = month;
-      label.style.left = `${weekIndex * 14}px`;
+      label.style.left = `${left}px`;
       monthsContainer.appendChild(label);
+      lastLabelLeft = left;
     });
     
     // Render grid cells

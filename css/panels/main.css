@@ -35,8 +35,8 @@
 .simnote-logo { opacity:0;transform:translateY(20px);transition:opacity 1s ease,transform 1s ease; }
 
 /* Heart next to logo */
-.heart-next { width:30px;height:30px;background:#fcbdd7;position:relative;transform:rotate(-45deg);overflow:visible;opacity:0;transition:opacity 1s ease; }
-.heart-next::before,.heart-next::after{content:"";position:absolute;width:30px;height:30px;background:#fcbdd7;border-radius:50%;}
+.heart-next { width:30px;height:30px;background:var(--accent);position:relative;transform:rotate(-45deg);overflow:visible;opacity:0;transition:opacity 1s ease; }
+.heart-next::before,.heart-next::after{content:"";position:absolute;width:30px;height:30px;background:var(--accent);border-radius:50%;}
 .heart-next::before{top:-15px;left:0;}
 .heart-next::after{top:0;left:15px;}
 @keyframes fadeInHeart{from{opacity:0;}to{opacity:0.8;}}

@@ -22,8 +22,15 @@ async function initSQLite() {
       console.log('[Storage] Using SQLite database');
     } else {
       console.log('[Storage] Falling back to localStorage');
+      // Ensure localStorage has data (may need to recover from a previous session)
+      const entries = JSON.parse(localStorage.getItem(ENTRIES_KEY)) || [];
+      console.log(`[Storage] localStorage has ${entries.length} entries available`);
     }
     return success;
+  }).catch(error => {
+    console.error('[Storage] SQLite initialization error:', error);
+    sqliteReady = false;
+    return false;
   });
   
   return sqliteInitPromise;
@@ -592,5 +599,66 @@ export class StorageManager {
       return dbManager.importFromJSON(jsonString);
     }
     return StorageManager.importEntries(jsonString);
+  }
+
+  // ==================== File Storage (.simnote files) ====================
+
+  // Check if file storage is enabled
+  static isFileStorageEnabled() {
+    if (sqliteReady) {
+      return dbManager.fileStorageEnabled;
+    }
+    return false;
+  }
+
+  // Check if File System Access API is supported (browser only)
+  static isFileStorageSupported() {
+    return 'showDirectoryPicker' in window || (typeof window !== 'undefined' && window.electronAPI);
+  }
+
+  // Enable file storage by selecting a directory (browser) or auto-enable (Electron)
+  static async enableFileStorage() {
+    if (sqliteReady) {
+      return dbManager.selectFileStorageDirectory();
+    }
+    return false;
+  }
+
+  // Get file storage directory name
+  static async getFileStorageDirectory() {
+    if (typeof window !== 'undefined' && window.electronAPI?.getStorageDir) {
+      return window.electronAPI.getStorageDir();
+    }
+    // For browser, we'd need to access the browserFileStorage
+    if (sqliteReady && dbManager.fileStorageEnabled) {
+      try {
+        const module = await import('./fileStorageBrowser.js');
+        return module.browserFileStorage.getDirectoryName();
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Sync all entries to file storage
+  static async syncAllToFiles() {
+    if (!sqliteReady) return 0;
+    
+    const entries = StorageManager.getEntries();
+    
+    if (typeof window !== 'undefined' && window.electronAPI?.syncAllEntries) {
+      return window.electronAPI.syncAllEntries(entries);
+    }
+    
+    try {
+      const module = await import('./fileStorageBrowser.js');
+      if (module.browserFileStorage.isEnabled) {
+        return module.browserFileStorage.syncAllEntries(entries);
+      }
+    } catch (e) {
+      console.warn('[Storage] File sync failed:', e);
+    }
+    return 0;
   }
 }

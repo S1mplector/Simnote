@@ -29,12 +29,12 @@
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
-  border-right: 2px solid #fcd8ff;
+  border-right: 2px solid var(--accent);
   animation: caretBlink 0.8s step-end infinite;
 }
 @keyframes caretBlink {
   from, to { border-color: transparent; }
-  50% { border-color: #fcd8ff; }
+  50% { border-color: var(--accent); }
 }
 
 #mood-input {

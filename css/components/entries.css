@@ -18,8 +18,8 @@
 }
 
 .entry-item.is-favorite {
-  background: rgba(252, 216, 255, 0.08);
-  border-left: 3px solid #fcd8ff;
+  background: rgba(var(--accent-rgb), 0.08);
+  border-left: 3px solid var(--accent);
 }
 
 .entry-item-main {
@@ -94,7 +94,7 @@
 
 .favorites-filter-btn.active {
   opacity: 1;
-  color: #fcd8ff;
+  color: var(--accent);
 }
 
 /* Delete button */
@@ -116,8 +116,8 @@
 /* Entry group headers */
 .entry-group {
   padding: 8px 16px;
-  background: rgba(252, 216, 255, 0.15);
-  color: #fcd8ff;
+  background: rgba(var(--accent-rgb), 0.15);
+  color: var(--accent);
   font-weight: 600;
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -137,8 +137,8 @@
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  background: rgba(252, 216, 255, 0.2);
-  color: #fcd8ff;
+  background: rgba(var(--accent-rgb), 0.2);
+  color: var(--accent);
   border-radius: 12px;
   font-size: 0.7rem;
   font-weight: 500;
@@ -146,7 +146,7 @@
 }
 
 .tag-pill:hover {
-  background: rgba(252, 216, 255, 0.3);
+  background: rgba(var(--accent-rgb), 0.3);
 }
 
 .tag-pill.editable {
@@ -200,7 +200,7 @@
 }
 
 .tag-input:focus {
-  border-color: #fcd8ff;
+  border-color: var(--accent);
   width: 140px;
 }
 
@@ -232,7 +232,7 @@
 }
 
 .tag-suggestion:hover {
-  background: rgba(252, 216, 255, 0.15);
+  background: rgba(var(--accent-rgb), 0.15);
   color: #fff;
 }
 

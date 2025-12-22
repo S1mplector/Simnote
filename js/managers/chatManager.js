@@ -41,6 +41,11 @@ class ChatManager{
 
     if(this.chatBtn){
       this.chatBtn.addEventListener('click', ()=>{
+        const manualBtn = document.getElementById('manual-btn');
+        const themeSettingsBtn = document.getElementById('theme-settings-btn');
+        if (manualBtn) manualBtn.style.display = 'none';
+        if (themeSettingsBtn) themeSettingsBtn.style.display = 'none';
+        document.body.classList.remove('main-menu-active');
         PanelManager.transitionPanels(this.mainPanel, this.chatPanel);
         this.input?.focus();
         // Show intro only on first open
@@ -57,7 +62,11 @@ class ChatManager{
 
     if(this.backBtn){
       this.backBtn.addEventListener('click', ()=>{
-        PanelManager.transitionPanels(this.chatPanel, this.mainPanel);
+        PanelManager.transitionPanels(this.chatPanel, this.mainPanel).then(() => {
+          if (window.animateMainPanelBack) {
+            window.animateMainPanelBack();
+          }
+        });
       });
     }
 

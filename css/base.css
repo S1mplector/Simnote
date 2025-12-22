@@ -21,6 +21,9 @@
 @import url("components/onboarding.css");
 @import url("components/navIcons.css");
 @import url("components/richEditor.css");
+@import url("animations/moodsSmiley.css");
+@import url("animations/journalPen.css");
+@import url("animations/entriesBook.css");
 
 /* ===== Global Reset & Body ===== */
 html, body {
@@ -33,21 +36,77 @@ html, body {
   font-family: Arial, sans-serif;
 }
 
-/* Theme accent var default */
-:root{--accent:#888;}
+/* Theme accent defaults */
+:root{
+  --accent:#fcd8ff;
+  --accent-hover:#fbcdfb;
+  --accent-secondary:#c9a0dc;
+  --accent-rgb:252,216,255;
+  --accent-secondary-rgb:201,160,220;
+  --accent-contrast:#333;
+  --settings-bg:#3a3a3a;
+}
 
 /* Sakura Themes (retain pink accent) */
-body[data-theme="dark-sakura"]{background:#2b2b2b;color:#e0e0e0;}
-body[data-theme="light-sakura"]{background:#ffffff;color:#333;}
+body[data-theme="dark-sakura"]{
+  background:#2b2b2b;
+  color:#e0e0e0;
+}
+body[data-theme="light-sakura"]{
+  background:#ffffff;
+  color:#333;
+}
 
 /* Plain themes switch accent to gray and hide petals */
-body[data-theme="plain-dark"]{background:#2b2b2b;color:#e0e0e0;--accent:#888;}
-body[data-theme="plain-light"]{background:#ffffff;color:#333;--accent:#888;}
-body[data-theme="sepia"]{background:#f4ecd8;color:#5b4636;--accent:#8b7355;--settings-bg:#d4c4a8;}
+body[data-theme="plain-dark"]{
+  background:#2b2b2b;
+  color:#e0e0e0;
+  --accent:#888;
+  --accent-hover:#9c9c9c;
+  --accent-secondary:#b0b0b0;
+  --accent-rgb:136,136,136;
+  --accent-secondary-rgb:176,176,176;
+  --accent-contrast:#1e1e1e;
+}
+body[data-theme="plain-light"]{
+  background:#ffffff;
+  color:#333;
+  --accent:#888;
+  --accent-hover:#9c9c9c;
+  --accent-secondary:#b0b0b0;
+  --accent-rgb:136,136,136;
+  --accent-secondary-rgb:176,176,176;
+  --accent-contrast:#1e1e1e;
+}
+body[data-theme="sepia"]{
+  background:#f4ecd8;
+  color:#5b4636;
+  --accent:#8b7355;
+  --accent-hover:#9b8466;
+  --accent-secondary:#b09a7b;
+  --accent-rgb:139,115,85;
+  --accent-secondary-rgb:176,154,123;
+  --accent-contrast:#f4ecd8;
+  --settings-bg:#d4c4a8;
+}
+
+/* Monokai theme */
+body[data-theme="monokai"]{
+  background:#272822;
+  color:#f8f8f2;
+  --accent:#a6e22e;
+  --accent-hover:#b7f84a;
+  --accent-secondary:#66d9ef;
+  --accent-rgb:166,226,46;
+  --accent-secondary-rgb:102,217,239;
+  --accent-contrast:#1f2318;
+  --settings-bg:#2f302a;
+}
 
 body[data-theme="plain-dark"] #bg-canvas,
 body[data-theme="plain-light"] #bg-canvas,
-body[data-theme="sepia"] #bg-canvas{display:none;}
+body[data-theme="sepia"] #bg-canvas,
+body[data-theme="monokai"] #bg-canvas{display:none;}
 
 /* Use var(--accent) in common components overrides */
 body[data-theme="plain-dark"] .button-33,
@@ -55,11 +114,29 @@ body[data-theme="plain-light"] .button-33,
 body[data-theme="sepia"] .button-33{background-color:var(--accent);}
 
 /* Aurora theme overrides */
-body[data-theme="aurora"]{background:#001010;color:#e0e0e0;--accent:#66ffcc;}
+body[data-theme="aurora"]{
+  background:#001010;
+  color:#e0e0e0;
+  --accent:#66ffcc;
+  --accent-hover:#82ffd6;
+  --accent-secondary:#2ac9a7;
+  --accent-rgb:102,255,204;
+  --accent-secondary-rgb:42,201,167;
+  --accent-contrast:#033b2d;
+}
 body[data-theme="aurora"] .button-33{background-color:var(--accent);}
 
 /* Fireflies theme overrides */
-body[data-theme="fireflies"]{background:#000408;color:#e0ffe0;--accent:#9aff3f;}
+body[data-theme="fireflies"]{
+  background:#000408;
+  color:#e0ffe0;
+  --accent:#9aff3f;
+  --accent-hover:#b0ff64;
+  --accent-secondary:#5fe06d;
+  --accent-rgb:154,255,63;
+  --accent-secondary-rgb:95,224,109;
+  --accent-contrast:#203300;
+}
 body[data-theme="fireflies"] .button-33{background-color:var(--accent);}
 
 /* Lavender Breeze theme overrides */
@@ -67,13 +144,13 @@ body[data-theme="lavender-breeze"]{
   background: linear-gradient(#EAE7FF 0%, #D6D1FF 55%, #C5C9F7 100%);
   color:#392B59;
   --accent:#6E5BAF;
+  --accent-hover:#7f6bc5;
+  --accent-secondary:#b095ff;
+  --accent-rgb:110,91,175;
+  --accent-secondary-rgb:176,149,255;
+  --accent-contrast:#f8f6ff;
 }
 body[data-theme="lavender-breeze"] .button-33{background-color:#6E5BAF;}
-
-/* === Force uniform accent across all themes === */
-body[data-theme] {
-  --accent: #888;
-}
 
 /* === Apply accent color to interactive components === */
 .button-33 {
@@ -89,7 +166,7 @@ body[data-theme] {
 /* Hover state using accent as well */
 .custom-dropdown-selected:hover,
 #theme-dropdown .custom-dropdown-selected:hover {
-  background: var(--accent);
+  background: var(--accent-hover);
 }
 
 /* --- end of global base styles --- */
@@ -98,5 +175,5 @@ body[data-theme] {
 
 .mood-badge {
   background: var(--accent) !important;
-  color: #fff !important;
+  color: var(--accent-contrast) !important;
 }

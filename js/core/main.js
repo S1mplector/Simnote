@@ -25,6 +25,9 @@ import { KeyboardManager } from '../managers/keyboardManager.js';
 import { OnboardingManager } from '../managers/onboardingManager.js';
 import { DailyMoodManager, getTodaysMood } from '../managers/dailyMoodManager.js';
 import { MoodAttributesManager } from '../managers/moodAttributesManager.js';
+import { MoodsSmileyAnimator } from '../animators/moodsSmileyAnimator.js';
+import { JournalPenAnimator } from '../animators/journalPenAnimator.js';
+import { EntriesBookAnimator } from '../animators/entriesBookAnimator.js';
 
 // Grab key panels from the DOM
 const mainPanel = document.getElementById('main-panel');
@@ -87,6 +90,8 @@ function launchSplash(theme) {
     new FirefliesSplashAnimator(startMainApp);
   } else if (theme === 'plain-dark') {
     new PlainDarkSweepSplashAnimator(startMainApp);
+  } else if (theme === 'monokai') {
+    new PlainDarkSweepSplashAnimator(startMainApp);
   } else if (theme === 'plain-light') {
     new PlainLightSweepSplashAnimator(startMainApp);
   } else if (theme === 'sepia') {
@@ -119,6 +124,7 @@ function startMainApp() {
   // Start appropriate background animation
   const theme = document.body.getAttribute('data-theme');
   startBgAnimator(theme);
+  document.body.classList.add('main-menu-active');
   startIntroAnimation();
 }
 
@@ -237,7 +243,7 @@ function startMoodPanelAnimation() {
 
   // Reset state each time panel opens
   moodPrompt.textContent = '';
-  moodPrompt.style.borderRight = '2px solid #fcd8ff';
+  moodPrompt.style.borderRight = '2px solid var(--accent)';
   moodInput.classList.remove('slide-in');
   moodInput.value = '';
 
@@ -263,10 +269,11 @@ function startMoodPanelAnimation() {
 
  let moodReturnPanel = mainPanel;
 
- function showMoodPanel(fromPanel) {
-   if (!moodPanel) return;
+function showMoodPanel(fromPanel) {
+  if (!moodPanel) return;
 
-   moodReturnPanel = fromPanel || mainPanel;
+  document.body.classList.remove('main-menu-active');
+  moodReturnPanel = fromPanel || mainPanel;
 
    // Ensure we're not in daily check-in mode (that mode is managed by DailyMoodManager)
    moodPanel.classList.remove('daily-checkin');
@@ -299,6 +306,7 @@ newEntryBtn.addEventListener('click', () => {
 loadEntryBtn.addEventListener('click', () => {
   manualBtn.style.display = 'none';
   themeSettingsBtn.style.display = 'none';
+  document.body.classList.remove('main-menu-active');
   document.body.classList.add('journal-open');
   PanelManager.smoothEntrance(mainPanel, journalPanel, {
     fadeDuration: 300
@@ -319,6 +327,7 @@ function animateMainPanelBack() {
   manualBtn.style.display = 'block';
   themeSettingsBtn.style.display = 'block';
   document.body.classList.remove('journal-open');
+  document.body.classList.add('main-menu-active');
 }
 window.animateMainPanelBack = animateMainPanelBack;
 
@@ -410,6 +419,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize daily mood check-in (shows after splash if enabled and not yet logged today)
   window.dailyMoodManager = new DailyMoodManager();
 
+  // Initialize moods smiley animator
+  new MoodsSmileyAnimator();
+
+  // Initialize journal pen animator
+  new JournalPenAnimator();
+
+  // Initialize entries book animator
+  new EntriesBookAnimator();
+
   /* --- Build Template Cards --- */
   const grid = document.querySelector('.template-grid');
   if(grid){
@@ -454,6 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
           blurOverlay.style.opacity = 1;
           manualBtn.style.display = 'block';
           themeSettingsBtn.style.display = 'block';
+          document.body.classList.add('main-menu-active');
         });
       });
     }
@@ -789,6 +808,54 @@ async function updateStorageInfo() {
   if (entriesEl) entriesEl.textContent = info.entriesCount;
   if (sizeEl) sizeEl.textContent = info.sizeFormatted;
   if (imagesEl) imagesEl.textContent = info.imagesCount;
+  
+  // Update file storage location info
+  const locationSection = document.getElementById('storage-location-section');
+  const locationPath = document.getElementById('storage-location-path');
+  const locationStatus = document.getElementById('storage-location-status');
+  
+  if (locationSection) {
+    const isElectron = typeof window !== 'undefined' && window.electronAPI;
+    const isFileStorageEnabled = StorageManager.isFileStorageEnabled();
+    
+    if (isElectron) {
+      // In Electron, get the actual storage path
+      try {
+        const storagePath = await StorageManager.getFileStorageDirectory();
+        if (locationPath && storagePath) {
+          // Convert to display-friendly path (replace home with ~)
+          const displayPath = storagePath.replace(/^\/Users\/[^/]+/, '~');
+          locationPath.textContent = displayPath;
+          locationPath.title = `Click to open: ${storagePath}`;
+        }
+        if (locationStatus) {
+          locationStatus.classList.remove('inactive');
+          locationStatus.title = 'File storage active';
+        }
+      } catch (e) {
+        if (locationPath) locationPath.textContent = '~/Documents/Simnote';
+      }
+    } else if (isFileStorageEnabled) {
+      // Browser with File System Access API enabled
+      const dirName = await StorageManager.getFileStorageDirectory();
+      if (locationPath) {
+        locationPath.textContent = dirName || 'Custom folder';
+      }
+      if (locationStatus) {
+        locationStatus.classList.remove('inactive');
+      }
+    } else {
+      // Browser without file storage
+      if (locationPath) {
+        locationPath.textContent = 'Not configured';
+        locationPath.title = 'Click to select a folder';
+      }
+      if (locationStatus) {
+        locationStatus.classList.add('inactive');
+        locationStatus.title = 'File storage not enabled';
+      }
+    }
+  }
 }
 
 // Export data
@@ -878,6 +945,26 @@ themeSettingsBtn.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateStorageInfo, 2000); // Wait for SQLite to initialize
 });
+
+// Click handler for storage location path - open folder in Finder
+const storageLocationPath = document.getElementById('storage-location-path');
+if (storageLocationPath) {
+  storageLocationPath.addEventListener('click', async () => {
+    const isElectron = typeof window !== 'undefined' && window.electronAPI;
+    
+    if (isElectron && window.electronAPI.openStorageFolder) {
+      // Open folder in Finder via Electron
+      await window.electronAPI.openStorageFolder();
+    } else if (!isElectron && StorageManager.isFileStorageSupported()) {
+      // In browser, offer to select/change folder
+      const enabled = await StorageManager.enableFileStorage();
+      if (enabled) {
+        showPopup('File storage folder selected!');
+        updateStorageInfo();
+      }
+    }
+  });
+}
 
 /* -------------------------------------
    Preferences Toggles

@@ -13,4 +13,4 @@
   100% { left: -300px; opacity: 0; }
 }
 
-.typing-cursor{border-right:2px solid #fcd8ff;animation:caretBlink 0.8s step-end infinite;} 
+.typing-cursor{border-right:2px solid var(--accent);animation:caretBlink 0.8s step-end infinite;} 

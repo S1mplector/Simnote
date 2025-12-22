@@ -66,8 +66,8 @@
 }
 
 .stat-card.streak-card {
-  background: linear-gradient(135deg, rgba(252, 216, 255, 0.2), rgba(252, 216, 255, 0.05));
-  border: 1px solid rgba(252, 216, 255, 0.3);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2), rgba(var(--accent-rgb), 0.05));
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
 }
 
 .stat-icon {
@@ -92,15 +92,20 @@
 
 /* Heatmap */
 .heatmap-container {
-  overflow-x: auto;
-  padding: 10px 0;
+  --heatmap-cell: 14px;
+  --heatmap-gap: 1px;
+  --heatmap-label-offset: 27px;
+  overflow: hidden;
+  padding: 8px 0;
 }
 
 .heatmap-months {
   position: relative;
   height: 20px;
   margin-bottom: 8px;
-  margin-left: 30px;
+  margin-left: var(--heatmap-label-offset);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
 }
 
 .month-label {
@@ -111,33 +116,33 @@
 
 #heatmap-grid {
   display: flex;
-  gap: 3px;
+  gap: var(--heatmap-gap);
 }
 
 .day-labels {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-right: 4px;
+  gap: var(--heatmap-gap);
+  margin-right: calc(var(--heatmap-gap) + 2px);
 }
 
 .day-labels span {
   font-size: 0.6rem;
   color: rgba(255, 255, 255, 0.4);
-  height: 12px;
-  line-height: 12px;
+  height: var(--heatmap-cell);
+  line-height: var(--heatmap-cell);
   width: 24px;
 }
 
 .week-column {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--heatmap-gap);
 }
 
 .heatmap-cell {
-  width: 12px;
-  height: 12px;
+  width: var(--heatmap-cell);
+  height: var(--heatmap-cell);
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.1);
   transition: transform 0.1s;
@@ -148,19 +153,19 @@
 }
 
 .heatmap-cell[data-level="1"] {
-  background: rgba(252, 216, 255, 0.3);
+  background: rgba(var(--accent-rgb), 0.3);
 }
 
 .heatmap-cell[data-level="2"] {
-  background: rgba(252, 216, 255, 0.5);
+  background: rgba(var(--accent-rgb), 0.5);
 }
 
 .heatmap-cell[data-level="3"] {
-  background: rgba(252, 216, 255, 0.7);
+  background: rgba(var(--accent-rgb), 0.7);
 }
 
 .heatmap-cell[data-level="4"] {
-  background: rgba(252, 216, 255, 0.9);
+  background: rgba(var(--accent-rgb), 0.9);
 }
 
 .heatmap-legend {
@@ -174,26 +179,26 @@
 }
 
 .legend-cell {
-  width: 12px;
-  height: 12px;
+  width: calc(var(--heatmap-cell) - 1px);
+  height: calc(var(--heatmap-cell) - 1px);
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.1);
 }
 
 .legend-cell[data-level="1"] {
-  background: rgba(252, 216, 255, 0.3);
+  background: rgba(var(--accent-rgb), 0.3);
 }
 
 .legend-cell[data-level="2"] {
-  background: rgba(252, 216, 255, 0.5);
+  background: rgba(var(--accent-rgb), 0.5);
 }
 
 .legend-cell[data-level="3"] {
-  background: rgba(252, 216, 255, 0.7);
+  background: rgba(var(--accent-rgb), 0.7);
 }
 
 .legend-cell[data-level="4"] {
-  background: rgba(252, 216, 255, 0.9);
+  background: rgba(var(--accent-rgb), 0.9);
 }
 
 /* Mood Chart */
@@ -243,7 +248,7 @@
 
 .mood-bar {
   height: 100%;
-  background: linear-gradient(90deg, #fcd8ff, #c9a0dc);
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
   border-radius: 12px;
   transition: width 0.8s ease-out;
 }

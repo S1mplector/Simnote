@@ -54,7 +54,7 @@
 
 .msg.user{
   background:var(--accent,#fcd8ff);
-  color:#000;
+  color:var(--accent-contrast);
 }
 
 .msg.assistant{
@@ -177,7 +177,7 @@
   cursor: pointer;
   font-family: inherit;
   font-size: 0.9rem;
-  color: #000;
+  color: var(--accent-contrast);
 }
 
 .msg.assistant .breath-btn:hover{
@@ -191,7 +191,7 @@
   left:50%;
   transform:translateX(-50%);
   background:var(--accent,#fcd8ff);
-  color:#000;
+  color:var(--accent-contrast);
   padding:4px 10px;
   border-radius:12px;
   font-size:0.8rem;

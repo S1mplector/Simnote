@@ -1,5 +1,5 @@
 /* themeSelector.css */
 .theme-options{position:relative;z-index:10;display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;}
-.theme-opt{background:var(--accent,#fcd8ff);border:none;border-radius:8px;padding:8px 14px;color:#333;font-size:0.9rem;cursor:pointer;transition:transform .2s,background .3s;}
+.theme-opt{background:var(--accent,#fcd8ff);border:none;border-radius:8px;padding:8px 14px;color:var(--accent-contrast);font-size:0.9rem;cursor:pointer;transition:transform .2s,background .3s;}
 .theme-opt:hover{transform:translateY(-2px);}
 .theme-opt.selected{outline:2px solid #fff;box-shadow:0 0 0 2px var(--accent,#fcd8ff) inset;}

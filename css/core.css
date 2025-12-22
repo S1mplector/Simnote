@@ -84,7 +84,7 @@ html, body {
 .heart-next {
   width: 30px;
   height: 30px;
-  background: #fcbdd7;
+  background: var(--accent);
   position: relative;
   transform: rotate(-45deg);
   overflow: visible;
@@ -97,7 +97,7 @@ html, body {
   position: absolute;
   width: 30px;
   height: 30px;
-  background: #fcbdd7;
+  background: var(--accent);
   border-radius: 50%;
 }
 .heart-next::before {
@@ -132,7 +132,7 @@ html, body {
 
 /* ===== Button-33 Styling ===== */
 .button-33 {
-  background-color: #fcd8ff;
+  background-color: var(--accent);
   border-radius: 100px;
   box-shadow: rgba(0, 0, 0, 0.2) 0 -25px 18px -14px inset,
               rgba(0, 0, 0, 0.15) 0 1px 2px,
@@ -140,7 +140,7 @@ html, body {
               rgba(0, 0, 0, 0.15) 0 4px 8px,
               rgba(0, 0, 0, 0.15) 0 8px 16px,
               rgba(0, 0, 0, 0.15) 0 16px 32px;
-  color: #ffffff;
+  color: var(--accent-contrast);
   cursor: pointer;
   display: inline-block;
   font-family: CerebriSans-Regular, -apple-system, system-ui, Roboto, sans-serif;
@@ -426,7 +426,7 @@ html, body {
 
 /* Round 🖋️ button */
 .paint-circle-btn {
-  background-color: #fcd8ff;
+  background-color: var(--accent);
   border: none;
   border-radius: 50%;
   width: 80px;
@@ -559,15 +559,72 @@ html, body {
 
 /* Settings Button & Panel */
 .settings-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  position: relative;
   background: transparent;
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  z-index: 31;
   color: #fff;
+}
+
+.panel-utility {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  z-index: 31;
+}
+
+.panel-utility::before {
+  content: ">";
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 1;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.panel-utility .settings-btn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.95);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+}
+
+.panel-utility:hover .settings-btn,
+.panel-utility:focus-within .settings-btn {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.panel-utility:hover::before,
+.panel-utility:focus-within::before {
+  opacity: 0;
+  transform: translateX(6px);
+}
+
+@media (hover: none) {
+  .panel-utility .settings-btn {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .panel-utility::before {
+    opacity: 0;
+  }
 }
 #settings-panel {
   position: fixed;
@@ -598,15 +655,16 @@ html, body {
   margin-top: 5px;
 }
 .custom-dropdown-selected {
-  background: #fcd8ff;
+  background: var(--accent);
   padding: 8px 10px;
   border-radius: 5px;
   cursor: pointer;
   border: 1px solid #ccc;
   transition: background 0.3s, border-color 0.3s;
+  color: var(--accent-contrast);
 }
 .custom-dropdown-selected:hover {
-  background: #fbcdfb;
+  background: var(--accent-hover);
   border-color: #bbb;
 }
 .custom-dropdown-list {
@@ -638,9 +696,7 @@ html, body {
 
 /* === Manual Popup Styles === */
 .manual-btn {
-  position: fixed;
-  top: 10px;
-  left: 10px;
+  position: relative;
   background: none;
   border: none;
   width: 44px;
@@ -650,7 +706,6 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 110;
   color: rgba(255, 255, 255, 0.7);
 }
 .manual-popup {
@@ -674,9 +729,7 @@ html, body {
 
 /* Theme Settings Button */
 .theme-settings-btn {
-  position: fixed;
-  top: 60px; /* or wherever you want it below the manual button */
-  left: 10px;
+  position: relative;
   background: none;
   border: none;
   width: 44px;
@@ -686,7 +739,6 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 110;
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -716,8 +768,8 @@ html, body {
   margin-top: 10px;
   border-radius: 5px;
   border: none;
-  background: #fcd8ff;
-  color: #333;
+  background: var(--accent);
+  color: var(--accent-contrast);
   cursor: pointer;
 }
 
@@ -787,7 +839,7 @@ body[data-theme="light"] {
   left: 10px;
   width: 28px;
   height: 24px;
-  background: #fcd8ff;
+  background: var(--accent);
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset;
 }
@@ -800,7 +852,7 @@ body[data-theme="light"] {
   left: 4px;
   width: 40px;
   height: 20px;
-  background: #fcd8ff;
+  background: var(--accent);
   transform: skewX(-45deg);
   transform-origin: bottom left;
   border-radius: 4px 4px 0 0;
@@ -808,7 +860,7 @@ body[data-theme="light"] {
 }
 .home-btn:hover::before,
 .home-btn:hover::after {
-  background: #fbcdfb;
+  background: var(--accent-hover);
 }
 
 .logo-text {
@@ -910,11 +962,11 @@ body[data-theme="light"] {
   position: relative;
 }
 #entry-date-filter {
-  background: #fcd8ff;
+  background: var(--accent);
   border: none;
   border-radius: 5px;
   padding: 6px 10px;
-  color: #333;
+  color: var(--accent-contrast);
   font-family: inherit;
 }
 #entry-date-filter:focus {
@@ -962,7 +1014,7 @@ body[data-theme="light"] {
 .calendar-nav {
   background: none;
   border: none;
-  color: #fcd8ff;
+  color: var(--accent);
   font-size: 1rem;
   cursor: pointer;
 }
@@ -986,14 +1038,14 @@ body[data-theme="light"] {
   background: #444;
 }
 .calendar-cell.selected {
-  background: #fcd8ff;
-  color: #333;
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 /* Mood panel styles */
 .mood-panel input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  background: #fcd8ff;
+  background: var(--accent);
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -1093,12 +1145,12 @@ body[data-theme="light"] {
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
-  border-right: 2px solid #fcd8ff;
+  border-right: 2px solid var(--accent);
   animation: caretBlink 0.8s step-end infinite;
 }
 @keyframes caretBlink {
   from, to { border-color: transparent; }
-  50% { border-color: #fcd8ff; }
+  50% { border-color: var(--accent); }
 }
 
 #mood-input {
@@ -1119,8 +1171,8 @@ body[data-theme="light"] {
   margin-bottom: 10px;
 }
 .mood-badge {
-  background: #fcd8ff;
-  color: #333;
+  background: var(--accent);
+  color: var(--accent-contrast);
   padding: 4px 8px;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -1190,7 +1242,7 @@ body[data-theme="light"] {
 }
 #new-entry-panel input.entry-name:focus,
 #edit-entry-panel input.entry-name:focus {
-  border-bottom-color: #fcd8ff;
+  border-bottom-color: var(--accent);
 }
 
 /* Spacing adjustments */

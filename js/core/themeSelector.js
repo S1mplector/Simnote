@@ -1,43 +1,54 @@
 // themeSelector.js
 export function initThemeSelector(){
-  const dropdown=document.getElementById('theme-dropdown');
-  if(!dropdown) return;
-  const selectedEl=dropdown.querySelector('#theme-selected');
-  const listEl=dropdown.querySelector('#theme-list');
-  const items=listEl.querySelectorAll('li');
+  const selector = document.getElementById('theme-selector');
+  if(!selector) return;
+  
+  const currentBtn = document.getElementById('theme-selected');
+  const optionsContainer = document.getElementById('theme-options');
+  const options = optionsContainer.querySelectorAll('.theme-option');
+  const themeName = currentBtn.querySelector('.theme-name');
 
-  let initialized=false;
+  let initialized = false;
 
-  const apply=(theme,text)=>{
-    document.body.setAttribute('data-theme',theme);
-    localStorage.setItem('selectedTheme',theme);
-    selectedEl.textContent=text;
+  const apply = (theme, text) => {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('selectedTheme', theme);
+    currentBtn.dataset.value = theme;
+    themeName.textContent = text;
+    
+    // Update active state on options
+    options.forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.value === theme);
+    });
+    
     if(initialized){
-      window.dispatchEvent(new CustomEvent('themeChanged',{detail:theme}));
+      window.dispatchEvent(new CustomEvent('themeChanged', {detail: theme}));
     }
   };
 
-  // init saved theme
-  const saved=localStorage.getItem('selectedTheme')||'dark-sakura';
-  const savedItem=[...items].find(li=>li.dataset.value===saved)||items[0];
-  apply(savedItem.dataset.value,savedItem.textContent);
-  initialized=true;
+  // Init saved theme
+  const saved = localStorage.getItem('selectedTheme') || 'dark-sakura';
+  const savedOption = [...options].find(opt => opt.dataset.value === saved) || options[0];
+  apply(savedOption.dataset.value, savedOption.textContent);
+  initialized = true;
 
-  // toggle open
-  selectedEl.addEventListener('click',()=>{
-    listEl.classList.toggle('open');
+  // Toggle open/close
+  currentBtn.addEventListener('click', () => {
+    selector.classList.toggle('open');
   });
 
-  document.addEventListener('click',e=>{
-    if(!dropdown.contains(e.target)){
-      listEl.classList.remove('open');
+  // Close when clicking outside
+  document.addEventListener('click', e => {
+    if(!selector.contains(e.target)){
+      selector.classList.remove('open');
     }
   });
 
-  items.forEach(li=>{
-    li.addEventListener('click',()=>{
-      apply(li.dataset.value,li.textContent);
-      listEl.classList.remove('open');
+  // Handle option clicks
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      apply(opt.dataset.value, opt.textContent);
+      selector.classList.remove('open');
     });
   });
 } 

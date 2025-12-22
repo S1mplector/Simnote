@@ -11,8 +11,8 @@
   margin-bottom: 10px;
 }
 .mood-badge {
-  background: #fcd8ff;
-  color: #333;
+  background: var(--accent);
+  color: var(--accent-contrast);
   padding: 4px 8px;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -80,7 +80,7 @@
 }
 #new-entry-panel input.entry-name:focus,
 #edit-entry-panel input.entry-name:focus {
-  border-bottom-color: #fcd8ff;
+  border-bottom-color: var(--accent);
 }
 
 /* Spacing / textarea look */

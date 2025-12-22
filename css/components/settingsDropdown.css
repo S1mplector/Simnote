@@ -167,4 +167,72 @@
 .confirm-dialog .confirm-btn {
   background: #dc3545;
   color: #fff;
+}
+
+/* Storage Location Info */
+.storage-location-info {
+  margin: 12px 0;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  max-width: 220px;
+}
+
+.storage-location-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.storage-location-icon {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.storage-location-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.storage-location-status {
+  font-size: 8px;
+  margin-left: auto;
+  color: #4ade80;
+}
+
+.storage-location-status.inactive {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.storage-location-path {
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-location-path:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.storage-location-hint {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 6px;
+  line-height: 1.3;
 } 

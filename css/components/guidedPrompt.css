@@ -10,5 +10,5 @@
 
 @keyframes fadePrompt{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);} }
 
-.guided-prompt-btn{margin-top:14px;background:var(--accent,#fcd8ff);border:none;border-radius:8px;padding:6px 14px;font-size:0.95rem;color:#000;cursor:pointer;transition:background 0.25s;}
-.guided-prompt-btn:hover{background:#fff;} 
+.guided-prompt-btn{margin-top:14px;background:var(--accent,#fcd8ff);border:none;border-radius:8px;padding:6px 14px;font-size:0.95rem;color:var(--accent-contrast);cursor:pointer;transition:background 0.25s;}
+.guided-prompt-btn:hover{background:var(--accent-hover);}

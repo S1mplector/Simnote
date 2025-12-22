@@ -91,12 +91,12 @@
 
 /* === Selected State === */
 .attribute-item.selected .attribute-icon {
-  background: rgba(252, 216, 255, 0.3);
-  box-shadow: 0 0 0 3px #fcd8ff, 0 4px 12px rgba(252, 216, 255, 0.4);
+  background: rgba(var(--accent-rgb), 0.3);
+  box-shadow: 0 0 0 3px var(--accent), 0 4px 12px rgba(var(--accent-rgb), 0.4);
 }
 
 .attribute-item.selected .attribute-name {
-  color: #fcd8ff;
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -271,7 +271,7 @@
 
 .dialog-field input:focus {
   outline: none;
-  border-color: #fcd8ff;
+  border-color: var(--accent);
 }
 
 .dialog-field .emoji-input {
@@ -310,13 +310,13 @@
 }
 
 .dialog-buttons .save-btn {
-  background: #fcd8ff;
-  color: #333;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-weight: 600;
 }
 
 .dialog-buttons .save-btn:hover {
-  background: #f9c5fd;
+  background: var(--accent-hover);
 }
 
 /* === Responsive adjustments === */

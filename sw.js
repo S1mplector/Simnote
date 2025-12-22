@@ -1,10 +1,13 @@
 // Service Worker for Simnote PWA
-const CACHE_NAME = 'simnote-v2.0.0';
+const CACHE_NAME = 'simnote-v2.1.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/style.css',
+  // sql.js for offline SQLite support
+  '/js/lib/sql-wasm.js',
+  '/js/lib/sql-wasm.wasm',
   '/css/base.css',
   '/css/core.css',
   '/css/util.css',
@@ -41,7 +44,11 @@ const STATIC_ASSETS = [
   '/js/managers/keyboardManager.js',
   '/js/managers/onboardingManager.js',
   '/js/utils/moodEmojiMapper.js',
-  '/js/utils/typingEffect.js'
+  '/js/utils/typingEffect.js',
+  '/js/managers/databaseManager.js',
+  '/js/managers/dailyMoodManager.js',
+  '/js/managers/moodAttributesManager.js',
+  '/js/managers/fileStorageBrowser.js'
 ];
 
 // Install event - cache static assets

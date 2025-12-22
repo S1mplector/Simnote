@@ -1,0 +1,163 @@
+/* === Animated Journal Pen === */
+.journal-pen {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+}
+
+/* Paper/notebook background */
+.journal-pen-paper {
+  position: absolute;
+  width: 20px;
+  height: 24px;
+  left: 6px;
+  top: 4px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.2;
+}
+
+/* Horizontal lines on paper */
+.journal-pen-line {
+  position: absolute;
+  width: 12px;
+  height: 1px;
+  background: currentColor;
+  left: 10px;
+  opacity: 0.15;
+}
+
+.journal-pen-line:nth-child(2) {
+  top: 10px;
+}
+
+.journal-pen-line:nth-child(3) {
+  top: 14px;
+}
+
+.journal-pen-line:nth-child(4) {
+  top: 18px;
+}
+
+/* Pen */
+.journal-pen-body {
+  position: absolute;
+  width: 3px;
+  height: 16px;
+  background: currentColor;
+  left: 22px;
+  top: 8px;
+  transform-origin: bottom center;
+  border-radius: 1.5px 1.5px 0 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Pen tip */
+.journal-pen-tip {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+  border-top: 3px solid currentColor;
+  left: 21.5px;
+  top: 24px;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Ink dots that appear when writing */
+.journal-pen-ink {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.journal-pen-ink:nth-child(6) {
+  left: 12px;
+  top: 22px;
+}
+
+.journal-pen-ink:nth-child(7) {
+  left: 15px;
+  top: 22px;
+}
+
+.journal-pen-ink:nth-child(8) {
+  left: 18px;
+  top: 22px;
+}
+
+/* Idle state - pen resting */
+.journal-pen.idle .journal-pen-body {
+  transform: rotate(0deg);
+}
+
+.journal-pen.idle .journal-pen-tip {
+  transform: rotate(0deg);
+}
+
+/* Writing animation */
+.journal-pen.writing .journal-pen-body {
+  animation: penWrite 1.5s ease-in-out infinite;
+}
+
+.journal-pen.writing .journal-pen-tip {
+  animation: penWrite 1.5s ease-in-out infinite;
+}
+
+.journal-pen.writing .journal-pen-ink {
+  animation: inkAppear 1.5s ease-in-out infinite;
+}
+
+.journal-pen.writing .journal-pen-ink:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+.journal-pen.writing .journal-pen-ink:nth-child(7) {
+  animation-delay: 0.6s;
+}
+
+.journal-pen.writing .journal-pen-ink:nth-child(8) {
+  animation-delay: 0.9s;
+}
+
+@keyframes penWrite {
+  0%, 100% {
+    transform: rotate(-15deg) translateX(-2px);
+  }
+  25% {
+    transform: rotate(-25deg) translateX(-3px) translateY(1px);
+  }
+  50% {
+    transform: rotate(-15deg) translateX(-1px);
+  }
+  75% {
+    transform: rotate(-25deg) translateX(-3px) translateY(1px);
+  }
+}
+
+@keyframes inkAppear {
+  0%, 20% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  30%, 70% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  80%, 100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+/* Hover effect */
+#new-entry-btn:hover .journal-pen-paper {
+  opacity: 0.3;
+  transform: scale(1.05);
+}
