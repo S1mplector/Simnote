@@ -127,18 +127,22 @@ export class DailyMoodManager {
       backBtn.addEventListener('click', this.skipHandler, true);
     }
 
-    // Simple fade-in animation centered on screen
+    // Smooth slide-up + fade + scale entrance animation using CSS classes
     this.mainPanel.style.display = 'none';
-    this.moodPanel.style.opacity = '0';
+    this.moodPanel.classList.remove('panel-entering', 'panel-exiting', 'panel-fade-out');
     this.moodPanel.style.display = 'block';
-    this.moodPanel.style.transition = 'opacity 0.5s ease';
     
-    // Trigger fade in
-    requestAnimationFrame(() => {
-      this.moodPanel.style.opacity = '1';
-      // Start typing animation after fade completes
-      setTimeout(() => this.animateMoodInput(), 400);
-    });
+    // Force reflow before adding animation class
+    void this.moodPanel.offsetWidth;
+    
+    // Add entrance animation class
+    this.moodPanel.classList.add('panel-entering');
+    
+    // Start typing animation after entrance completes
+    setTimeout(() => {
+      this.moodPanel.classList.remove('panel-entering');
+      this.animateMoodInput();
+    }, 550);
   }
 
   animateMoodInput() {
@@ -175,12 +179,14 @@ export class DailyMoodManager {
   hideMoodCheckin() {
     if (!this.moodPanel || !this.mainPanel) return;
     
-    // Simple fade-out animation
-    this.moodPanel.style.transition = 'opacity 0.4s ease';
-    this.moodPanel.style.opacity = '0';
+    // Smooth slide-down + fade + scale exit animation using CSS classes
+    this.moodPanel.classList.remove('panel-entering', 'panel-fade-out');
+    this.moodPanel.classList.add('panel-exiting');
     
     setTimeout(() => {
       this.moodPanel.style.display = 'none';
+      this.moodPanel.classList.remove('panel-exiting');
+      
       this.mainPanel.style.display = 'block';
       this.moodPanel.classList.remove('daily-checkin');
       if (this.headingEl && this.originalHeadingText) {

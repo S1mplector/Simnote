@@ -4,6 +4,7 @@
 @import url("panels/mood.css");
 @import url("panels/main.css");
 @import url("panels/journal.css");
+@import url("animations/panelTransitions.css");
 @import url("util.css");
 
 /* ===== Global Reset & Body ===== */

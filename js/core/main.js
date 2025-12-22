@@ -263,7 +263,13 @@ newEntryBtn.addEventListener('click', () => {
   // Get today's mood from daily check-in
   const todaysMood = getTodaysMood() || '';
   
-  PanelManager.transitionPanels(mainPanel, newEntryPanel).then(() => {
+  PanelManager.smoothEntrance(mainPanel, newEntryPanel, {
+    direction: 'up',
+    distance: 50,
+    scale: 0.96,
+    hideDuration: 350,
+    showDuration: 550
+  }).then(() => {
     blurOverlay.style.opacity = 0;
     newEntryPanel.dataset.mood = todaysMood;
     
@@ -302,7 +308,13 @@ loadEntryBtn.addEventListener('click', () => {
   manualBtn.style.display = 'none';
   themeSettingsBtn.style.display = 'none';
   document.body.classList.add('journal-open');
-  PanelManager.transitionPanels(mainPanel, journalPanel).then(() => {
+  PanelManager.smoothEntrance(mainPanel, journalPanel, {
+    direction: 'up',
+    distance: 50,
+    scale: 0.96,
+    hideDuration: 350,
+    showDuration: 550
+  }).then(() => {
     blurOverlay.style.opacity = 0;
     const entriesPane = document.querySelector('.entries-pane');
     if (entriesPane) entriesPane.style.display = 'block';
@@ -442,7 +454,13 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Skip mood panel - go directly to new entry with today's mood
       const todaysMood = getTodaysMood() || '';
-      PanelManager.transitionPanels(templatePanel, newEntryPanel).then(()=>{
+      PanelManager.smoothEntrance(templatePanel, newEntryPanel, {
+        direction: 'up',
+        distance: 50,
+        scale: 0.96,
+        hideDuration: 350,
+        showDuration: 550
+      }).then(()=>{
         newEntryPanel.dataset.mood = todaysMood;
         
         const meta = newEntryPanel.querySelector('.entry-meta');
@@ -491,7 +509,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const tplBackBtn = templatePanel.querySelector('.tpl-back-btn');
     if(tplBackBtn){
       tplBackBtn.addEventListener('click', ()=>{
-        PanelManager.transitionPanels(templatePanel, mainPanel).then(()=>{
+        PanelManager.smoothExit(templatePanel, mainPanel, {
+          direction: 'down',
+          distance: 40,
+          scale: 0.97,
+          hideDuration: 400,
+          showDuration: 350
+        }).then(()=>{
           blurOverlay.style.opacity = 1;
           manualBtn.style.display = 'block';
           themeSettingsBtn.style.display = 'block';
@@ -613,7 +637,13 @@ const moodNextBtn = document.querySelector('.mood-next-btn');
 if (moodNextBtn) {
   moodNextBtn.addEventListener('click', () => {
     currentMood = moodInput.value.trim();
-    PanelManager.transitionPanels(moodPanel, newEntryPanel).then(() => {
+    PanelManager.smoothEntrance(moodPanel, newEntryPanel, {
+      direction: 'up',
+      distance: 50,
+      scale: 0.96,
+      hideDuration: 350,
+      showDuration: 550
+    }).then(() => {
       newEntryPanel.dataset.mood = currentMood;
 
       const meta = newEntryPanel.querySelector('.entry-meta');
@@ -661,7 +691,13 @@ if (moodNextBtn) {
 const moodBackBtn = moodPanel.querySelector('.back-btn');
 if (moodBackBtn) {
   moodBackBtn.addEventListener('click', () => {
-    PanelManager.transitionPanels(moodPanel, mainPanel).then(() => {
+    PanelManager.smoothExit(moodPanel, mainPanel, {
+      direction: 'down',
+      distance: 40,
+      scale: 0.97,
+      hideDuration: 400,
+      showDuration: 350
+    }).then(() => {
       blurOverlay.style.opacity = 1;
       manualBtn.style.display = 'block';
       themeSettingsBtn.style.display = 'block';

@@ -199,7 +199,18 @@ export class EditorManager {
     this.currentEntryId = null;
     this.currentEntryIndex = null;
 
-    PanelManager.transitionPanels(panel, this.mainPanel).then(() => {
+    // Use smooth exit for journal panel, regular transition for others
+    const transitionMethod = panel.id === 'journal-panel' 
+      ? PanelManager.smoothExit(panel, this.mainPanel, {
+          direction: 'down',
+          distance: 40,
+          scale: 0.97,
+          hideDuration: 400,
+          showDuration: 350
+        })
+      : PanelManager.transitionPanels(panel, this.mainPanel);
+
+    transitionMethod.then(() => {
       if (panel.id === 'journal-panel') {
         // Make sure the entries pane is shown if needed
         const entriesPane = document.querySelector('.entries-pane');
