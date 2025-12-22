@@ -1,4 +1,5 @@
 @import url("components/buttons.css");
+@import url("components/entries.css");
 @import url("panels/entry.css");
 @import url("panels/mood.css");
 @import url("panels/main.css");
@@ -16,6 +17,8 @@
 @import url("animations/dateHeader.css");
 @import url("components/guidedPrompt.css");
 @import url("panels/chat.css");
+@import url("panels/stats.css");
+@import url("components/onboarding.css");
 
 /* ===== Global Reset & Body ===== */
 html, body {

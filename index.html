@@ -3,7 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Simnote - A beautiful journaling app for capturing your thoughts, tracking your moods, and reflecting on your journey." />
+    <meta name="theme-color" content="#fcd8ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Simnote" />
     <title>Simnote</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png" />
+    <link rel="apple-touch-icon" href="img/icon-192.png" />
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="css/base.css" />
     <!-- Google Font for cursive logo -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
@@ -82,6 +96,7 @@
         <div class="nav-buttons">
           <button id="new-entry-btn" class="button-33" role="button" data-emoji="🖋️">Journal</button>
           <button id="load-entry-btn" class="button-33" role="button" data-emoji="📚">All Entries</button>
+          <button id="stats-btn" class="button-33" role="button" data-emoji="📊">Insights</button>
           <button id="chat-btn" class="button-33" role="button" data-emoji="💬">Wellness Chat</button>
         </div>
       </div>
@@ -111,6 +126,82 @@
         <div class="entry-list"></div>
         <button class="button-33 back-to-menu" role="button" data-emoji="🏠">Back to Menu</button>
       </div>
+    </div>
+
+    <!-- Statistics Panel -->
+    <div id="stats-panel" class="custom-panel stats-panel" style="display:none;">
+      <div class="stats-header">
+        <h2>Your Journaling Insights</h2>
+      </div>
+      <div class="stats-content">
+        <!-- Streak Section -->
+        <div class="stats-section streak-section">
+          <div class="stat-card streak-card">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-value" id="current-streak">0</div>
+            <div class="stat-label">Day Streak</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-value" id="longest-streak">0</div>
+            <div class="stat-label">Best Streak</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value" id="total-entries">0</div>
+            <div class="stat-label">Total Entries</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📖</div>
+            <div class="stat-value" id="total-words">0</div>
+            <div class="stat-label">Words Written</div>
+          </div>
+        </div>
+
+        <!-- Calendar Heatmap -->
+        <div class="stats-section">
+          <h3>Activity Calendar</h3>
+          <div class="heatmap-container">
+            <div class="heatmap-months" id="heatmap-months"></div>
+            <div class="heatmap-grid" id="heatmap-grid"></div>
+            <div class="heatmap-legend">
+              <span>Less</span>
+              <div class="legend-cell" data-level="0"></div>
+              <div class="legend-cell" data-level="1"></div>
+              <div class="legend-cell" data-level="2"></div>
+              <div class="legend-cell" data-level="3"></div>
+              <div class="legend-cell" data-level="4"></div>
+              <span>More</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mood Distribution -->
+        <div class="stats-section">
+          <h3>Mood Distribution</h3>
+          <div class="mood-chart" id="mood-chart"></div>
+        </div>
+
+        <!-- Writing Stats -->
+        <div class="stats-section">
+          <h3>Writing Statistics</h3>
+          <div class="writing-stats">
+            <div class="writing-stat">
+              <span class="stat-name">Average words per entry</span>
+              <span class="stat-val" id="avg-words">0</span>
+            </div>
+            <div class="writing-stat">
+              <span class="stat-name">Favorite entries</span>
+              <span class="stat-val" id="favorite-count">0</span>
+            </div>
+            <div class="writing-stat">
+              <span class="stat-name">Most used tags</span>
+              <span class="stat-val" id="top-tags">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="button-33 stats-back-btn" role="button" data-emoji="🏠">Back to Menu</button>
     </div>
 
     <!-- Wellness Chat Panel -->
@@ -246,10 +337,26 @@
     <div id="custom-popup" class="custom-popup">Entry saved!</div>
 
     <!-- Version Badge -->
-    <div class="version-badge" style="color:#fff;font-size:0.9rem;opacity:0.8;">v0.1.0</div>
+    <div class="version-badge" style="color:#fff;font-size:0.9rem;opacity:0.8;">v0.2.0</div>
 
     <!-- JavaScript Modules -->
     <script type="module" src="js/core/main.js"></script>
     <script type="module" src="js/managers/chatManager.js"></script>
+    <script type="module" src="js/managers/statsManager.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('SW registered:', registration.scope);
+            })
+            .catch(error => {
+              console.log('SW registration failed:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

@@ -1,0 +1,290 @@
+/* Onboarding & Keyboard Shortcuts Styles */
+
+/* Onboarding Overlay */
+.onboarding-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.onboarding-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Onboarding Tooltip */
+.onboarding-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 360px;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.onboarding-tooltip.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tooltip-content {
+  background: linear-gradient(135deg, #2e2e2e 0%, #3a3a3a 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-content h3 {
+  margin: 0 0 12px 0;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.tooltip-content p {
+  margin: 0 0 20px 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.tooltip-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tooltip-progress {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tooltip-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.tooltip-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tooltip-btn.prev {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.tooltip-btn.prev:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.tooltip-btn.next,
+.tooltip-btn.finish {
+  background: var(--accent, #fcd8ff);
+  color: #333;
+  font-weight: 500;
+}
+
+.tooltip-btn.next:hover,
+.tooltip-btn.finish:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(252, 216, 255, 0.3);
+}
+
+.tooltip-skip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.tooltip-skip:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Arrow indicators */
+.onboarding-tooltip.arrow-left::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 10px solid transparent;
+  border-right-color: #2e2e2e;
+}
+
+.onboarding-tooltip.arrow-right::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 10px solid transparent;
+  border-left-color: #3a3a3a;
+}
+
+.onboarding-tooltip.arrow-top::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 10px solid transparent;
+  border-bottom-color: #2e2e2e;
+}
+
+.onboarding-tooltip.arrow-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 10px solid transparent;
+  border-top-color: #3a3a3a;
+}
+
+/* Highlight effect for target elements */
+.onboarding-highlight {
+  position: relative;
+  z-index: 9999;
+  animation: pulse-highlight 2s ease-in-out infinite;
+}
+
+@keyframes pulse-highlight {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(252, 216, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(252, 216, 255, 0.2);
+  }
+}
+
+/* Keyboard Shortcuts Modal */
+.shortcuts-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.shortcuts-modal.visible {
+  opacity: 1;
+}
+
+.shortcuts-content {
+  background: #2e2e2e;
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 480px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.shortcuts-content h3 {
+  margin: 0 0 20px 0;
+  color: #fff;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.shortcut-keys {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.shortcut-keys kbd {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.shortcut-desc {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.shortcuts-hint {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  margin: 20px 0 16px;
+}
+
+.shortcuts-hint kbd {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.shortcuts-close {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Scrollbar for shortcuts modal */
+.shortcuts-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.shortcuts-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.shortcuts-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}

@@ -19,6 +19,9 @@ import { FirefliesSplashAnimator } from '../animators/firefliesSplashAnimator.js
 import { LavenderBreezeAnimator } from '../animators/lavenderBreezeAnimator.js';
 import { LavenderSplashAnimator } from '../animators/lavenderSplashAnimator.js';
 import { GuidedPromptManager } from '../managers/guidedPromptManager.js';
+import { StatsManager } from '../managers/statsManager.js';
+import { KeyboardManager } from '../managers/keyboardManager.js';
+import { OnboardingManager } from '../managers/onboardingManager.js';
 
 // Grab key panels from the DOM
 const mainPanel = document.getElementById('main-panel');
@@ -357,6 +360,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize date header immediately to avoid placeholder flicker
   initDateHeader();
+
+  // Initialize stats manager
+  new StatsManager();
+
+  // Initialize keyboard shortcuts
+  new KeyboardManager();
+
+  // Initialize onboarding for first-time users
+  const onboarding = new OnboardingManager();
+  onboarding.start();
 
   /* --- Build Template Cards --- */
   const grid = document.querySelector('.template-grid');

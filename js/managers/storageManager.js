@@ -1,52 +1,295 @@
 // storageManager.js
+
+const STORAGE_VERSION = 2;
+const ENTRIES_KEY = 'entries';
+const META_KEY = 'simnote_meta';
+
 export class StorageManager {
-  static getEntries() {
-    return JSON.parse(localStorage.getItem('entries')) || [];
+  // Generate unique ID for entries
+  static generateId() {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  static saveEntry(name, content, mood = '', fontFamily = '', fontSize = '') {
+  // Get metadata (version, stats, etc.)
+  static getMeta() {
+    const meta = JSON.parse(localStorage.getItem(META_KEY)) || {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      totalEntries: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastEntryDate: null
+    };
+    return meta;
+  }
+
+  static saveMeta(meta) {
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+  }
+
+  // Migrate old entries to new format
+  static migrateIfNeeded() {
+    const meta = StorageManager.getMeta();
+    if (meta.version >= STORAGE_VERSION) return;
+
+    const entries = JSON.parse(localStorage.getItem(ENTRIES_KEY)) || [];
+    const migratedEntries = entries.map((entry, idx) => {
+      // Add missing fields for v2
+      if (!entry.id) entry.id = StorageManager.generateId();
+      if (!entry.tags) entry.tags = [];
+      if (entry.favorite === undefined) entry.favorite = false;
+      if (!entry.createdAt) entry.createdAt = entry.date || new Date().toISOString();
+      if (!entry.updatedAt) entry.updatedAt = entry.date || new Date().toISOString();
+      return entry;
+    });
+
+    localStorage.setItem(ENTRIES_KEY, JSON.stringify(migratedEntries));
+    meta.version = STORAGE_VERSION;
+    meta.totalEntries = migratedEntries.length;
+    StorageManager.saveMeta(meta);
+    console.log(`Migrated ${migratedEntries.length} entries to v${STORAGE_VERSION}`);
+  }
+
+  static getEntries() {
+    StorageManager.migrateIfNeeded();
+    return JSON.parse(localStorage.getItem(ENTRIES_KEY)) || [];
+  }
+
+  static getEntryById(id) {
     const entries = StorageManager.getEntries();
+    return entries.find(e => e.id === id) || null;
+  }
+
+  static getEntryIndexById(id) {
+    const entries = StorageManager.getEntries();
+    return entries.findIndex(e => e.id === id);
+  }
+
+  static saveEntry(name, content, mood = '', fontFamily = '', fontSize = '', tags = []) {
+    const entries = StorageManager.getEntries();
+    const now = new Date().toISOString();
     const wordCount = StorageManager.countWords(content);
-    entries.push({
+    
+    const newEntry = {
+      id: StorageManager.generateId(),
       name,
       content,
       mood,
       wordCount,
       fontFamily,
       fontSize,
-      date: new Date().toISOString()
-    });
-    localStorage.setItem('entries', JSON.stringify(entries));
+      tags: Array.isArray(tags) ? tags : [],
+      favorite: false,
+      createdAt: now,
+      updatedAt: now,
+      date: now // Keep for backward compatibility
+    };
+    
+    entries.push(newEntry);
+    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+    
+    // Update streaks
+    StorageManager.updateStreaks();
+    
+    return newEntry;
   }
 
-  static updateEntry(index, name, content, mood, fontFamily = '', fontSize = '') {
+  static updateEntry(indexOrId, name, content, mood, fontFamily = '', fontSize = '', tags = null) {
     const entries = StorageManager.getEntries();
+    let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
+    
     if (index >= 0 && index < entries.length) {
-      const existingMood = entries[index].mood || '';
+      const existing = entries[index];
       const wordCount = StorageManager.countWords(content);
+      const now = new Date().toISOString();
+      
       entries[index] = {
+        ...existing,
         name,
         content,
-        mood: mood !== undefined ? mood : existingMood,
+        mood: mood !== undefined ? mood : (existing.mood || ''),
         wordCount,
-        fontFamily,
-        fontSize,
-        date: new Date().toISOString()
+        fontFamily: fontFamily || existing.fontFamily,
+        fontSize: fontSize || existing.fontSize,
+        tags: tags !== null ? tags : (existing.tags || []),
+        updatedAt: now,
+        date: now // Keep for backward compatibility
       };
-      localStorage.setItem('entries', JSON.stringify(entries));
+      
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      return entries[index];
     }
+    return null;
   }
 
-  static deleteEntry(index) {
+  static deleteEntry(indexOrId) {
     const entries = StorageManager.getEntries();
+    let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
+    
     if (index >= 0 && index < entries.length) {
       entries.splice(index, 1);
-      localStorage.setItem('entries', JSON.stringify(entries));
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      return true;
     }
+    return false;
   }
 
-  // NEW: Generate export content from all (or selected) entries.
+  // Toggle favorite status
+  static toggleFavorite(indexOrId) {
+    const entries = StorageManager.getEntries();
+    let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
+    
+    if (index >= 0 && index < entries.length) {
+      entries[index].favorite = !entries[index].favorite;
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      return entries[index].favorite;
+    }
+    return false;
+  }
+
+  // Tag management
+  static addTag(indexOrId, tag) {
+    const entries = StorageManager.getEntries();
+    let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
+    
+    if (index >= 0 && index < entries.length) {
+      if (!entries[index].tags) entries[index].tags = [];
+      const normalizedTag = tag.toLowerCase().trim();
+      if (!entries[index].tags.includes(normalizedTag)) {
+        entries[index].tags.push(normalizedTag);
+        localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      }
+      return entries[index].tags;
+    }
+    return [];
+  }
+
+  static removeTag(indexOrId, tag) {
+    const entries = StorageManager.getEntries();
+    let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
+    
+    if (index >= 0 && index < entries.length) {
+      const normalizedTag = tag.toLowerCase().trim();
+      entries[index].tags = (entries[index].tags || []).filter(t => t !== normalizedTag);
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      return entries[index].tags;
+    }
+    return [];
+  }
+
+  // Get all unique tags across all entries
+  static getAllTags() {
+    const entries = StorageManager.getEntries();
+    const tagSet = new Set();
+    entries.forEach(e => {
+      (e.tags || []).forEach(t => tagSet.add(t));
+    });
+    return Array.from(tagSet).sort();
+  }
+
+  // Streak calculation
+  static updateStreaks() {
+    const meta = StorageManager.getMeta();
+    const entries = StorageManager.getEntries();
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get unique dates with entries
+    const entryDates = new Set(entries.map(e => e.createdAt.split('T')[0]));
+    const sortedDates = Array.from(entryDates).sort().reverse();
+    
+    if (sortedDates.length === 0) {
+      meta.currentStreak = 0;
+      meta.lastEntryDate = null;
+    } else {
+      // Calculate current streak
+      let streak = 0;
+      let checkDate = new Date(today);
+      
+      // If no entry today, start from yesterday
+      if (!entryDates.has(today)) {
+        const yesterday = new Date(checkDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (!entryDates.has(yesterday.toISOString().split('T')[0])) {
+          streak = 0;
+        } else {
+          checkDate = yesterday;
+        }
+      }
+      
+      if (streak === 0 && entryDates.has(checkDate.toISOString().split('T')[0])) {
+        streak = 1;
+        let prevDate = new Date(checkDate);
+        prevDate.setDate(prevDate.getDate() - 1);
+        
+        while (entryDates.has(prevDate.toISOString().split('T')[0])) {
+          streak++;
+          prevDate.setDate(prevDate.getDate() - 1);
+        }
+      }
+      
+      meta.currentStreak = streak;
+      meta.lastEntryDate = sortedDates[0];
+      meta.longestStreak = Math.max(meta.longestStreak || 0, streak);
+    }
+    
+    meta.totalEntries = entries.length;
+    StorageManager.saveMeta(meta);
+    return meta;
+  }
+
+  // Statistics
+  static getStats() {
+    const entries = StorageManager.getEntries();
+    const meta = StorageManager.updateStreaks();
+    
+    const totalWords = entries.reduce((sum, e) => sum + (e.wordCount || 0), 0);
+    const avgWords = entries.length > 0 ? Math.round(totalWords / entries.length) : 0;
+    
+    // Mood distribution
+    const moodCounts = {};
+    entries.forEach(e => {
+      if (e.mood) {
+        moodCounts[e.mood] = (moodCounts[e.mood] || 0) + 1;
+      }
+    });
+    
+    // Entries by month
+    const monthlyEntries = {};
+    entries.forEach(e => {
+      const month = e.createdAt.substring(0, 7); // YYYY-MM
+      monthlyEntries[month] = (monthlyEntries[month] || 0) + 1;
+    });
+    
+    return {
+      totalEntries: entries.length,
+      totalWords,
+      avgWords,
+      currentStreak: meta.currentStreak,
+      longestStreak: meta.longestStreak,
+      moodCounts,
+      monthlyEntries,
+      favoriteCount: entries.filter(e => e.favorite).length
+    };
+  }
+
+  // Export entries to JSON format (v2)
   static generateExportContent(selectedIndices = null) {
+    const entries = StorageManager.getEntries();
+    const toExport = (selectedIndices === null)
+      ? entries
+      : selectedIndices.map(index => entries[index]);
+    
+    const exportData = {
+      version: STORAGE_VERSION,
+      exportedAt: new Date().toISOString(),
+      entries: toExport
+    };
+    
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  // Legacy text export format for backward compatibility
+  static generateExportContentLegacy(selectedIndices = null) {
     const entries = StorageManager.getEntries();
     const toExport = (selectedIndices === null)
       ? entries
@@ -54,76 +297,140 @@ export class StorageManager {
     let content = '';
     toExport.forEach(entry => {
       content += `---ENTRY---\n`;
-      content += `Date: ${entry.date}\n`;
+      content += `ID: ${entry.id}\n`;
+      content += `Date: ${entry.createdAt || entry.date}\n`;
       content += `Caption: ${entry.name}\n`;
       content += `Mood: ${entry.mood || ''}\n`;
+      content += `Tags: ${(entry.tags || []).join(', ')}\n`;
+      content += `Favorite: ${entry.favorite || false}\n`;
       content += `WordCount: ${entry.wordCount || StorageManager.countWords(entry.content)}\n`;
-      content += `Font: ${entry.fontFamily || ''}\n`;
-      content += `FontSize: ${entry.fontSize || ''}\n`;
       content += `Content:\n${entry.content}\n`;
       content += `---END ENTRY---\n\n`;
     });
     return content;
   }
 
-  // NEW: Helper to add an imported entry while preserving its date.
-  static addImportedEntry(name, content, date, mood = '', fontFamily = '', fontSize = '', wordCount = StorageManager.countWords(content)) {
-    const entries = StorageManager.getEntries();
-    entries.push({ name, content, date, mood, fontFamily, fontSize, wordCount });
-    localStorage.setItem('entries', JSON.stringify(entries));
-  }
-
-  // NEW: Import entries from a custom-formatted .txt file content.
+  // Import entries from JSON or legacy format
   static importEntries(fileContent) {
     let importedCount = 0;
+    
+    // Try JSON format first
+    try {
+      const data = JSON.parse(fileContent);
+      if (data.entries && Array.isArray(data.entries)) {
+        data.entries.forEach(entry => {
+          StorageManager.addImportedEntry(entry);
+          importedCount++;
+        });
+        StorageManager.updateStreaks();
+        return importedCount;
+      }
+    } catch (e) {
+      // Not JSON, try legacy format
+    }
+    
+    // Legacy text format
     const blocks = fileContent.split('---ENTRY---');
     blocks.forEach(block => {
       if (block.includes('---END ENTRY---')) {
         const contentBlock = block.split('---END ENTRY---')[0].trim();
-        const lines = contentBlock.split('\n').filter(line => line.trim() !== '');
-        if (lines.length >= 4) {
-          const dateLine = lines[0];
-          const captionLine = lines[1];
-          let moodLine = '';
-          let wordLine = '';
-          let fontLine = '';
-          let sizeLine = '';
-          let contentStartIdx = 2;
-
-          // Parse optional metadata lines if present in any order after Caption
-          for (let i = 2; i < lines.length; i++) {
-            const l = lines[i];
-            if (l.startsWith('Mood:')) {
-              moodLine = l;
-            } else if (l.startsWith('WordCount:')) {
-              wordLine = l;
-            } else if (l.startsWith('Font:')) {
-              fontLine = l;
-            } else if (l.startsWith('FontSize:')) {
-              sizeLine = l;
-            } else if (l.trim() === 'Content:') {
-              contentStartIdx = i;
-              break;
-            }
-          }
-
-          const date = dateLine.replace('Date:', '').trim();
-          const caption = captionLine.replace('Caption:', '').trim();
-          const mood = moodLine ? moodLine.replace('Mood:', '').trim() : '';
-          const font = fontLine ? fontLine.replace('Font:', '').trim() : '';
-          const fontSize = sizeLine ? sizeLine.replace('FontSize:', '').trim() : '';
-          const content = lines.slice(contentStartIdx + 1).join('\n').trim();
-          StorageManager.addImportedEntry(caption, content, date, mood, font, fontSize);
+        const lines = contentBlock.split('\n');
+        
+        const parseField = (prefix) => {
+          const line = lines.find(l => l.startsWith(prefix));
+          return line ? line.replace(prefix, '').trim() : '';
+        };
+        
+        const contentIdx = lines.findIndex(l => l.trim() === 'Content:');
+        const content = contentIdx >= 0 ? lines.slice(contentIdx + 1).join('\n').trim() : '';
+        
+        if (content) {
+          const entry = {
+            name: parseField('Caption:'),
+            content,
+            mood: parseField('Mood:'),
+            tags: parseField('Tags:').split(',').map(t => t.trim()).filter(Boolean),
+            favorite: parseField('Favorite:') === 'true',
+            createdAt: parseField('Date:') || new Date().toISOString()
+          };
+          StorageManager.addImportedEntry(entry);
           importedCount++;
         }
       }
     });
+    
+    StorageManager.updateStreaks();
     return importedCount;
+  }
+
+  // Add imported entry with proper format
+  static addImportedEntry(entryData) {
+    const entries = StorageManager.getEntries();
+    const now = new Date().toISOString();
+    
+    // Handle both object format and legacy parameters
+    const entry = typeof entryData === 'object' ? {
+      id: entryData.id || StorageManager.generateId(),
+      name: entryData.name || entryData.caption || 'Untitled',
+      content: entryData.content || '',
+      mood: entryData.mood || '',
+      wordCount: entryData.wordCount || StorageManager.countWords(entryData.content || ''),
+      fontFamily: entryData.fontFamily || '',
+      fontSize: entryData.fontSize || '',
+      tags: entryData.tags || [],
+      favorite: entryData.favorite || false,
+      createdAt: entryData.createdAt || entryData.date || now,
+      updatedAt: entryData.updatedAt || now,
+      date: entryData.date || entryData.createdAt || now
+    } : entryData;
+    
+    // Check for duplicate by ID
+    const existingIdx = entries.findIndex(e => e.id === entry.id);
+    if (existingIdx >= 0) {
+      // Update existing
+      entries[existingIdx] = { ...entries[existingIdx], ...entry };
+    } else {
+      entries.push(entry);
+    }
+    
+    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+    return entry;
   }
 
   // Helper to count words in content
   static countWords(text) {
     if (!text) return 0;
     return text.trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  // Search entries
+  static searchEntries(query, options = {}) {
+    const entries = StorageManager.getEntries();
+    const q = query.toLowerCase();
+    
+    return entries.filter(entry => {
+      // Text search
+      const matchesText = !query || 
+        (entry.name && entry.name.toLowerCase().includes(q)) ||
+        (entry.content && entry.content.toLowerCase().includes(q));
+      
+      // Tag filter
+      const matchesTags = !options.tags || options.tags.length === 0 ||
+        options.tags.some(tag => (entry.tags || []).includes(tag.toLowerCase()));
+      
+      // Mood filter
+      const matchesMood = !options.mood ||
+        (entry.mood && entry.mood.toLowerCase() === options.mood.toLowerCase());
+      
+      // Favorites filter
+      const matchesFavorite = !options.favoritesOnly || entry.favorite;
+      
+      // Date range filter
+      const entryDate = new Date(entry.createdAt);
+      const matchesDateFrom = !options.dateFrom || entryDate >= new Date(options.dateFrom);
+      const matchesDateTo = !options.dateTo || entryDate <= new Date(options.dateTo);
+      
+      return matchesText && matchesTags && matchesMood && matchesFavorite && matchesDateFrom && matchesDateTo;
+    });
   }
 }

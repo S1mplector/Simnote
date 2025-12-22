@@ -14,9 +14,12 @@ export class EditorManager {
     this.editEntryPanel = document.getElementById('edit-entry-panel');
     this.entriesListDiv = document.querySelector('.entry-list');
 
-    // Track current entry index
-    this.currentEntryIndex = null;
+    // Track current entry by ID (not index)
+    this.currentEntryId = null;
+    this.currentEntryIndex = null; // Keep for backward compatibility
     this.filterDate = null; // YYYY-MM-DD string
+    this.filterTags = []; // Array of tag strings
+    this.showFavoritesOnly = false;
 
     // Global search filter
     this.searchQuery = '';
@@ -26,6 +29,9 @@ export class EditorManager {
 
     // Autosave timer reference
     this.autosaveTimer = null;
+
+    // Current entry tags (for editing)
+    this.currentTags = [];
 
     this.initializeUI();
   }
@@ -44,6 +50,12 @@ export class EditorManager {
         this.handleSaveButton(btn);
       });
     });
+
+    // Setup tag input handlers
+    this.setupTagInput();
+
+    // Setup favorites filter button
+    this.setupFavoritesFilter();
 
     // Remove delete button listener from edit panel:
     // (This was previously registered with querySelectorAll('.delete-btn') and handled in handleDeleteButton)
@@ -171,6 +183,11 @@ export class EditorManager {
     if (nameInput) nameInput.value = '';
     if (contentArea) contentArea.value = '';
 
+    // Clear tags
+    this.currentTags = [];
+    this.renderTagsUI(panel);
+
+    this.currentEntryId = null;
     this.currentEntryIndex = null;
 
     PanelManager.transitionPanels(panel, this.mainPanel).then(() => {
@@ -205,23 +222,29 @@ export class EditorManager {
       this.showPopup("Please enter both a name and content.");
       return;
     }
+
+    const fontStyle = window.getComputedStyle(contentArea);
+    const fontFamily = fontStyle.fontFamily;
+    const fontSize = fontStyle.fontSize;
   
-    if (panel.id === 'edit-entry-panel' && this.currentEntryIndex !== null) {
-      // Editing existing entry
+    if (panel.id === 'edit-entry-panel' && this.currentEntryId) {
+      // Editing existing entry by ID
       const mood = this.editEntryPanel.dataset.mood;
-      const fontStyle = window.getComputedStyle(contentArea);
-      const fontFamily = fontStyle.fontFamily;
-      const fontSize = fontStyle.fontSize;
-      StorageManager.updateEntry(this.currentEntryIndex, name, content, mood, fontFamily, fontSize);
+      StorageManager.updateEntry(this.currentEntryId, name, content, mood, fontFamily, fontSize, this.currentTags);
+      this.showPopup("Entry updated!");
+    } else if (panel.id === 'edit-entry-panel' && this.currentEntryIndex !== null) {
+      // Fallback to index for backward compatibility
+      const mood = this.editEntryPanel.dataset.mood;
+      StorageManager.updateEntry(this.currentEntryIndex, name, content, mood, fontFamily, fontSize, this.currentTags);
       this.showPopup("Entry updated!");
     } else {
       // Creating new entry
       const mood = this.newEntryPanel.dataset.mood || '';
-      const fontStyle = window.getComputedStyle(contentArea);
-      const fontFamily = fontStyle.fontFamily;
-      const fontSize = fontStyle.fontSize;
-      StorageManager.saveEntry(name, content, mood, fontFamily, fontSize);
+      StorageManager.saveEntry(name, content, mood, fontFamily, fontSize, this.currentTags);
       this.showPopup("Entry saved!");
+      // Clear tags after saving new entry
+      this.currentTags = [];
+      this.renderTagsUI(panel);
     }
     this.displayEntries();
   }
@@ -232,34 +255,52 @@ export class EditorManager {
   displayEntries() {
     let entries = StorageManager.getEntries().map((e,i)=>({...e,__index:i}));
 
-    // Date filter (if active)
-    if (this.filterDate) {
-      entries = entries.filter(entry => entry.date.startsWith(this.filterDate));
+    // Favorites filter
+    if (this.showFavoritesOnly) {
+      entries = entries.filter(entry => entry.favorite);
     }
 
-    // Text search filter (case-insensitive; match name or content)
+    // Date filter (if active)
+    if (this.filterDate) {
+      entries = entries.filter(entry => (entry.createdAt || entry.date).startsWith(this.filterDate));
+    }
+
+    // Tag filter
+    if (this.filterTags && this.filterTags.length > 0) {
+      entries = entries.filter(entry => 
+        this.filterTags.some(tag => (entry.tags || []).includes(tag))
+      );
+    }
+
+    // Text search filter (case-insensitive; match name, content, or tags)
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
       entries = entries.filter(entry =>
         (entry.name && entry.name.toLowerCase().includes(q)) ||
-        (entry.content && entry.content.toLowerCase().includes(q))
+        (entry.content && entry.content.toLowerCase().includes(q)) ||
+        (entry.tags && entry.tags.some(t => t.toLowerCase().includes(q)))
       );
     }
 
     // Apply sorting / grouping
     if(this.sortMode === 'newest'){
-      entries.sort((a,b)=> new Date(b.date) - new Date(a.date));
+      entries.sort((a,b)=> new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
     } else if(this.sortMode === 'oldest'){
-      entries.sort((a,b)=> new Date(a.date) - new Date(b.date));
+      entries.sort((a,b)=> new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date));
     } else if(this.sortMode === 'az'){
       entries.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
     } else if(this.sortMode === 'mood'){
       entries.sort((a,b)=> (a.mood||'').localeCompare(b.mood||''));
     }
 
+    // Always show favorites first within sort order
+    entries.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+
     if (entries.length === 0) {
       this.entriesListDiv.innerHTML = "<p id=\"no-entries-msg\"></p>";
-      const msg = (this.filterDate || this.searchQuery) ? 'No matching entries.' : 'No entries saved.';
+      const msg = (this.filterDate || this.searchQuery || this.showFavoritesOnly || this.filterTags.length) 
+        ? 'No matching entries.' 
+        : 'No entries saved.';
       typeText('no-entries-msg', msg, 45, true);
       return;
     }
@@ -273,24 +314,12 @@ export class EditorManager {
           currentGroup = entry.mood;
           html += `<li class="entry-group">${currentGroup || 'No Mood'}</li>`;
         }
-        const formattedDate = new Date(entry.date).toLocaleString();
-        html += `
-          <li data-index="${entry.__index}" class="entry-item">
-            <span class="entry-name-display">${entry.name}</span>
-            <span class="entry-date-display">${formattedDate}</span>
-            <button class="delete-entry" data-index="${entry.__index}">🗑️</button>
-          </li>`;
+        html += this.renderEntryItem(entry);
       });
     } else {
       entries.forEach((entry) => {
-      const formattedDate = new Date(entry.date).toLocaleString();
-      html += `
-          <li data-index="${entry.__index}" class="entry-item">
-          <span class="entry-name-display">${entry.name}</span>
-          <span class="entry-date-display">${formattedDate}</span>
-            <button class="delete-entry" data-index="${entry.__index}">🗑️</button>
-        </li>`;
-    });
+        html += this.renderEntryItem(entry);
+      });
     }
     html += "</ul>";
     this.entriesListDiv.innerHTML = html;
@@ -298,11 +327,17 @@ export class EditorManager {
     // Clicking a list item loads it into the edit panel
     document.querySelectorAll('.entry-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        if (e.target.classList.contains('delete-entry')) return; // skip if it's the delete button
+        // Skip if clicking action buttons
+        if (e.target.classList.contains('delete-entry') || 
+            e.target.classList.contains('favorite-btn')) return;
 
+        const entryId = item.getAttribute('data-id');
         const idx = parseInt(item.getAttribute('data-index'));
-        const loadedEntry = StorageManager.getEntries()[idx];
+        const loadedEntry = entryId ? StorageManager.getEntryById(entryId) : StorageManager.getEntries()[idx];
+        
+        this.currentEntryId = loadedEntry.id;
         this.currentEntryIndex = idx;
+        this.currentTags = loadedEntry.tags || [];
 
         // Load that entry into edit panel
         const nameInput = this.editEntryPanel.querySelector('input.entry-name');
@@ -327,9 +362,12 @@ export class EditorManager {
             }
           }
           if (dateEl) {
-            dateEl.textContent = new Date(loadedEntry.date).toLocaleString();
+            dateEl.textContent = new Date(loadedEntry.createdAt || loadedEntry.date).toLocaleString();
           }
         }
+
+        // Render tags in edit panel
+        this.renderTagsUI(this.editEntryPanel);
 
         // Ensure edit panel shows its contents immediately, mirroring new-entry-panel behaviour
         this.editEntryPanel.classList.add('expand');
@@ -338,21 +376,60 @@ export class EditorManager {
       });
     });
 
-    // Delete buttons for each entry in the list remain unchanged
+    // Favorite buttons
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const entryId = btn.getAttribute('data-id');
+        const idx = parseInt(btn.getAttribute('data-index'));
+        const newState = StorageManager.toggleFavorite(entryId || idx);
+        btn.textContent = newState ? '⭐' : '☆';
+        btn.classList.toggle('active', newState);
+      });
+    });
+
+    // Delete buttons for each entry in the list
     document.querySelectorAll('.delete-entry').forEach(deleteBtn => {
       deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // so it doesn't trigger opening the edit panel
+        e.stopPropagation();
+        const entryId = deleteBtn.getAttribute('data-id');
         const idx = parseInt(deleteBtn.getAttribute('data-index'));
-        const listItem = deleteBtn.parentElement;
+        const listItem = deleteBtn.closest('.entry-item');
 
         // Animate removal
         listItem.classList.add('removing');
         listItem.addEventListener('animationend', () => {
-          StorageManager.deleteEntry(idx);
+          StorageManager.deleteEntry(entryId || idx);
           this.displayEntries();
         }, { once: true });
       });
     });
+  }
+
+  // Render a single entry item HTML
+  renderEntryItem(entry) {
+    const formattedDate = new Date(entry.createdAt || entry.date).toLocaleString();
+    const tagsHtml = (entry.tags || []).length > 0 
+      ? `<span class="entry-tags">${entry.tags.map(t => `<span class="tag-pill">${t}</span>`).join('')}</span>` 
+      : '';
+    const favoriteClass = entry.favorite ? 'active' : '';
+    const favoriteIcon = entry.favorite ? '⭐' : '☆';
+    
+    return `
+      <li data-id="${entry.id}" data-index="${entry.__index}" class="entry-item ${entry.favorite ? 'is-favorite' : ''}">
+        <div class="entry-item-main">
+          <span class="entry-name-display">${entry.name}</span>
+          ${tagsHtml}
+        </div>
+        <div class="entry-item-meta">
+          <span class="entry-date-display">${formattedDate}</span>
+          <span class="entry-word-count">${entry.wordCount || 0} words</span>
+        </div>
+        <div class="entry-item-actions">
+          <button class="favorite-btn ${favoriteClass}" data-id="${entry.id}" data-index="${entry.__index}">${favoriteIcon}</button>
+          <button class="delete-entry" data-id="${entry.id}" data-index="${entry.__index}">🗑️</button>
+        </div>
+      </li>`;
   }
 
   // Helper method to show custom popup
@@ -465,11 +542,163 @@ export class EditorManager {
     const name = nameInput.value.trim();
     const content = contentArea.value.trim();
     if(!name || !content) return;
-    if(this.currentEntryIndex !== null){
+    
+    if(this.currentEntryId || this.currentEntryIndex !== null){
       const mood = this.editEntryPanel.dataset.mood;
       const fontStyle = window.getComputedStyle(contentArea);
-      StorageManager.updateEntry(this.currentEntryIndex, name, content, mood, fontStyle.fontFamily, fontStyle.fontSize);
+      StorageManager.updateEntry(
+        this.currentEntryId || this.currentEntryIndex, 
+        name, content, mood, 
+        fontStyle.fontFamily, fontStyle.fontSize,
+        this.currentTags
+      );
       console.log('Autosaved entry');
     }
+  }
+
+  // Setup tag input functionality
+  setupTagInput() {
+    // Add tag input to both new and edit panels
+    [this.newEntryPanel, this.editEntryPanel].forEach(panel => {
+      if (!panel) return;
+      
+      const meta = panel.querySelector('.entry-meta');
+      if (!meta || meta.querySelector('.tags-container')) return;
+      
+      // Create tags container
+      const tagsContainer = document.createElement('div');
+      tagsContainer.className = 'tags-container';
+      tagsContainer.innerHTML = `
+        <div class="tags-list"></div>
+        <div class="tag-input-wrapper">
+          <input type="text" class="tag-input" placeholder="Add tag..." />
+          <div class="tag-suggestions"></div>
+        </div>
+      `;
+      meta.appendChild(tagsContainer);
+      
+      const tagInput = tagsContainer.querySelector('.tag-input');
+      const suggestions = tagsContainer.querySelector('.tag-suggestions');
+      
+      // Handle tag input
+      tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const tag = tagInput.value.trim().toLowerCase();
+          if (tag && !this.currentTags.includes(tag)) {
+            this.currentTags.push(tag);
+            this.renderTagsUI(panel);
+          }
+          tagInput.value = '';
+          suggestions.innerHTML = '';
+        }
+      });
+      
+      // Show suggestions
+      tagInput.addEventListener('input', () => {
+        const val = tagInput.value.trim().toLowerCase();
+        if (!val) {
+          suggestions.innerHTML = '';
+          return;
+        }
+        
+        const allTags = StorageManager.getAllTags();
+        const matches = allTags.filter(t => 
+          t.includes(val) && !this.currentTags.includes(t)
+        ).slice(0, 5);
+        
+        suggestions.innerHTML = matches.map(t => 
+          `<div class="tag-suggestion" data-tag="${t}">${t}</div>`
+        ).join('');
+        
+        suggestions.querySelectorAll('.tag-suggestion').forEach(el => {
+          el.addEventListener('click', () => {
+            const tag = el.getAttribute('data-tag');
+            if (!this.currentTags.includes(tag)) {
+              this.currentTags.push(tag);
+              this.renderTagsUI(panel);
+            }
+            tagInput.value = '';
+            suggestions.innerHTML = '';
+          });
+        });
+      });
+      
+      // Close suggestions on outside click
+      document.addEventListener('click', (e) => {
+        if (!tagsContainer.contains(e.target)) {
+          suggestions.innerHTML = '';
+        }
+      });
+    });
+  }
+
+  // Render tags in a panel
+  renderTagsUI(panel) {
+    if (!panel) return;
+    const tagsList = panel.querySelector('.tags-list');
+    if (!tagsList) return;
+    
+    tagsList.innerHTML = this.currentTags.map(tag => 
+      `<span class="tag-pill editable">
+        ${tag}
+        <button class="tag-remove" data-tag="${tag}">×</button>
+      </span>`
+    ).join('');
+    
+    // Add remove handlers
+    tagsList.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tag = btn.getAttribute('data-tag');
+        this.currentTags = this.currentTags.filter(t => t !== tag);
+        this.renderTagsUI(panel);
+      });
+    });
+  }
+
+  // Setup favorites filter toggle
+  setupFavoritesFilter() {
+    const header = document.querySelector('.entries-header');
+    if (!header || header.querySelector('.favorites-filter-btn')) return;
+    
+    const btn = document.createElement('button');
+    btn.className = 'favorites-filter-btn';
+    btn.innerHTML = '☆';
+    btn.title = 'Show favorites only';
+    
+    btn.addEventListener('click', () => {
+      this.showFavoritesOnly = !this.showFavoritesOnly;
+      btn.classList.toggle('active', this.showFavoritesOnly);
+      btn.innerHTML = this.showFavoritesOnly ? '⭐' : '☆';
+      this.displayEntries();
+    });
+    
+    // Insert before search toggle
+    const searchBtn = header.querySelector('#search-toggle-btn');
+    if (searchBtn) {
+      header.insertBefore(btn, searchBtn);
+    } else {
+      header.appendChild(btn);
+    }
+  }
+
+  // Clear all filters
+  clearFilters() {
+    this.filterDate = null;
+    this.filterTags = [];
+    this.showFavoritesOnly = false;
+    this.searchQuery = '';
+    
+    const searchInput = document.getElementById('entry-search');
+    if (searchInput) searchInput.value = '';
+    
+    const favBtn = document.querySelector('.favorites-filter-btn');
+    if (favBtn) {
+      favBtn.classList.remove('active');
+      favBtn.innerHTML = '☆';
+    }
+    
+    this.displayEntries();
   }
 }
