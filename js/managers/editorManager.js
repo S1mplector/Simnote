@@ -190,7 +190,7 @@ export class EditorManager {
     const panel = btn.closest('#journal-panel, #new-entry-panel, #edit-entry-panel');
     if (!panel) return;
 
-    if (panel.id === 'new-entry-panel' || panel.id === 'edit-entry-panel') {
+    if (this.shouldShowExitFeedback(panel)) {
       this.showExitOverlay();
     }
 
@@ -219,7 +219,9 @@ export class EditorManager {
           hideDuration: 400,
           showDuration: 350
         })
-      : PanelManager.transitionPanels(panel, this.mainPanel);
+      : PanelManager.smoothExit(panel, this.mainPanel, {
+          fadeDuration: 450
+        });
 
     transitionMethod.then(() => {
       this.hideExitOverlay();
@@ -824,6 +826,15 @@ export class EditorManager {
     const overlay = document.createElement('div');
     overlay.id = 'panel-exit-overlay';
     overlay.className = 'panel-exit-overlay';
+    const content = document.createElement('div');
+    content.className = 'panel-exit-overlay-content';
+    content.innerHTML = `
+      <svg class="exit-check" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 12l5 5 11-12"></path>
+      </svg>
+      <div class="exit-quote">${this.getExitQuote()}</div>
+    `;
+    overlay.appendChild(content);
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('visible'));
   }
@@ -833,6 +844,28 @@ export class EditorManager {
     if (!overlay) return;
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+  }
+
+  shouldShowExitFeedback(panel) {
+    if (!panel || (panel.id !== 'new-entry-panel' && panel.id !== 'edit-entry-panel')) {
+      return false;
+    }
+    const nameInput = panel.querySelector('input.entry-name');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const richEditor = this.richEditors.get(panel.id);
+    const plainText = richEditor ? richEditor.getPlainText().trim() : '';
+    return Boolean(name || plainText);
+  }
+
+  getExitQuote() {
+    const quotes = [
+      'Great job journaling today.',
+      "You're doing great.",
+      'Nice work reflecting today.',
+      'Proud of you for writing.',
+      'Thanks for showing up today.'
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
   }
 
   isAutosaveEnabled() {

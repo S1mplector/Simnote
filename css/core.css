@@ -335,13 +335,66 @@ html, body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.55s ease;
   z-index: 90;
   pointer-events: none;
 }
 
 .panel-exit-overlay.visible {
   opacity: 1;
+}
+
+.panel-exit-overlay-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.98);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.panel-exit-overlay.visible .panel-exit-overlay-content {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.exit-check {
+  width: 64px;
+  height: 64px;
+  stroke: rgba(255, 255, 255, 0.95);
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.exit-check path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: drawCheck 0.6s ease forwards;
+}
+
+.exit-quote {
+  font-size: 1.05rem;
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: quoteIn 0.45s ease 0.15s forwards;
+}
+
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes quoteIn {
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== "Paint Drop" for New Entry Panel ===== */
