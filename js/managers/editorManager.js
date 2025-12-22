@@ -4,6 +4,7 @@ import { PanelManager } from './panelManager.js';
 import { PaintDropAnimator } from '../animators/paintDropAnimator.js';
 import { typeText } from '../utils/typingEffect.js';
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
+import { RichEditorManager } from './richEditorManager.js';
 
 export class EditorManager {
   constructor() {
@@ -33,6 +34,9 @@ export class EditorManager {
     // Current entry tags (for editing)
     this.currentTags = [];
 
+    // Rich text editors
+    this.richEditors = new Map();
+
     this.initializeUI();
   }
 
@@ -56,6 +60,9 @@ export class EditorManager {
 
     // Setup favorites filter button
     this.setupFavoritesFilter();
+
+    // Initialize rich text editors
+    this.initRichEditors();
 
     // Remove delete button listener from edit panel:
     // (This was previously registered with querySelectorAll('.delete-btn') and handled in handleDeleteButton)
@@ -179,9 +186,11 @@ export class EditorManager {
 
     // Clear text fields if leaving new/edit panel
     const nameInput = panel.querySelector('input.entry-name');
-    const contentArea = panel.querySelector('textarea.entry-content');
     if (nameInput) nameInput.value = '';
-    if (contentArea) contentArea.value = '';
+    
+    // Clear rich editor content
+    const richEditor = this.richEditors.get(panel.id);
+    if (richEditor) richEditor.clear();
 
     // Clear tags
     this.currentTags = [];
@@ -214,15 +223,19 @@ export class EditorManager {
     if (!panel) return;
   
     const nameInput = panel.querySelector('input.entry-name');
-    const contentArea = panel.querySelector('textarea.entry-content');
     const name = nameInput.value.trim();
-    const content = contentArea.value.trim();
+    
+    // Get content from rich editor or textarea
+    const richEditor = this.richEditors.get(panel.id);
+    const content = richEditor ? richEditor.getContent() : '';
+    const plainText = richEditor ? richEditor.getPlainText().trim() : '';
   
-    if (!name || !content) {
+    if (!name || !plainText) {
       this.showPopup("Please enter both a name and content.");
       return;
     }
 
+    const contentArea = panel.querySelector('.rich-editor') || panel.querySelector('.entry-content');
     const fontStyle = window.getComputedStyle(contentArea);
     const fontFamily = fontStyle.fontFamily;
     const fontSize = fontStyle.fontSize;
@@ -245,6 +258,8 @@ export class EditorManager {
       // Clear tags after saving new entry
       this.currentTags = [];
       this.renderTagsUI(panel);
+      // Clear the rich editor
+      if (richEditor) richEditor.clear();
     }
     this.displayEntries();
   }
@@ -341,9 +356,14 @@ export class EditorManager {
 
         // Load that entry into edit panel
         const nameInput = this.editEntryPanel.querySelector('input.entry-name');
-        const contentArea = this.editEntryPanel.querySelector('textarea.entry-content');
         nameInput.value = loadedEntry.name;
-        contentArea.value = loadedEntry.content;
+        
+        // Load content into rich editor
+        const richEditor = this.richEditors.get('edit-entry-panel');
+        if (richEditor) {
+          richEditor.setContent(loadedEntry.content);
+        }
+        
         // store mood for possible editing
         this.editEntryPanel.dataset.mood = loadedEntry.mood || '';
 
@@ -700,5 +720,17 @@ export class EditorManager {
     }
     
     this.displayEntries();
+  }
+
+  // Initialize rich text editors for new and edit panels
+  initRichEditors() {
+    const panels = [this.newEntryPanel, this.editEntryPanel];
+    
+    panels.forEach(panel => {
+      if (panel && panel.querySelector('.rich-editor')) {
+        const editor = new RichEditorManager(panel);
+        this.richEditors.set(panel.id, editor);
+      }
+    });
   }
 }

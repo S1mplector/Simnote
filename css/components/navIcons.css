@@ -1,0 +1,303 @@
+/* Nav Icon Buttons - Main Menu */
+
+.nav-icons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 30px;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.nav-icons.visible {
+  opacity: 1;
+}
+
+/* Icon Button Base */
+.nav-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 16px;
+  border-radius: 16px;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.nav-icon-btn:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-icon-btn:active {
+  transform: translateY(-2px);
+}
+
+/* Icon Label */
+.icon-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+}
+
+.nav-icon-btn:hover .icon-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ==================== */
+/* FOUNTAIN PEN ICON    */
+/* ==================== */
+.icon-pen {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.pen-body {
+  position: absolute;
+  width: 12px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 3px 3px 0 0;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-30deg);
+  transform-origin: bottom center;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.pen-tip {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 16px solid rgba(255, 255, 255, 0.25);
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-30deg);
+  transform-origin: top center;
+  transition: border-top-color 0.4s ease;
+}
+
+.pen-band {
+  position: absolute;
+  width: 14px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 1px;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-30deg);
+  transition: background 0.4s ease;
+}
+
+/* Pen hover state - fill in */
+.nav-icon-btn:hover .pen-body {
+  background: linear-gradient(135deg, #a0a0a0 0%, #d0d0d0 50%, #ffffff 100%);
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.nav-icon-btn:hover .pen-tip {
+  border-top-color: #c9a227;
+}
+
+.nav-icon-btn:hover .pen-band {
+  background: #c9a227;
+}
+
+/* ==================== */
+/* BOOK ICON            */
+/* ==================== */
+.icon-book {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.book-cover {
+  position: absolute;
+  width: 38px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px 6px 6px 2px;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.book-pages {
+  position: absolute;
+  width: 32px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 0 4px 4px 0;
+  top: 8px;
+  left: calc(50% - 2px);
+  transform: translateX(-50%);
+  transition: background 0.4s ease;
+}
+
+.book-pages::before {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 10px;
+  width: 16px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 6px 0 rgba(255, 255, 255, 0.2),
+    0 12px 0 rgba(255, 255, 255, 0.2),
+    0 18px 0 rgba(255, 255, 255, 0.2);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.book-spine {
+  position: absolute;
+  width: 6px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px 0 0 2px;
+  top: 6px;
+  left: calc(50% - 19px);
+  transition: background 0.4s ease;
+}
+
+/* Book hover state - fill in */
+.nav-icon-btn:hover .book-cover {
+  background: linear-gradient(135deg, #8b4513 0%, #a0522d 50%, #cd853f 100%);
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.4);
+}
+
+.nav-icon-btn:hover .book-pages {
+  background: #f5f5dc;
+}
+
+.nav-icon-btn:hover .book-pages::before {
+  background: rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0 6px 0 rgba(0, 0, 0, 0.15),
+    0 12px 0 rgba(0, 0, 0, 0.15),
+    0 18px 0 rgba(0, 0, 0, 0.15);
+}
+
+.nav-icon-btn:hover .book-spine {
+  background: #6b3a0f;
+}
+
+/* ==================== */
+/* SMILEY ICON          */
+/* ==================== */
+.icon-smiley {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.smiley-face {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.smiley-eye {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  top: 20px;
+  transition: background 0.4s ease, transform 0.3s ease;
+}
+
+.smiley-eye.left {
+  left: 17px;
+}
+
+.smiley-eye.right {
+  right: 17px;
+}
+
+.smiley-mouth {
+  position: absolute;
+  width: 20px;
+  height: 10px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: border-color 0.4s ease, height 0.3s ease;
+}
+
+/* Smiley hover state - fill in with animation */
+.nav-icon-btn:hover .smiley-face {
+  background: #ffde59;
+  border-color: #f5c518;
+  box-shadow: 0 2px 12px rgba(255, 222, 89, 0.5);
+}
+
+.nav-icon-btn:hover .smiley-eye {
+  background: #333;
+}
+
+.nav-icon-btn:hover .smiley-eye.left {
+  animation: eyeBlink 2s ease-in-out infinite;
+}
+
+.nav-icon-btn:hover .smiley-eye.right {
+  animation: eyeBlink 2s ease-in-out 0.1s infinite;
+}
+
+.nav-icon-btn:hover .smiley-mouth {
+  border-color: #333;
+  height: 12px;
+}
+
+@keyframes eyeBlink {
+  0%, 45%, 55%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 500px) {
+  .nav-icons {
+    gap: 20px;
+  }
+  
+  .icon-pen,
+  .icon-book,
+  .icon-smiley {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .nav-icon-btn {
+    padding: 12px;
+  }
+  
+  .icon-label {
+    font-size: 0.75rem;
+  }
+}

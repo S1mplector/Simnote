@@ -14,21 +14,21 @@ export class OnboardingManager {
       },
       {
         title: 'Start Journaling 🖋️',
-        content: 'Click here to create a new journal entry. Choose a template and capture your thoughts.',
+        content: 'Click the pen icon to create a new journal entry. Choose a template and capture your thoughts.',
         target: '#new-entry-btn',
-        position: 'right'
+        position: 'bottom'
       },
       {
         title: 'View Your Entries 📚',
-        content: 'Access all your past entries here. Search, filter by date, or sort by mood.',
+        content: 'Click the book icon to access all your past entries. Search, filter by date, or sort by mood.',
         target: '#load-entry-btn',
-        position: 'right'
+        position: 'bottom'
       },
       {
-        title: 'Track Your Progress 📊',
-        content: 'View your journaling insights - streaks, mood trends, and writing statistics.',
+        title: 'Track Your Moods 😊',
+        content: 'Click the smiley to see your mood trends, writing streaks, and journaling insights.',
         target: '#stats-btn',
-        position: 'right'
+        position: 'bottom'
       },
       {
         title: 'Customize Your Space ⚙️',

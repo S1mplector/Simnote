@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="css/base.css" />
     <!-- Google Font for cursive logo -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
+    <!-- sql.js for SQLite support -->
+    <script src="https://sql.js.org/dist/sql-wasm.js"></script>
   </head>
   <body>
     <!-- Manual Button -->
@@ -93,11 +95,32 @@
             <span class="logo-text">Simnote</span>
           </div>
         </div>
-        <div class="nav-buttons">
-          <button id="new-entry-btn" class="button-33" role="button" data-emoji="🖋️">Journal</button>
-          <button id="load-entry-btn" class="button-33" role="button" data-emoji="📚">All Entries</button>
-          <button id="stats-btn" class="button-33" role="button" data-emoji="📊">Insights</button>
-          <button id="chat-btn" class="button-33" role="button" data-emoji="💬">Wellness Chat</button>
+        <div class="nav-icons">
+          <button id="new-entry-btn" class="nav-icon-btn" title="Journal">
+            <div class="icon-pen">
+              <div class="pen-body"></div>
+              <div class="pen-tip"></div>
+              <div class="pen-band"></div>
+            </div>
+            <span class="icon-label">Journal</span>
+          </button>
+          <button id="load-entry-btn" class="nav-icon-btn" title="All Entries">
+            <div class="icon-book">
+              <div class="book-cover"></div>
+              <div class="book-pages"></div>
+              <div class="book-spine"></div>
+            </div>
+            <span class="icon-label">Entries</span>
+          </button>
+          <button id="stats-btn" class="nav-icon-btn" title="Mood Tracking">
+            <div class="icon-smiley">
+              <div class="smiley-face"></div>
+              <div class="smiley-eye left"></div>
+              <div class="smiley-eye right"></div>
+              <div class="smiley-mouth"></div>
+            </div>
+            <span class="icon-label">Moods</span>
+          </button>
         </div>
       </div>
     </div>
@@ -128,10 +151,10 @@
       </div>
     </div>
 
-    <!-- Statistics Panel -->
+    <!-- Mood Tracking Panel -->
     <div id="stats-panel" class="custom-panel stats-panel" style="display:none;">
       <div class="stats-header">
-        <h2>Your Journaling Insights</h2>
+        <h2>Mood Tracking</h2>
       </div>
       <div class="stats-content">
         <!-- Streak Section -->
@@ -238,7 +261,24 @@
           <span class="date-stamp"></span>
         </div>
         <div class="panel-content">
-          <textarea class="entry-content" placeholder="..."></textarea>
+          <!-- Rich Text Toolbar -->
+          <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+            <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading">H</button>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote">“</button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
+            <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List">1.</button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn" data-command="createLink" title="Insert Link">🔗</button>
+            <button type="button" class="toolbar-btn insert-image-btn" title="Insert Image">🖼️</button>
+          </div>
+          <!-- Rich Text Editor -->
+          <div class="entry-content rich-editor" contenteditable="true" data-placeholder="Start writing..."></div>
+          <input type="file" class="image-upload-input" accept="image/*" style="display:none;" />
         </div>
         <div class="editor-buttons">
           <button class="button-33 save-btn" role="button" data-emoji="💾">Save</button>
@@ -288,7 +328,24 @@
           <span class="date-stamp"></span>
         </div>
         <div class="panel-content">
-          <textarea class="entry-content" placeholder="..."></textarea>
+          <!-- Rich Text Toolbar -->
+          <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+            <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading">H</button>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote">“</button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
+            <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List">1.</button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn" data-command="createLink" title="Insert Link">🔗</button>
+            <button type="button" class="toolbar-btn insert-image-btn" title="Insert Image">🖼️</button>
+          </div>
+          <!-- Rich Text Editor -->
+          <div class="entry-content rich-editor" contenteditable="true" data-placeholder="Start writing..."></div>
+          <input type="file" class="image-upload-input" accept="image/*" style="display:none;" />
         </div>
         <div class="editor-buttons">
           <button class="button-33 save-btn" role="button" data-emoji="💾">Save Entry</button>
@@ -323,6 +380,43 @@
       <div class="settings-separator"></div>
       <div class="autosave-section">
         <label><input type="checkbox" id="autosave-enabled" /> Enable Autosave (every 30s)</label>
+      </div>
+
+      <!-- Daily Mood Check-in Settings -->
+      <div class="settings-separator"></div>
+      <div class="mood-checkin-section">
+        <label><input type="checkbox" id="mood-checkin-enabled" checked /> Daily Mood Check-in</label>
+        <p class="settings-hint">Ask how you're feeling when you open the app each day</p>
+      </div>
+
+      <!-- Storage Settings -->
+      <div class="settings-separator"></div>
+      <div class="storage-section">
+        <h4>Storage</h4>
+        <div class="storage-info">
+          <div class="storage-stat">
+            <span class="storage-label">Database</span>
+            <span class="storage-value" id="storage-type">SQLite</span>
+          </div>
+          <div class="storage-stat">
+            <span class="storage-label">Entries</span>
+            <span class="storage-value" id="storage-entries">0</span>
+          </div>
+          <div class="storage-stat">
+            <span class="storage-label">Size</span>
+            <span class="storage-value" id="storage-size">0 KB</span>
+          </div>
+          <div class="storage-stat">
+            <span class="storage-label">Images</span>
+            <span class="storage-value" id="storage-images">0</span>
+          </div>
+        </div>
+        <div class="storage-actions">
+          <button id="export-data-btn" class="settings-action-btn">Export Data</button>
+          <button id="import-data-btn" class="settings-action-btn">Import Data</button>
+          <button id="clear-data-btn" class="settings-action-btn danger">Clear All Data</button>
+        </div>
+        <input type="file" id="import-file-input" accept=".json" style="display:none;" />
       </div>
     </div>
 

@@ -22,6 +22,7 @@ import { GuidedPromptManager } from '../managers/guidedPromptManager.js';
 import { StatsManager } from '../managers/statsManager.js';
 import { KeyboardManager } from '../managers/keyboardManager.js';
 import { OnboardingManager } from '../managers/onboardingManager.js';
+import { DailyMoodManager, getTodaysMood } from '../managers/dailyMoodManager.js';
 
 // Grab key panels from the DOM
 const mainPanel = document.getElementById('main-panel');
@@ -41,7 +42,7 @@ const editorManager = new EditorManager();
 // DOM elements used for main panel animations
 const blurOverlay = document.querySelector('.blur-overlay');
 const simnoteLogo = document.querySelector('.simnote-logo');
-const navButtons = document.querySelector('.nav-buttons');
+const navButtons = document.querySelector('.nav-icons');
 const logoTextEl = document.querySelector('.logo-text');
 
 // Buttons
@@ -66,7 +67,7 @@ function startIntroAnimation() {
     }
 
     setTimeout(() => {
-      navButtons.classList.add('visible');
+      if (navButtons) navButtons.classList.add('visible');
       // Reveal utility buttons together with the main menu
       manualBtn.style.display = 'block';
       themeSettingsBtn.style.display = 'block';
@@ -280,7 +281,7 @@ function animateMainPanelBack() {
   blurOverlay.style.opacity = 1;
   simnoteLogo.style.opacity = 1;
   simnoteLogo.style.transform = 'translateY(0)';
-  navButtons.classList.add('visible');
+  if (navButtons) navButtons.classList.add('visible');
   manualBtn.style.display = 'block';
   themeSettingsBtn.style.display = 'block';
   document.body.classList.remove('journal-open');
@@ -371,6 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const onboarding = new OnboardingManager();
   onboarding.start();
 
+  // Initialize daily mood check-in (shows after splash if enabled and not yet logged today)
+  window.dailyMoodManager = new DailyMoodManager();
+
   /* --- Build Template Cards --- */
   const grid = document.querySelector('.template-grid');
   if(grid){
@@ -401,8 +405,51 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!card) return;
       window.selectedTemplate = TEMPLATES[card.dataset.key];
       window.selectedTemplateBackup = TEMPLATES[card.dataset.key];
-      PanelManager.transitionPanels(templatePanel, moodPanel).then(()=>{
-        startMoodPanelAnimation();
+      
+      // Skip mood panel - go directly to new entry with today's mood
+      const todaysMood = getTodaysMood() || '';
+      PanelManager.transitionPanels(templatePanel, newEntryPanel).then(()=>{
+        newEntryPanel.dataset.mood = todaysMood;
+        
+        const meta = newEntryPanel.querySelector('.entry-meta');
+        if (meta) {
+          const moodEl = meta.querySelector('.mood-badge');
+          const dateEl = meta.querySelector('.date-stamp');
+          if (moodEl) {
+            if (todaysMood) {
+              const emoji = MoodEmojiMapper.getEmoji(todaysMood);
+              moodEl.textContent = emoji ? `${emoji} ${todaysMood}` : todaysMood;
+              moodEl.style.display = 'inline-block';
+            } else {
+              moodEl.style.display = 'none';
+            }
+          }
+          if (dateEl) {
+            dateEl.textContent = new Date().toLocaleString();
+          }
+        }
+        
+        // Expand panel
+        if (!newEntryPanel.classList.contains('expand')) {
+          newEntryPanel.classList.add('expand');
+        }
+        
+        const titleInput = newEntryPanel.querySelector('input.entry-name');
+        const richEditor = newEntryPanel.querySelector('.rich-editor');
+        if(window.selectedTemplate){
+          titleInput.value = window.selectedTemplate.name;
+          if (richEditor) {
+            richEditor.innerHTML = window.selectedTemplate.content || '';
+          }
+          window.selectedTemplate = null;
+          if(window._guidedPromptMgr){window._guidedPromptMgr.destroy();}
+          if(window.selectedTemplateBackup && window.selectedTemplateBackup.prompts){
+             window._guidedPromptMgr = new GuidedPromptManager(newEntryPanel, window.selectedTemplateBackup);
+          }
+        } else {
+          titleInput.value = '';
+          if (richEditor) richEditor.innerHTML = '';
+        }
       });
     });
 
@@ -557,10 +604,12 @@ if (moodNextBtn) {
         newEntryPanel.classList.add('expand');
       }
       const titleInput = newEntryPanel.querySelector('input.entry-name');
-      const contentArea = newEntryPanel.querySelector('textarea.entry-content');
+      const richEditor = newEntryPanel.querySelector('.rich-editor');
       if(window.selectedTemplate){
         titleInput.value = window.selectedTemplate.name;
-        contentArea.value = window.selectedTemplate.content || '';
+        if (richEditor) {
+          richEditor.innerHTML = window.selectedTemplate.content || '';
+        }
         window.selectedTemplate = null;
         // Start guided prompts if template has them
         if(window._guidedPromptMgr){window._guidedPromptMgr.destroy();}
@@ -569,7 +618,7 @@ if (moodNextBtn) {
         }
       } else {
         titleInput.value = '';
-        contentArea.value = '';
+        if (richEditor) richEditor.innerHTML = '';
       }
     });
   });
@@ -618,5 +667,143 @@ if(autosaveEnabledCheckbox){
 }
 
 document.addEventListener('DOMContentLoaded', loadAutosaveSettings);
+
+/* -------------------------------------
+   Daily Mood Check-in Settings
+-------------------------------------- */
+const moodCheckinCheckbox = document.getElementById('mood-checkin-enabled');
+
+function loadMoodCheckinSettings(){
+  const enabled = localStorage.getItem('simnote_mood_checkin_enabled');
+  // Default to true if not set
+  const isEnabled = enabled === null ? true : enabled === 'true';
+  if(moodCheckinCheckbox) moodCheckinCheckbox.checked = isEnabled;
+}
+
+function saveMoodCheckinSettings(){
+  if(moodCheckinCheckbox){
+    localStorage.setItem('simnote_mood_checkin_enabled', moodCheckinCheckbox.checked.toString());
+  }
+}
+
+if(moodCheckinCheckbox){
+  moodCheckinCheckbox.addEventListener('change', saveMoodCheckinSettings);
+}
+
+document.addEventListener('DOMContentLoaded', loadMoodCheckinSettings);
+
+/* -------------------------------------
+   Storage Settings
+-------------------------------------- */
+const exportDataBtn = document.getElementById('export-data-btn');
+const importDataBtn = document.getElementById('import-data-btn');
+const clearDataBtn = document.getElementById('clear-data-btn');
+const importFileInput = document.getElementById('import-file-input');
+
+// Update storage info display
+async function updateStorageInfo() {
+  const info = await StorageManager.getStorageInfo();
+  
+  const typeEl = document.getElementById('storage-type');
+  const entriesEl = document.getElementById('storage-entries');
+  const sizeEl = document.getElementById('storage-size');
+  const imagesEl = document.getElementById('storage-images');
+  
+  if (typeEl) typeEl.textContent = StorageManager.isUsingSQL() ? 'SQLite' : 'localStorage';
+  if (entriesEl) entriesEl.textContent = info.entriesCount;
+  if (sizeEl) sizeEl.textContent = info.sizeFormatted;
+  if (imagesEl) imagesEl.textContent = info.imagesCount;
+}
+
+// Export data
+if (exportDataBtn) {
+  exportDataBtn.addEventListener('click', () => {
+    const data = StorageManager.exportToJSON();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `simnote-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showPopup('Data exported successfully!');
+  });
+}
+
+// Import data
+if (importDataBtn) {
+  importDataBtn.addEventListener('click', () => {
+    importFileInput.click();
+  });
+}
+
+if (importFileInput) {
+  importFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const count = await StorageManager.importFromJSON(event.target.result);
+      showPopup(`${count} entries imported!`);
+      updateStorageInfo();
+      window.dispatchEvent(new Event('loadEntries'));
+    };
+    reader.readAsText(file);
+    importFileInput.value = '';
+  });
+}
+
+// Clear all data with confirmation
+if (clearDataBtn) {
+  clearDataBtn.addEventListener('click', () => {
+    // Show confirmation dialog
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-dialog-overlay';
+    
+    const dialog = document.createElement('div');
+    dialog.className = 'confirm-dialog';
+    dialog.innerHTML = `
+      <h4>Clear All Data?</h4>
+      <p>This will permanently delete all your journal entries. This action cannot be undone.</p>
+      <div class="confirm-dialog-buttons">
+        <button class="cancel-btn">Cancel</button>
+        <button class="confirm-btn">Delete Everything</button>
+      </div>
+    `;
+    
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    
+    dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+      overlay.remove();
+    });
+    
+    dialog.querySelector('.confirm-btn').addEventListener('click', async () => {
+      await StorageManager.clearAllData();
+      overlay.remove();
+      showPopup('All data cleared');
+      updateStorageInfo();
+      window.dispatchEvent(new Event('loadEntries'));
+    });
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+  });
+}
+
+// Update storage info when settings panel opens
+const themeSettingsBtn2 = document.getElementById('theme-settings-btn');
+if (themeSettingsBtn2) {
+  themeSettingsBtn2.addEventListener('click', () => {
+    setTimeout(updateStorageInfo, 100);
+  });
+}
+
+// Initial storage info update
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(updateStorageInfo, 2000); // Wait for SQLite to initialize
+});
 
 window.selectedTemplate = null;

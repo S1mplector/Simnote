@@ -19,6 +19,8 @@
 @import url("panels/chat.css");
 @import url("panels/stats.css");
 @import url("components/onboarding.css");
+@import url("components/navIcons.css");
+@import url("components/richEditor.css");
 
 /* ===== Global Reset & Body ===== */
 html, body {
