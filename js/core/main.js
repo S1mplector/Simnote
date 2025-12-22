@@ -884,4 +884,50 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateStorageInfo, 2000); // Wait for SQLite to initialize
 });
 
+/* -------------------------------------
+   Preferences Toggles
+-------------------------------------- */
+const moodCheckinToggle = document.getElementById('mood-checkin-toggle');
+const previewToggle = document.getElementById('preview-toggle');
+const compactViewToggle = document.getElementById('compact-view-toggle');
+
+// Load saved preferences
+document.addEventListener('DOMContentLoaded', () => {
+  if (moodCheckinToggle) {
+    const setting = localStorage.getItem('simnote_mood_checkin_enabled');
+    moodCheckinToggle.checked = setting === null ? true : setting === 'true';
+  }
+  if (previewToggle) {
+    previewToggle.checked = localStorage.getItem('showEntryPreviews') !== 'false';
+  }
+  if (compactViewToggle) {
+    compactViewToggle.checked = localStorage.getItem('compactViewEnabled') === 'true';
+    if (compactViewToggle.checked) {
+      document.body.classList.add('compact-view');
+    }
+  }
+});
+
+// Save preferences on toggle
+if (moodCheckinToggle) {
+  moodCheckinToggle.addEventListener('change', () => {
+    localStorage.setItem('simnote_mood_checkin_enabled', moodCheckinToggle.checked.toString());
+  });
+}
+
+if (previewToggle) {
+  previewToggle.addEventListener('change', () => {
+    localStorage.setItem('showEntryPreviews', previewToggle.checked);
+    window.dispatchEvent(new Event('loadEntries'));
+  });
+}
+
+if (compactViewToggle) {
+  compactViewToggle.addEventListener('change', () => {
+    localStorage.setItem('compactViewEnabled', compactViewToggle.checked);
+    document.body.classList.toggle('compact-view', compactViewToggle.checked);
+    window.dispatchEvent(new Event('loadEntries'));
+  });
+}
+
 window.selectedTemplate = null;

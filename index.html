@@ -84,26 +84,17 @@
         </div>
       </div>
 
-      <!-- Storage Settings -->
-      <div class="settings-section" style="margin-top:30px;">
-        <h4 style="margin:0 0 10px 0;">Storage</h4>
-        <div class="storage-info">
-          <div class="storage-stat">
-            <span class="storage-label">Database</span>
-            <span class="storage-value" id="storage-type">SQLite</span>
-          </div>
-          <div class="storage-stat">
-            <span class="storage-label">Entries</span>
-            <span class="storage-value" id="storage-entries">0</span>
-          </div>
-          <div class="storage-stat">
-            <span class="storage-label">Size</span>
-            <span class="storage-value" id="storage-size">0 KB</span>
-          </div>
-          <div class="storage-stat">
-            <span class="storage-label">Images</span>
-            <span class="storage-value" id="storage-images">0</span>
-          </div>
+      <!-- Data & Storage -->
+      <div class="settings-section" style="margin-top:20px;">
+        <h4 style="margin:0 0 8px 0;">Data & Storage</h4>
+        <div class="storage-info-compact">
+          <span class="storage-stat-inline"><span id="storage-type">SQLite</span></span>
+          <span class="storage-divider">•</span>
+          <span class="storage-stat-inline"><span id="storage-entries">0</span> entries</span>
+          <span class="storage-divider">•</span>
+          <span class="storage-stat-inline"><span id="storage-images">0</span> images</span>
+          <span class="storage-divider">•</span>
+          <span class="storage-stat-inline"><span id="storage-size">0 KB</span></span>
         </div>
         <div class="storage-actions">
           <button id="export-data-btn" class="settings-action-btn">Export</button>
@@ -111,6 +102,32 @@
           <button id="clear-data-btn" class="settings-action-btn danger">Clear All</button>
         </div>
         <input type="file" id="import-file-input" accept=".json" style="display:none;" />
+      </div>
+
+      <!-- Preferences -->
+      <div class="settings-section" style="margin-top:20px;">
+        <h4 style="margin:0 0 8px 0;">Preferences</h4>
+        <div class="settings-option">
+          <span class="settings-option-label">Daily mood check-in</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="mood-checkin-toggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-option">
+          <span class="settings-option-label">Show entry previews</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="preview-toggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-option">
+          <span class="settings-option-label">Compact list view</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="compact-view-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
 
       <!-- Close button -->
