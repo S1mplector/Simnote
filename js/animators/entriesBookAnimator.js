@@ -18,12 +18,15 @@ export class EntriesBookAnimator {
     bookContainer.className = 'entries-book idle';
     bookContainer.innerHTML = `
       <div class="entries-book-cover-left"></div>
-      <div class="entries-book-spine"></div>
       <div class="entries-book-cover-right"></div>
-      <div class="entries-book-page"></div>
-      <div class="entries-book-page"></div>
-      <div class="entries-book-page"></div>
-      <div class="entries-book-bookmark"></div>
+      <div class="entries-book-pages">
+        <div class="entries-book-page-line"></div>
+        <div class="entries-book-page-line"></div>
+        <div class="entries-book-page-line"></div>
+        <div class="entries-book-page-line"></div>
+        <div class="entries-book-page-line"></div>
+        <div class="entries-book-page-line"></div>
+      </div>
     `;
 
     svg.replaceWith(bookContainer);
@@ -36,36 +39,14 @@ export class EntriesBookAnimator {
   }
 
   onHover() {
-    if (this.state === 'idle') {
-      this.startFlipping();
-    }
-    
-    clearTimeout(this.flipTimeout);
+    this.state = 'opening';
+    this.book.classList.remove('idle');
+    this.book.classList.add('opening');
   }
 
   onLeave() {
-    clearTimeout(this.flipTimeout);
-    
-    if (this.state === 'flipping') {
-      this.flipTimeout = setTimeout(() => {
-        this.stopFlipping();
-      }, 2000);
-    }
-  }
-
-  startFlipping() {
-    this.state = 'flipping';
-    this.book.classList.remove('idle');
-    this.book.classList.add('flipping');
-    
-    this.flipTimeout = setTimeout(() => {
-      this.stopFlipping();
-    }, 4000);
-  }
-
-  stopFlipping() {
     this.state = 'idle';
-    this.book.classList.remove('flipping');
+    this.book.classList.remove('opening');
     this.book.classList.add('idle');
   }
 
