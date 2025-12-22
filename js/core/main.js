@@ -92,6 +92,8 @@ function launchSplash(theme) {
     new PlainDarkSweepSplashAnimator(startMainApp);
   } else if (theme === 'monokai') {
     new PlainDarkSweepSplashAnimator(startMainApp);
+  } else if (theme === 'dracula') {
+    new PlainDarkSweepSplashAnimator(startMainApp);
   } else if (theme === 'plain-light') {
     new PlainLightSweepSplashAnimator(startMainApp);
   } else if (theme === 'sepia') {

@@ -832,18 +832,23 @@ export class EditorManager {
       <svg class="exit-check" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M4 12l5 5 11-12"></path>
       </svg>
-      <div class="exit-quote">${this.getExitQuote()}</div>
     `;
     overlay.appendChild(content);
     document.body.appendChild(overlay);
+    this.exitOverlayShownAt = Date.now();
     requestAnimationFrame(() => overlay.classList.add('visible'));
   }
 
   hideExitOverlay() {
     const overlay = document.getElementById('panel-exit-overlay');
     if (!overlay) return;
-    overlay.classList.remove('visible');
-    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+    const minVisibleMs = 650;
+    const elapsed = this.exitOverlayShownAt ? Date.now() - this.exitOverlayShownAt : minVisibleMs;
+    const delay = Math.max(0, minVisibleMs - elapsed);
+    setTimeout(() => {
+      overlay.classList.remove('visible');
+      overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+    }, delay);
   }
 
   shouldShowExitFeedback(panel) {
@@ -855,17 +860,6 @@ export class EditorManager {
     const richEditor = this.richEditors.get(panel.id);
     const plainText = richEditor ? richEditor.getPlainText().trim() : '';
     return Boolean(name || plainText);
-  }
-
-  getExitQuote() {
-    const quotes = [
-      'Great job journaling today.',
-      "You're doing great.",
-      'Nice work reflecting today.',
-      'Proud of you for writing.',
-      'Thanks for showing up today.'
-    ];
-    return quotes[Math.floor(Math.random() * quotes.length)];
   }
 
   isAutosaveEnabled() {

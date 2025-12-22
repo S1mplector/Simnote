@@ -10,8 +10,10 @@ const META_BACKUP_KEY = 'simnote_meta';
 // File storage will be lazy-loaded to avoid circular dependencies
 let fileStorage = null;
 
-// Check if running in Electron
-const isElectron = typeof window !== 'undefined' && window.electronAPI;
+// Check if running in Electron (dynamic check)
+function isElectron() {
+  return typeof window !== 'undefined' && window.electronAPI;
+}
 
 class DatabaseManager {
   constructor() {
@@ -23,10 +25,11 @@ class DatabaseManager {
 
   // Enable file storage (call after user selects directory in browser, or auto in Electron)
   async enableFileStorage() {
-    if (isElectron) {
+    console.log('[DB] enableFileStorage called, isElectron:', isElectron());
+    if (isElectron()) {
       // Electron handles file storage via IPC
       this.fileStorageEnabled = true;
-      console.log('[DB] File storage enabled via Electron');
+      console.log('[DB] File storage enabled via Electron, fileStorageEnabled =', this.fileStorageEnabled);
       return true;
     }
     
@@ -52,7 +55,7 @@ class DatabaseManager {
 
   // Prompt user to select file storage directory (browser only)
   async selectFileStorageDirectory() {
-    if (isElectron) return true;
+    if (isElectron()) return true;
     
     try {
       if (!fileStorage) {
@@ -76,11 +79,15 @@ class DatabaseManager {
 
   // Sync single entry to file storage
   async _syncEntryToFile(entry) {
-    if (!this.fileStorageEnabled) return;
+    if (!this.fileStorageEnabled) {
+      console.log('[DB] File storage not enabled, skipping sync');
+      return;
+    }
     
-    if (isElectron && window.electronAPI?.saveEntryFile) {
+    if (isElectron() && window.electronAPI?.saveEntryFile) {
       try {
-        await window.electronAPI.saveEntryFile(entry);
+        const filename = await window.electronAPI.saveEntryFile(entry);
+        console.log(`[DB] Synced entry to file: ${filename}`);
       } catch (err) {
         console.warn('[DB] Electron file sync failed:', err);
       }
@@ -97,7 +104,7 @@ class DatabaseManager {
   async _deleteEntryFile(id) {
     if (!this.fileStorageEnabled) return;
     
-    if (isElectron && window.electronAPI?.deleteEntryFile) {
+    if (isElectron() && window.electronAPI?.deleteEntryFile) {
       try {
         await window.electronAPI.deleteEntryFile(id);
       } catch (err) {
@@ -147,7 +154,13 @@ class DatabaseManager {
       this._syncToLocalStorage();
       
       // Try to enable file storage (restore previous directory or auto-enable in Electron)
-      this.enableFileStorage().catch(() => {});
+      // Wait for this to complete to ensure file storage is ready before entries are saved
+      try {
+        const fileStorageResult = await this.enableFileStorage();
+        console.log('[DB] File storage initialization result:', fileStorageResult);
+      } catch (err) {
+        console.warn('[DB] File storage initialization failed:', err);
+      }
       
       // Auto-save periodically (both IndexedDB and localStorage)
       setInterval(() => {
@@ -381,6 +394,8 @@ class DatabaseManager {
     const now = new Date().toISOString();
     const wordCount = this._countWords(content);
     
+    console.log('[DB] saveEntry called, id:', id, 'fileStorageEnabled:', this.fileStorageEnabled);
+    
     this.db.run(`
       INSERT INTO entries 
       (id, name, content, mood, tags, favorite, word_count, font_family, font_size, created_at, updated_at)
@@ -393,6 +408,7 @@ class DatabaseManager {
     
     // Sync to file storage (async, non-blocking)
     const entry = this.getEntryById(id);
+    console.log('[DB] About to sync entry to file, entry exists:', !!entry);
     if (entry) this._syncEntryToFile(entry);
     
     return id;

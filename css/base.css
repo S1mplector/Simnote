@@ -103,10 +103,24 @@ body[data-theme="monokai"]{
   --settings-bg:#2f302a;
 }
 
+/* Dracula theme */
+body[data-theme="dracula"]{
+  background:#282a36;
+  color:#f8f8f2;
+  --accent:#bd93f9;
+  --accent-hover:#d0b1ff;
+  --accent-secondary:#ff79c6;
+  --accent-rgb:189,147,249;
+  --accent-secondary-rgb:255,121,198;
+  --accent-contrast:#20162f;
+  --settings-bg:#2b2d3a;
+}
+
 body[data-theme="plain-dark"] #bg-canvas,
 body[data-theme="plain-light"] #bg-canvas,
 body[data-theme="sepia"] #bg-canvas,
-body[data-theme="monokai"] #bg-canvas{display:none;}
+body[data-theme="monokai"] #bg-canvas,
+body[data-theme="dracula"] #bg-canvas{display:none;}
 
 /* Use var(--accent) in common components overrides */
 body[data-theme="plain-dark"] .button-33,

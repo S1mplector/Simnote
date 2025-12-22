@@ -59,10 +59,13 @@ ipcMain.handle('save-entry', (event, { entryName, entryContent }) => {
 
 // Save entry as .simnote file (new hybrid storage)
 ipcMain.handle('save-entry-file', (event, entry) => {
+  console.log('[Electron] save-entry-file called with:', entry?.id, entry?.name);
   if (!fileStorageManager) {
     throw new Error("FileStorageManager not initialized!");
   }
-  return fileStorageManager.saveEntry(entry);
+  const filename = fileStorageManager.saveEntry(entry);
+  console.log('[Electron] Saved .simnote file:', filename);
+  return filename;
 });
 
 // Update entry .simnote file
