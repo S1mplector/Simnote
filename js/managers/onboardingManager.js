@@ -5,6 +5,7 @@ export class OnboardingManager {
   constructor() {
     this.storageKey = 'simnote_onboarding_complete';
     this.currentStep = 0;
+    this.keyHandler = null;
     this.steps = [
       {
         title: 'Welcome to Simnote! 📝',
@@ -14,21 +15,21 @@ export class OnboardingManager {
       },
       {
         title: 'Start Journaling 🖋️',
-        content: 'Click the pen icon to create a new journal entry. Choose a template and capture your thoughts.',
-        target: '#new-entry-btn',
-        position: 'bottom'
+        content: 'Open the top drawer to start a new journal entry and capture your thoughts.',
+        target: '.chest__drawer[data-action="journal"] .drawer__panel--front',
+        position: 'right'
       },
       {
         title: 'View Your Entries 📚',
-        content: 'Click the book icon to access all your past entries. Search, filter by date, or sort by mood.',
-        target: '#load-entry-btn',
-        position: 'bottom'
+        content: 'Pull the middle drawer to browse past entries, search, and filter.',
+        target: '.chest__drawer[data-action="entries"] .drawer__panel--front',
+        position: 'right'
       },
       {
         title: 'Track Your Moods 😊',
-        content: 'Click the smiley to see your mood trends, writing streaks, and journaling insights.',
-        target: '#stats-btn',
-        position: 'bottom'
+        content: 'Open the bottom drawer to see mood trends and insights.',
+        target: '.chest__drawer[data-action="moods"] .drawer__panel--front',
+        position: 'right'
       },
       {
         title: 'Customize Your Space ⚙️',
@@ -73,12 +74,20 @@ export class OnboardingManager {
     // Create tooltip
     const tooltip = document.createElement('div');
     tooltip.className = 'onboarding-tooltip';
+    const progress = (stepIndex + 1) / this.steps.length;
+    tooltip.style.setProperty('--progress', progress.toFixed(3));
     tooltip.innerHTML = `
       <div class="tooltip-content">
+        <div class="tooltip-header">
+          <span class="tooltip-step">Step ${stepIndex + 1} of ${this.steps.length}</span>
+          <button class="tooltip-skip" type="button">Skip</button>
+        </div>
         <h3>${step.title}</h3>
         <p>${step.content}</p>
+        <div class="tooltip-progress-bar" aria-hidden="true">
+          <span class="tooltip-progress-fill"></span>
+        </div>
         <div class="tooltip-actions">
-          <span class="tooltip-progress">${stepIndex + 1} / ${this.steps.length}</span>
           <div class="tooltip-buttons">
             ${stepIndex > 0 ? '<button class="tooltip-btn prev">Back</button>' : ''}
             ${stepIndex < this.steps.length - 1 
@@ -86,7 +95,6 @@ export class OnboardingManager {
               : '<button class="tooltip-btn finish">Get Started</button>'}
           </div>
         </div>
-        <button class="tooltip-skip">Skip Tour</button>
       </div>
     `;
     
@@ -122,12 +130,26 @@ export class OnboardingManager {
       finishBtn.addEventListener('click', () => this.complete());
     }
     if (skipBtn) {
-      skipBtn.addEventListener('click', () => this.complete());
+      skipBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        this.complete();
+      });
+    }
+
+    if (!this.keyHandler) {
+      this.keyHandler = (event) => {
+        if (event.key === 'Escape') {
+          this.complete();
+        }
+      };
+      document.addEventListener('keydown', this.keyHandler);
     }
   }
 
   positionTooltip(tooltip, step) {
-    if (step.position === 'center' || !step.target) {
+    tooltip.classList.remove('arrow-left', 'arrow-right', 'arrow-top', 'arrow-bottom');
+
+    if (step.position === 'center' || !step.target || window.innerWidth < 720) {
       tooltip.style.top = '50%';
       tooltip.style.left = '50%';
       tooltip.style.transform = 'translate(-50%, -50%)';
@@ -171,12 +193,33 @@ export class OnboardingManager {
         tooltip.classList.add('arrow-bottom');
         break;
     }
+
+    const bounds = tooltip.getBoundingClientRect();
+    const margin = 12;
+    if (
+      bounds.left < margin ||
+      bounds.right > window.innerWidth - margin ||
+      bounds.top < margin ||
+      bounds.bottom > window.innerHeight - margin
+    ) {
+      tooltip.classList.remove('arrow-left', 'arrow-right', 'arrow-top', 'arrow-bottom');
+      tooltip.style.top = '50%';
+      tooltip.style.left = '50%';
+      tooltip.style.transform = 'translate(-50%, -50%)';
+    }
   }
 
   createOverlay() {
-    const overlay = document.createElement('div');
+    let overlay = document.getElementById('onboarding-overlay');
+    if (overlay) {
+      requestAnimationFrame(() => overlay.classList.add('visible'));
+      return;
+    }
+
+    overlay = document.createElement('div');
     overlay.className = 'onboarding-overlay';
     overlay.id = 'onboarding-overlay';
+    overlay.addEventListener('click', () => this.complete());
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('visible'));
   }
@@ -211,6 +254,11 @@ export class OnboardingManager {
     if (overlay) {
       overlay.classList.remove('visible');
       setTimeout(() => overlay.remove(), 300);
+    }
+
+    if (this.keyHandler) {
+      document.removeEventListener('keydown', this.keyHandler);
+      this.keyHandler = null;
     }
   }
 
