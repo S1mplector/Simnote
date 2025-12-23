@@ -87,36 +87,24 @@ body.main-menu-active .utility-buttons:focus-within::before {
   transition: filter 0.3s ease, transform 0.3s ease;
 }
 
-/* Settings gear spin – animate only the icon inside */
-.theme-settings-btn {
+.theme-settings-btn,
+.manual-btn {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.theme-settings-btn .gear-icon {
-  display: block;
-  transform-origin: center;
-  transition: transform 0.4s ease;
+.theme-settings-btn .gear-icon,
+.manual-btn .manual-book {
+  transition: filter 0.3s ease, transform 0.3s ease;
 }
 
 .theme-settings-btn:hover .gear-icon {
-  animation: gearSpin 1.6s linear infinite;
-}
-
-.theme-settings-btn:hover .menu-icon-svg {
   filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.28));
+  transform: translateY(-1px);
 }
 
-@keyframes gearSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* Manual button hover polish */
-.manual-btn {
-  display: inline-flex;
-}
-
-.manual-btn:hover .menu-icon-svg {
+.manual-btn:hover .manual-book {
   filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.28));
   transform: translateY(-1px);
 }

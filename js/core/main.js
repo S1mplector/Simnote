@@ -78,6 +78,7 @@ function startIntroAnimation() {
       // Reveal utility buttons together with the main menu
       manualBtn.style.display = 'block';
       themeSettingsBtn.style.display = 'block';
+      signalMainMenuReady();
     }, 300);
   }, 1000);
 }
@@ -107,6 +108,43 @@ function launchSplash(theme) {
 
 // --- Background animator management ---
 let currentBgAnimator = null;
+let mainMenuStarted = false;
+let mainMenuReady = false;
+
+function signalMainMenuReady() {
+  if (mainMenuReady) return;
+  mainMenuReady = true;
+  window.__mainMenuReady = true;
+  window.dispatchEvent(new Event('mainMenuReady'));
+}
+
+function isPanelVisible(panel) {
+  if (!panel) return false;
+  const style = window.getComputedStyle(panel);
+  const opacity = Number.parseFloat(style.opacity || '1');
+  return style.display !== 'none' && style.visibility !== 'hidden' && opacity > 0;
+}
+
+function isMainMenuVisible() {
+  if (!mainPanel || !drawerNav || !simnoteLogo) return false;
+  const panelStyle = window.getComputedStyle(mainPanel);
+  if (panelStyle.display === 'none' || panelStyle.opacity === '0') return false;
+  const navStyle = window.getComputedStyle(drawerNav);
+  const logoStyle = window.getComputedStyle(simnoteLogo);
+  return navStyle.opacity !== '0' && logoStyle.opacity !== '0';
+}
+
+function ensureMainMenuVisible() {
+  if (isPanelVisible(moodPanel)) return;
+  if (isMainMenuVisible()) return;
+  startIntroAnimation();
+  setTimeout(() => {
+    if (!isMainMenuVisible()) {
+      animateMainPanelBack();
+    }
+  }, 1400);
+}
+
 function startBgAnimator(theme) {
   if (currentBgAnimator && currentBgAnimator.destroy) {
     currentBgAnimator.destroy();
@@ -123,11 +161,25 @@ function startBgAnimator(theme) {
 }
 
 function startMainApp() {
+  if (mainMenuStarted) return;
+  mainMenuStarted = true;
   // Start appropriate background animation
   const theme = document.body.getAttribute('data-theme');
-  startBgAnimator(theme);
+  try {
+    startBgAnimator(theme);
+  } catch (err) {
+    console.error('[Main] Background animator failed to start:', err);
+  }
   document.body.classList.add('main-menu-active');
-  startIntroAnimation();
+  setTimeout(() => {
+    ensureMainMenuVisible();
+  }, 1800);
+  try {
+    startIntroAnimation();
+  } catch (err) {
+    console.error('[Main] Intro animation failed:', err);
+    animateMainPanelBack();
+  }
 }
 
 // Respond to runtime theme changes
@@ -350,6 +402,10 @@ document.querySelectorAll('.drawer-label').forEach(label => {
 
 // Called when returning to the main panel
 function animateMainPanelBack() {
+  if (mainPanel) {
+    mainPanel.style.display = 'block';
+    mainPanel.style.opacity = '1';
+  }
   blurOverlay.style.opacity = 1;
   simnoteLogo.style.opacity = 1;
   simnoteLogo.style.transform = 'translateY(0)';
@@ -358,6 +414,7 @@ function animateMainPanelBack() {
   themeSettingsBtn.style.display = 'block';
   document.body.classList.remove('journal-open');
   document.body.classList.add('main-menu-active');
+  signalMainMenuReady();
 }
 window.animateMainPanelBack = animateMainPanelBack;
 
@@ -431,10 +488,24 @@ themeSettingsCloseBtn.addEventListener('click', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+  const allowedThemes = new Set(['plain-dark', 'dracula', 'monokai']);
+  const storedTheme = localStorage.getItem('selectedTheme');
+  const savedTheme = allowedThemes.has(storedTheme) ? storedTheme : 'plain-dark';
   document.body.setAttribute('data-theme', savedTheme);
   initThemeSelector();
   launchSplash(savedTheme);
+  setTimeout(() => {
+    if (!mainMenuStarted) {
+      startMainApp();
+    }
+  }, 5200);
+  setTimeout(() => {
+    if (!mainMenuStarted) {
+      startMainApp();
+    } else {
+      ensureMainMenuVisible();
+    }
+  }, 7200);
 
   // Initialize date header immediately to avoid placeholder flicker
   initDateHeader();

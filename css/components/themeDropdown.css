@@ -7,9 +7,11 @@
 }
 
 .theme-dock {
-  display: flex;
-  padding: 6px 10px;
-  border-radius: 12px;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 6px;
+  border-radius: 10px;
   gap: 6px;
   background: rgba(255, 255, 255, 0.06);
   align-items: flex-end;
@@ -18,12 +20,12 @@
 }
 
 .theme-block {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  transition: flex 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  flex: calc(0.15 + (var(--lerp, 0) * 0.6));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex: 0 0 22px;
   position: relative;
   background: none;
   border: none;
@@ -59,7 +61,7 @@
 .theme-block__item {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--theme-color);
   display: block;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),

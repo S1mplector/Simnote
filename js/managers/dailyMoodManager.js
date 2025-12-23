@@ -3,6 +3,7 @@
 
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 import { StorageManager } from './storageManager.js';
+import { PanelManager } from './panelManager.js';
 
 export class DailyMoodManager {
   constructor() {
@@ -16,6 +17,9 @@ export class DailyMoodManager {
     this.originalBackLabel = backLabel ? backLabel.textContent : '';
     this.originalBackEmoji = backBtn ? backBtn.dataset.emoji : '';
     this.skipHandler = null;
+    this.hasShownCheckin = false;
+    this.readyHandler = null;
+    this.fallbackTimer = null;
     
     this.init();
   }
@@ -60,10 +64,36 @@ export class DailyMoodManager {
   setupMoodPanel() {
     if (!this.moodPanel) return;
 
-    // Wait for splash to complete, then show mood panel
-    setTimeout(() => {
-      this.showMoodCheckin();
-    }, 4500); // After splash animation
+    const showDelayMs = 600;
+    const fallbackMs = 8000;
+
+    const scheduleShow = () => {
+      if (this.hasShownCheckin) return;
+      this.hasShownCheckin = true;
+      if (this.readyHandler) {
+        window.removeEventListener('mainMenuReady', this.readyHandler);
+        this.readyHandler = null;
+      }
+      if (this.fallbackTimer) {
+        clearTimeout(this.fallbackTimer);
+        this.fallbackTimer = null;
+      }
+      setTimeout(() => this.showMoodCheckin(), showDelayMs);
+    };
+
+    if (window.__mainMenuReady) {
+      scheduleShow();
+      return;
+    }
+
+    this.readyHandler = () => {
+      scheduleShow();
+    };
+    window.addEventListener('mainMenuReady', this.readyHandler);
+
+    this.fallbackTimer = setTimeout(() => {
+      scheduleShow();
+    }, fallbackMs);
   }
 
   showMoodCheckin() {
@@ -102,22 +132,24 @@ export class DailyMoodManager {
       }
     }
 
-    // Smooth slide-up + fade + scale entrance animation using CSS classes
-    this.mainPanel.style.display = 'none';
     this.moodPanel.classList.remove('panel-entering', 'panel-exiting', 'panel-fade-out');
+
+    if (this.mainPanel && this.mainPanel.style.display !== 'none') {
+      PanelManager.smoothEntrance(this.mainPanel, this.moodPanel, {
+        fadeDuration: 320
+      }).then(() => {
+        this.animateMoodInput();
+      });
+      return;
+    }
+
     this.moodPanel.style.display = 'block';
-    
-    // Force reflow before adding animation class
+    this.moodPanel.style.opacity = '0';
     void this.moodPanel.offsetWidth;
-    
-    // Add entrance animation class
-    this.moodPanel.classList.add('panel-entering');
-    
-    // Start typing animation after entrance completes
+    this.moodPanel.style.opacity = '1';
     setTimeout(() => {
-      this.moodPanel.classList.remove('panel-entering');
       this.animateMoodInput();
-    }, 550);
+    }, 360);
   }
 
   animateMoodInput() {
@@ -153,16 +185,13 @@ export class DailyMoodManager {
 
   hideMoodCheckin() {
     if (!this.moodPanel || !this.mainPanel) return;
-    
-    // Smooth slide-down + fade + scale exit animation using CSS classes
+
     this.moodPanel.classList.remove('panel-entering', 'panel-fade-out');
     this.moodPanel.classList.add('panel-exiting');
-    
-    setTimeout(() => {
+
+    const resetPanel = () => {
       this.moodPanel.style.display = 'none';
       this.moodPanel.classList.remove('panel-exiting');
-      
-      this.mainPanel.style.display = 'block';
       this.moodPanel.classList.remove('daily-checkin');
       if (this.headingEl && this.originalHeadingText) {
         this.headingEl.textContent = this.originalHeadingText;
@@ -180,8 +209,7 @@ export class DailyMoodManager {
           backBtn.dataset.emoji = this.originalBackEmoji;
         }
       }
-      
-      // Restore Write button label
+
       const writeBtn = this.moodPanel.querySelector('.mood-next-btn');
       if (writeBtn) {
         const writeLabel = writeBtn.querySelector('.icon-label') || writeBtn.querySelector('.settings-icon-label');
@@ -189,12 +217,22 @@ export class DailyMoodManager {
           writeLabel.textContent = 'Write';
         }
       }
-      
-      // Trigger main panel animation
+
       if (window.animateMainPanelBack) {
         window.animateMainPanelBack();
       }
-    }, 400);
+    };
+
+    if (this.moodPanel.style.display !== 'none') {
+      PanelManager.smoothExit(this.moodPanel, this.mainPanel, {
+        fadeDuration: 320
+      }).then(() => {
+        resetPanel();
+      });
+      return;
+    }
+
+    resetPanel();
   }
 }
 

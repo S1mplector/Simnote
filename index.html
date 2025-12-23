@@ -28,17 +28,31 @@
     <div class="utility-buttons" aria-label="Quick Controls">
       <!-- Manual Button -->
       <button id="manual-btn" class="manual-btn" aria-label="Manual">
-        <svg class="menu-icon-svg book-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-        </svg>
+        <span class="manual-book" aria-hidden="true">
+          <span class="manual-book__pg-shadow"></span>
+          <span class="manual-book__pg"></span>
+          <span class="manual-book__pg manual-book__pg--2"></span>
+          <span class="manual-book__pg manual-book__pg--3"></span>
+          <span class="manual-book__pg manual-book__pg--4"></span>
+          <span class="manual-book__pg manual-book__pg--5"></span>
+        </span>
       </button>
       <!-- Theme Settings Button -->
       <button id="theme-settings-btn" class="theme-settings-btn" aria-label="Settings">
-        <svg class="menu-icon-svg gear-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
+        <span class="gear-icon" aria-hidden="true">
+          <span class="gear-spin">
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+            <img src="img/gear.svg" alt="" />
+          </span>
+        </span>
       </button>
     </div>
 
@@ -75,25 +89,13 @@
       <div class="settings-section">
         <h4 style="margin:0 0 10px 0;">Theme</h4>
         <nav class="theme-dock" id="theme-selector">
-          <button class="theme-block" data-value="dark-sakura" title="Dark Sakura" style="--theme-color: #fcd8ff;">
-            <span class="theme-block__item"></span>
-          </button>
-          <button class="theme-block" data-value="plain-dark" title="Plain Dark" style="--theme-color: #888888;">
-            <span class="theme-block__item"></span>
-          </button>
-          <button class="theme-block" data-value="monokai" title="Monokai" style="--theme-color: #a6e22e;">
+          <button class="theme-block" data-value="plain-dark" title="Dark" style="--theme-color: #888888;">
             <span class="theme-block__item"></span>
           </button>
           <button class="theme-block" data-value="dracula" title="Dracula" style="--theme-color: #bd93f9;">
             <span class="theme-block__item"></span>
           </button>
-          <button class="theme-block" data-value="aurora" title="Aurora" style="--theme-color: #66ffcc;">
-            <span class="theme-block__item"></span>
-          </button>
-          <button class="theme-block" data-value="fireflies" title="Fireflies" style="--theme-color: #9aff3f;">
-            <span class="theme-block__item"></span>
-          </button>
-          <button class="theme-block" data-value="lavender-breeze" title="Lavender Breeze" style="--theme-color: linear-gradient(135deg, #b095ff, #6E5BAF);">
+          <button class="theme-block" data-value="monokai" title="Monokai" style="--theme-color: #a6e22e;">
             <span class="theme-block__item"></span>
           </button>
         </nav>
@@ -417,10 +419,20 @@
       <div class="panel-utility">
         <!-- Settings Button (upper right) -->
         <button class="settings-btn" aria-label="Editor Settings">
-          <svg class="menu-icon-svg gear-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
+          <span class="gear-icon" aria-hidden="true">
+            <span class="gear-spin">
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+            </span>
+          </span>
         </button>
       </div>
 
@@ -551,10 +563,20 @@
       <div class="panel-utility">
         <!-- Settings Button (upper right) -->
         <button class="settings-btn" aria-label="Editor Settings">
-          <svg class="menu-icon-svg gear-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
+          <span class="gear-icon" aria-hidden="true">
+            <span class="gear-spin">
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+              <img src="img/gear.svg" alt="" />
+            </span>
+          </span>
         </button>
       </div>
       <div class="new-entry-contents">

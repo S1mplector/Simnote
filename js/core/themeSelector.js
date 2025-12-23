@@ -21,7 +21,7 @@ export function initThemeSelector(){
   };
 
   // Init saved theme
-  const saved = localStorage.getItem('selectedTheme') || 'dark-sakura';
+  const saved = localStorage.getItem('selectedTheme') || 'plain-dark';
   const savedBlock = [...blocks].find(b => b.dataset.value === saved) || blocks[0];
   apply(savedBlock.dataset.value);
   initialized = true;
