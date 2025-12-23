@@ -447,49 +447,141 @@ body.quote-overlay-open .quote-overlay {
   pointer-events: auto;
 }
 
-/* Quote panel that slides in from left */
-.quote-panel {
+/* Slide out logo and drawer when quote panel is open */
+body.quote-overlay-open .simnote-logo {
+  transform: translateY(-30px) scale(0.9) !important;
+  opacity: 0 !important;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
+}
+
+body.quote-overlay-open .drawer-nav {
+  transform: translateX(-17vmin) translateY(40px) scale(0.95) !important;
+  opacity: 0 !important;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
+}
+
+/* Quote panel container with arrows */
+.quote-panel-container {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 320px;
-  height: 420px;
-  transform: translate(-150%, -50%);
-  background: #ffffff;
-  border-radius: 24px;
-  box-shadow: 
-    0 25px 80px rgba(0, 0, 0, 0.3),
-    0 10px 30px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 24px;
   z-index: 9001;
   opacity: 0;
   pointer-events: none;
-  transition: 
-    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 0.4s ease;
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  gap: 16px;
+  transition: opacity 0.4s ease;
 }
 
-body.quote-overlay-open .quote-panel {
-  transform: translate(-50%, -50%);
+body.quote-overlay-open .quote-panel-container {
   opacity: 1;
   pointer-events: auto;
 }
 
-.quote-panel__quote {
-  font-size: 1.15rem;
-  line-height: 1.5;
-  color: #222;
-  flex: 1;
+/* Arrow navigation buttons */
+.quote-nav-arrow {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
+  transition: 
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.quote-nav-arrow:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.quote-nav-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.quote-nav-arrow svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Quote panel card */
+.quote-panel {
+  width: 320px;
+  min-height: 380px;
+  max-height: 80vh;
+  transform: translateX(-40px);
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.3),
+    0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  gap: 16px;
+  position: relative;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body.quote-overlay-open .quote-panel {
+  transform: translateX(0);
+}
+
+/* Favorite button in top right */
+.quote-panel__fav-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s, transform 0.2s;
+  padding: 4px;
+  line-height: 1;
+}
+
+.quote-panel__fav-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.quote-panel__fav-btn.is-favorite {
+  opacity: 1;
+}
+
+/* Quote content area */
+.quote-panel__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 30px;
+}
+
+.quote-panel__quote {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: #222;
+  margin-bottom: 16px;
 }
 
 .quote-panel__author {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #666;
   font-style: italic;
 }
@@ -497,16 +589,15 @@ body.quote-overlay-open .quote-panel {
 .quote-panel__actions {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .quote-panel__btn {
   border: 1px solid rgba(0, 0, 0, 0.1);
   background: #f5f5f5;
   color: #333;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-radius: 12px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   flex: 1;
@@ -525,34 +616,25 @@ body.quote-overlay-open .quote-panel {
   transform: none;
 }
 
-.quote-panel__btn--ghost {
-  background: transparent;
-  border-color: transparent;
-}
-
 .quote-panel__btn--accent {
   background: var(--accent);
   color: var(--accent-contrast);
   border-color: rgba(var(--accent-rgb), 0.3);
 }
 
-.quote-panel__btn--favorite.is-favorite {
-  background: rgba(var(--accent-rgb), 0.15);
-  color: #c04a7b;
-}
-
 .quote-panel__btn--close {
   background: transparent;
   border: none;
-  color: #888;
-  font-size: 0.8rem;
-  padding: 8px;
+  color: #999;
+  font-size: 0.85rem;
+  padding: 10px;
   flex: none;
   align-self: center;
+  margin-top: auto;
 }
 
 .quote-panel__btn--close:hover {
-  color: #333;
+  color: #555;
   transform: none;
   box-shadow: none;
 }
@@ -581,10 +663,23 @@ body.quote-overlay-open .quote-panel {
     height: 7vmin;
   }
 
+  .quote-panel-container {
+    gap: 12px;
+  }
+
+  .quote-nav-arrow {
+    width: 40px;
+    height: 40px;
+  }
+
   .quote-panel {
-    width: 290px;
-    height: 400px;
+    width: 260px;
+    min-height: 340px;
     padding: 20px;
+  }
+
+  .quote-panel__quote {
+    font-size: 1.05rem;
   }
 }
 
@@ -593,5 +688,21 @@ body.quote-overlay-open .quote-panel {
     --drawer-height: 15;
     --drawer-width: 11;
     --drawer-depth: 8;
+  }
+
+  .quote-nav-arrow {
+    width: 36px;
+    height: 36px;
+  }
+
+  .quote-nav-arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .quote-panel {
+    width: 220px;
+    min-height: 300px;
+    padding: 16px;
   }
 }

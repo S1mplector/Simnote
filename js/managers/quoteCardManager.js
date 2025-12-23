@@ -85,8 +85,16 @@ class QuoteCardManager {
     }
 
     document.addEventListener('keydown', (event) => {
-      if (this.isOpen && event.key === 'Escape') {
+      if (!this.isOpen) return;
+      
+      if (event.key === 'Escape') {
         this.close();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        this.prevQuote();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        this.nextQuote();
       }
     });
   }
@@ -300,7 +308,7 @@ class QuoteCardManager {
     const favored = this.isFavorite(quote);
     this.favoriteBtn.classList.toggle('is-favorite', favored);
     this.favoriteBtn.setAttribute('aria-pressed', favored ? 'true' : 'false');
-    this.favoriteBtn.textContent = favored ? 'Saved' : 'Fav';
+    this.favoriteBtn.textContent = favored ? '❤️' : '🤍';
   }
 
   journalQuote() {

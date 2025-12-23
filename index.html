@@ -285,20 +285,33 @@
 
     <div class="quote-overlay" id="quote-overlay" aria-hidden="true"></div>
 
-    <!-- Quote Panel (slides in from left) -->
-    <div class="quote-panel" id="quote-panel">
-      <div class="quote-panel__quote" id="quote-panel-text">Loading quote...</div>
-      <div class="quote-panel__author" id="quote-panel-author"></div>
-      <div class="quote-panel__actions">
-        <button class="quote-panel__btn quote-panel__btn--ghost" id="quote-panel-prev" type="button" title="Previous quote">← Prev</button>
-        <button class="quote-panel__btn" id="quote-panel-next" type="button" title="Next quote">Next →</button>
+    <!-- Quote Panel Container -->
+    <div class="quote-panel-container" id="quote-panel-container">
+      <!-- Arrow navigation outside card -->
+      <button class="quote-nav-arrow quote-nav-arrow--prev" id="quote-panel-prev" type="button" title="Previous quote (←)" aria-label="Previous quote">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      
+      <div class="quote-panel" id="quote-panel">
+        <button class="quote-panel__fav-btn" id="quote-panel-favorite" type="button" title="Favorite quote" aria-pressed="false">🤍</button>
+        <div class="quote-panel__content">
+          <div class="quote-panel__quote" id="quote-panel-text">Loading quote...</div>
+          <div class="quote-panel__author" id="quote-panel-author"></div>
+        </div>
+        <div class="quote-panel__actions">
+          <button class="quote-panel__btn quote-panel__btn--accent" id="quote-panel-journal" type="button" title="Journal about this quote">Journal</button>
+        </div>
+        <button class="quote-panel__btn quote-panel__btn--close" id="quote-panel-close" type="button" title="Close">Put down</button>
+        <div class="quote-panel__status" id="quote-panel-status" aria-live="polite"></div>
       </div>
-      <div class="quote-panel__actions">
-        <button class="quote-panel__btn quote-panel__btn--favorite" id="quote-panel-favorite" type="button" title="Favorite quote" aria-pressed="false">♡ Favorite</button>
-        <button class="quote-panel__btn quote-panel__btn--accent" id="quote-panel-journal" type="button" title="Journal about this quote">Journal</button>
-      </div>
-      <button class="quote-panel__btn quote-panel__btn--close" id="quote-panel-close" type="button" title="Close">Put down</button>
-      <div class="quote-panel__status" id="quote-panel-status" aria-live="polite"></div>
+      
+      <button class="quote-nav-arrow quote-nav-arrow--next" id="quote-panel-next" type="button" title="Next quote (→)" aria-label="Next quote">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
     </div>
 
     <!-- Journal Panel -->
