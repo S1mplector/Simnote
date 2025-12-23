@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Simnote - A beautiful journaling app for capturing your thoughts, tracking your moods, and reflecting on your journey." />
+    <meta name="description" content="Simnote - A beautiful journaling app for capturing your thoughts, tracking your moods, and reflecting on your journey." data-i18n-content="meta.description" />
     <meta name="theme-color" content="#fcd8ff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -25,9 +25,9 @@
     <script src="/js/lib/sql-wasm.js"></script>
   </head>
   <body>
-    <div class="utility-buttons" aria-label="Quick Controls">
+    <div class="utility-buttons" aria-label="Quick Controls" data-i18n-aria-label="aria.quickControls">
       <!-- Manual Button -->
-      <button id="manual-btn" class="manual-btn" aria-label="Manual">
+      <button id="manual-btn" class="manual-btn" aria-label="Manual" data-i18n-aria-label="aria.manual">
         <span class="manual-book" aria-hidden="true">
           <span class="manual-book__pg-shadow"></span>
           <span class="manual-book__pg"></span>
@@ -38,7 +38,7 @@
         </span>
       </button>
       <!-- Theme Settings Button -->
-      <button id="theme-settings-btn" class="theme-settings-btn" aria-label="Settings">
+      <button id="theme-settings-btn" class="theme-settings-btn" aria-label="Settings" data-i18n-aria-label="aria.settings">
         <span class="settings-lines" aria-hidden="true">
           <span></span>
           <span></span>
@@ -49,38 +49,38 @@
 
     <!-- Manual Popup (hidden by default) -->
     <div id="manual-popup" class="manual-popup">
-      <h3>Simnote Manual</h3>
-      <p>
+      <h3 data-i18n="manual.title">Simnote Manual</h3>
+      <p data-i18n="manual.intro">
         Simnote is your calm journaling space. Notes save as you type, so you can focus on writing.
       </p>
       <ul>
-        <li>Start a new entry from the first drawer, or open past entries from the second drawer.</li>
-        <li>Everything autosaves while you type. Press Esc to return to the main menu.</li>
-        <li>Look at your mood data anytime from the third drawer.</li>
-        <li>Customize themes, fonts, and preferences in Settings.</li>
+        <li data-i18n="manual.tip1">Start a new entry from the first drawer, or open past entries from the second drawer.</li>
+        <li data-i18n="manual.tip2">Everything autosaves while you type. Press Esc to return to the main menu.</li>
+        <li data-i18n="manual.tip3">Look at your mood data anytime from the third drawer.</li>
+        <li data-i18n="manual.tip4">Customize themes, fonts, and preferences in Settings.</li>
       </ul>
-      <p>Want a refresher? Run the quick tour anytime.</p>
-      <button id="manual-tour-btn" class="nav-icon-btn" title="Start Tour">
+      <p data-i18n="manual.refresher">Want a refresher? Run the quick tour anytime.</p>
+      <button id="manual-tour-btn" class="nav-icon-btn" title="Start Tour" data-i18n-title="manual.startTour">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <path d="M8 5l11 7-11 7z"></path>
         </svg>
-        <span class="icon-label">Start Tour</span>
+        <span class="icon-label" data-i18n="manual.startTour">Start Tour</span>
       </button>
-      <button id="manual-close-btn" class="nav-icon-btn" title="Close">
+      <button id="manual-close-btn" class="nav-icon-btn" title="Close" data-i18n-title="common.close">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-        <span class="icon-label">Close</span>
+        <span class="icon-label" data-i18n="common.close">Close</span>
       </button>
     </div>
 
     <!-- Theme Settings Popup (hidden by default) -->
     <div id="theme-settings-popup" class="theme-settings-popup">
       <div class="settings-section">
-        <h4 style="margin:0 0 10px 0;">Theme</h4>
+        <h4 style="margin:0 0 10px 0;" data-i18n="theme.title">Theme</h4>
         <nav class="theme-dock" id="theme-selector">
-          <button class="theme-block" data-value="plain-dark" title="Dark" style="--theme-color: #888888;">
+          <button class="theme-block" data-value="plain-dark" title="Dark" data-i18n-title="theme.dark" style="--theme-color: #888888;">
             <span class="theme-block__item"></span>
           </button>
           <button class="theme-block" data-value="dracula" title="Dracula" style="--theme-color: #bd93f9;">
@@ -94,11 +94,11 @@
 
       <!-- Data & Storage -->
       <div class="settings-section" style="margin-top:20px;">
-        <h4 style="margin:0 0 8px 0;">Data & Storage</h4>
+        <h4 style="margin:0 0 8px 0;" data-i18n="storage.title">Data & Storage</h4>
         <div class="storage-info-compact">
-          <span class="storage-stat-inline"><span id="storage-entries">0</span> entries</span>
+          <span class="storage-stat-inline"><span id="storage-entries">0</span> <span data-i18n="storage.entries">entries</span></span>
           <span class="storage-divider">•</span>
-          <span class="storage-stat-inline"><span id="storage-images">0</span> images</span>
+          <span class="storage-stat-inline"><span id="storage-images">0</span> <span data-i18n="storage.images">images</span></span>
           <span class="storage-divider">•</span>
           <span class="storage-stat-inline"><span id="storage-size">0 KB</span></span>
         </div>
@@ -109,42 +109,42 @@
             <svg class="storage-location-icon" viewBox="0 0 24 24" width="14" height="14">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
             </svg>
-            <span class="storage-location-label">File Storage</span>
+            <span class="storage-location-label" data-i18n="storage.fileStorage">File Storage</span>
             <span class="storage-location-status" id="storage-location-status">●</span>
           </div>
-          <div class="storage-location-path" id="storage-location-path" title="Click to open folder">
+          <div class="storage-location-path" id="storage-location-path" title="Click to open folder" data-i18n-title="storage.clickToOpenFolder">
             ~/Documents/Simnote
           </div>
-          <div class="storage-location-hint">
+          <div class="storage-location-hint" data-i18n="storage.fileStorageHint">
             Your entries are saved as .simnote files for backup & portability
           </div>
         </div>
         
         <div class="storage-actions">
-          <button id="export-data-btn" class="nav-icon-btn" title="Export">
+          <button id="export-data-btn" class="nav-icon-btn" title="Export" data-i18n-title="common.export">
             <svg class="nav-icon-svg" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="17 8 12 3 7 8"></polyline>
               <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
-            <span class="icon-label">Export</span>
+            <span class="icon-label" data-i18n="common.export">Export</span>
           </button>
-          <button id="import-data-btn" class="nav-icon-btn" title="Import">
+          <button id="import-data-btn" class="nav-icon-btn" title="Import" data-i18n-title="common.import">
             <svg class="nav-icon-svg" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span class="icon-label">Import</span>
+            <span class="icon-label" data-i18n="common.import">Import</span>
           </button>
-          <button id="clear-data-btn" class="nav-icon-btn danger" title="Clear All">
+          <button id="clear-data-btn" class="nav-icon-btn danger" title="Clear All" data-i18n-title="common.clearAll">
             <svg class="nav-icon-svg" viewBox="0 0 24 24">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               <line x1="10" y1="11" x2="10" y2="17"></line>
               <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
-            <span class="icon-label">Clear</span>
+            <span class="icon-label" data-i18n="common.clear">Clear</span>
           </button>
         </div>
         <input type="file" id="import-file-input" accept=".json" style="display:none;" />
@@ -152,37 +152,48 @@
 
       <!-- Preferences -->
       <div class="settings-section" style="margin-top:20px;">
-        <h4 style="margin:0 0 8px 0;">Preferences</h4>
+        <h4 style="margin:0 0 8px 0;" data-i18n="preferences.title">Preferences</h4>
         <div class="settings-option">
-          <span class="settings-option-label">Daily mood check-in</span>
+          <span class="settings-option-label" data-i18n="preferences.dailyMoodCheckin">Daily mood check-in</span>
           <label class="toggle-switch">
             <input type="checkbox" id="mood-checkin-toggle" checked>
             <span class="toggle-slider"></span>
           </label>
         </div>
         <div class="settings-option">
-          <span class="settings-option-label">Show entry previews</span>
+          <span class="settings-option-label" data-i18n="preferences.showPreviews">Show entry previews</span>
           <label class="toggle-switch">
             <input type="checkbox" id="preview-toggle" checked>
             <span class="toggle-slider"></span>
           </label>
         </div>
         <div class="settings-option">
-          <span class="settings-option-label">Compact list view</span>
+          <span class="settings-option-label" data-i18n="preferences.compactList">Compact list view</span>
           <label class="toggle-switch">
             <input type="checkbox" id="compact-view-toggle">
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <div class="settings-option">
+          <span class="settings-option-label" data-i18n="preferences.language">Language</span>
+          <nav class="theme-dock" id="language-selector">
+            <button class="theme-block" data-value="en" title="English" data-i18n-title="language.english">
+              <span class="theme-block__flag">🇬🇧</span>
+            </button>
+            <button class="theme-block" data-value="tr" title="Türkçe" data-i18n-title="language.turkish">
+              <span class="theme-block__flag">🇹🇷</span>
+            </button>
+          </nav>
+        </div>
       </div>
 
       <!-- Close button -->
-      <button id="theme-settings-close-btn" class="nav-icon-btn" title="Close" style="position:absolute;bottom:20px;right:20px;">
+      <button id="theme-settings-close-btn" class="nav-icon-btn" title="Close" data-i18n-title="common.close" style="position:absolute;bottom:20px;right:20px;">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-        <span class="icon-label">Close</span>
+        <span class="icon-label" data-i18n="common.close">Close</span>
       </button>
     </div>
 
@@ -204,14 +215,14 @@
           <div class="chest">
             <!-- Quote card sitting on top of the drawer -->
             <div class="quote-card-wrap">
-              <div class="quote-card" id="quote-card" role="button" tabindex="0" aria-label="Open quotes" aria-expanded="false">
+              <div class="quote-card" id="quote-card" role="button" tabindex="0" aria-label="Open quotes" data-i18n-aria-label="quote.open" aria-expanded="false">
                 <div class="quote-card__lines">
                   <span class="quote-card__line"></span>
                   <span class="quote-card__line"></span>
                   <span class="quote-card__line"></span>
                 </div>
               </div>
-              <span class="quote-card-label">Quotes</span>
+              <span class="quote-card-label" data-i18n="quote.label">Quotes</span>
             </div>
             <div class="chest__panel chest__panel--back"></div>
             <div class="chest__panel chest__panel--top"></div>
@@ -224,8 +235,8 @@
             
             <!-- Drawer 1: Journal -->
             <div class="chest__drawer drawer" data-position="1" data-action="journal">
-              <button class="drawer-trigger" id="new-entry-btn" title="Journal"></button>
-              <span class="drawer-label">Journal</span>
+              <button class="drawer-trigger" id="new-entry-btn" title="Journal" data-i18n-title="drawer.journal"></button>
+              <span class="drawer-label" data-i18n="drawer.journal">Journal</span>
               <div class="drawer__structure">
                 <div class="drawer__panel drawer__panel--back">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -242,8 +253,8 @@
             
             <!-- Drawer 2: Entries -->
             <div class="chest__drawer drawer" data-position="2" data-action="entries">
-              <button class="drawer-trigger" id="load-entry-btn" title="Entries"></button>
-              <span class="drawer-label">Entries</span>
+              <button class="drawer-trigger" id="load-entry-btn" title="Entries" data-i18n-title="drawer.entries"></button>
+              <span class="drawer-label" data-i18n="drawer.entries">Entries</span>
               <div class="drawer__structure">
                 <div class="drawer__panel drawer__panel--back">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -260,8 +271,8 @@
             
             <!-- Drawer 3: Moods -->
             <div class="chest__drawer drawer" data-position="3" data-action="moods">
-              <button class="drawer-trigger" id="stats-btn" title="Moods"></button>
-              <span class="drawer-label">Moods</span>
+              <button class="drawer-trigger" id="stats-btn" title="Moods" data-i18n-title="drawer.moods"></button>
+              <span class="drawer-label" data-i18n="drawer.moods">Moods</span>
               <div class="drawer__structure">
                 <div class="drawer__panel drawer__panel--back">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -288,26 +299,26 @@
     <!-- Quote Panel Container -->
     <div class="quote-panel-container" id="quote-panel-container">
       <!-- Arrow navigation outside card -->
-      <button class="quote-nav-arrow quote-nav-arrow--prev" id="quote-panel-prev" type="button" title="Previous quote (←)" aria-label="Previous quote">
+      <button class="quote-nav-arrow quote-nav-arrow--prev" id="quote-panel-prev" type="button" title="Previous quote (←)" data-i18n-title="quote.previousTitle" aria-label="Previous quote" data-i18n-aria-label="quote.previous">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
       
       <div class="quote-panel" id="quote-panel">
-        <button class="quote-panel__fav-btn" id="quote-panel-favorite" type="button" title="Favorite quote" aria-pressed="false">🤍</button>
+        <button class="quote-panel__fav-btn" id="quote-panel-favorite" type="button" title="Favorite quote" data-i18n-title="quote.favorite" aria-pressed="false">🤍</button>
         <div class="quote-panel__content">
-          <div class="quote-panel__quote" id="quote-panel-text">Loading quote...</div>
+          <div class="quote-panel__quote" id="quote-panel-text" data-i18n="quote.loading">Loading quote...</div>
           <div class="quote-panel__author" id="quote-panel-author"></div>
         </div>
         <div class="quote-panel__actions">
-          <button class="quote-panel__btn quote-panel__btn--accent" id="quote-panel-journal" type="button" title="Journal about this quote">Journal</button>
+          <button class="quote-panel__btn quote-panel__btn--accent" id="quote-panel-journal" type="button" title="Journal about this quote" data-i18n-title="quote.journalTitle" data-i18n="quote.journal">Journal</button>
         </div>
-        <button class="quote-panel__btn quote-panel__btn--close" id="quote-panel-close" type="button" title="Close">Put down</button>
+        <button class="quote-panel__btn quote-panel__btn--close" id="quote-panel-close" type="button" title="Close" data-i18n-title="common.close" data-i18n="quote.putDown">Put down</button>
         <div class="quote-panel__status" id="quote-panel-status" aria-live="polite"></div>
       </div>
       
-      <button class="quote-nav-arrow quote-nav-arrow--next" id="quote-panel-next" type="button" title="Next quote (→)" aria-label="Next quote">
+      <button class="quote-nav-arrow quote-nav-arrow--next" id="quote-panel-next" type="button" title="Next quote (→)" data-i18n-title="quote.nextTitle" aria-label="Next quote" data-i18n-aria-label="quote.next">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>
@@ -318,30 +329,30 @@
     <div id="journal-panel" style="display: none;">
       <div class="entries-pane">
         <div class="entries-header">
-          <h2 style="margin:0">Entries</h2>
+          <h2 style="margin:0" data-i18n="journal.title">Entries</h2>
           <!-- Search (magnifying glass) toggle & input -->
-          <button id="search-toggle-btn" class="search-toggle-btn" title="Search">🔍</button>
-          <input id="entry-search" class="entry-search collapsed" type="text" placeholder="Search..." />
+          <button id="search-toggle-btn" class="search-toggle-btn" title="Search" data-i18n-title="common.search">🔍</button>
+          <input id="entry-search" class="entry-search collapsed" type="text" placeholder="Search..." data-i18n-placeholder="journal.searchPlaceholder" />
           <!-- Sort dropdown -->
           <div class="custom-dropdown sort-dropdown" id="sort-dropdown">
             <div class="custom-dropdown-selected" id="sort-selected">Newest</div>
             <ul class="custom-dropdown-list" id="sort-list">
-              <li data-value="newest">Newest First</li>
-              <li data-value="oldest">Oldest First</li>
-              <li data-value="az">A → Z</li>
-              <li data-value="mood">By Mood</li>
+              <li data-value="newest" data-i18n="journal.sortNewest">Newest First</li>
+              <li data-value="oldest" data-i18n="journal.sortOldest">Oldest First</li>
+              <li data-value="az" data-i18n="journal.sortAz">A → Z</li>
+              <li data-value="mood" data-i18n="journal.sortMood">By Mood</li>
             </ul>
           </div>
-          <button id="date-picker-btn" class="calendar-btn" title="Filter by date">📅</button>
+          <button id="date-picker-btn" class="calendar-btn" title="Filter by date" data-i18n-title="journal.filterByDate">📅</button>
           <div id="custom-calendar" class="custom-calendar" style="display:none;"></div>
         </div>
         <div class="entry-list"></div>
-        <button class="nav-icon-btn back-to-menu" title="Back to Menu">
+        <button class="nav-icon-btn back-to-menu" title="Back to Menu" data-i18n-title="nav.backToMenu">
           <svg class="nav-icon-svg" viewBox="0 0 24 24">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
-          <span class="icon-label">Menu</span>
+          <span class="icon-label" data-i18n="common.menu">Menu</span>
         </button>
       </div>
     </div>
@@ -349,7 +360,7 @@
     <!-- Mood Tracking Panel -->
     <div id="stats-panel" class="custom-panel stats-panel" style="display:none;">
       <div class="stats-header">
-        <h2>Mood Tracking</h2>
+        <h2 data-i18n="stats.title">Mood Tracking</h2>
       </div>
       <div class="stats-content">
         <!-- Streak Section -->
@@ -357,74 +368,74 @@
           <div class="stat-card streak-card">
             <div class="stat-icon">🔥</div>
             <div class="stat-value" id="current-streak">0</div>
-            <div class="stat-label">Day Streak</div>
+            <div class="stat-label" data-i18n="stats.dayStreak">Day Streak</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">🏆</div>
             <div class="stat-value" id="longest-streak">0</div>
-            <div class="stat-label">Best Streak</div>
+            <div class="stat-label" data-i18n="stats.bestStreak">Best Streak</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📝</div>
             <div class="stat-value" id="total-entries">0</div>
-            <div class="stat-label">Total Entries</div>
+            <div class="stat-label" data-i18n="stats.totalEntries">Total Entries</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📖</div>
             <div class="stat-value" id="total-words">0</div>
-            <div class="stat-label">Words Written</div>
+            <div class="stat-label" data-i18n="stats.wordsWritten">Words Written</div>
           </div>
         </div>
 
         <!-- Calendar Heatmap -->
         <div class="stats-section">
-          <h3>Activity Calendar</h3>
+          <h3 data-i18n="stats.activityCalendar">Activity Calendar</h3>
           <div class="heatmap-container">
             <div class="heatmap-months" id="heatmap-months"></div>
             <div class="heatmap-grid" id="heatmap-grid"></div>
             <div class="heatmap-legend">
-              <span>Less</span>
+              <span data-i18n="stats.less">Less</span>
               <div class="legend-cell" data-level="0"></div>
               <div class="legend-cell" data-level="1"></div>
               <div class="legend-cell" data-level="2"></div>
               <div class="legend-cell" data-level="3"></div>
               <div class="legend-cell" data-level="4"></div>
-              <span>More</span>
+              <span data-i18n="stats.more">More</span>
             </div>
           </div>
         </div>
 
         <!-- Mood Distribution -->
         <div class="stats-section">
-          <h3>Mood Distribution</h3>
+          <h3 data-i18n="stats.moodDistribution">Mood Distribution</h3>
           <div class="mood-chart" id="mood-chart"></div>
         </div>
 
         <!-- Writing Stats -->
         <div class="stats-section">
-          <h3>Writing Statistics</h3>
+          <h3 data-i18n="stats.writingStatistics">Writing Statistics</h3>
           <div class="writing-stats">
             <div class="writing-stat">
-              <span class="stat-name">Average words per entry</span>
+              <span class="stat-name" data-i18n="stats.avgWords">Average words per entry</span>
               <span class="stat-val" id="avg-words">0</span>
             </div>
             <div class="writing-stat">
-              <span class="stat-name">Favorite entries</span>
+              <span class="stat-name" data-i18n="stats.favoriteEntries">Favorite entries</span>
               <span class="stat-val" id="favorite-count">0</span>
             </div>
             <div class="writing-stat">
-              <span class="stat-name">Most used tags</span>
+              <span class="stat-name" data-i18n="stats.topTags">Most used tags</span>
               <span class="stat-val" id="top-tags">-</span>
             </div>
           </div>
         </div>
       </div>
-      <button class="nav-icon-btn stats-back-btn" title="Back to Menu">
+      <button class="nav-icon-btn stats-back-btn" title="Back to Menu" data-i18n-title="nav.backToMenu">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
-        <span class="icon-label">Menu</span>
+        <span class="icon-label" data-i18n="common.menu">Menu</span>
       </button>
     </div>
 
@@ -435,16 +446,16 @@
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row" id="chat-input-row">
-        <textarea id="chat-input" placeholder="Type a message..." rows="1"></textarea>
+        <textarea id="chat-input" placeholder="Type a message..." data-i18n-placeholder="chat.placeholder" rows="1"></textarea>
       </div>
       <!-- New chat bubble button (initial trigger) -->
-      <button id="chat-new-btn" class="chat-new-btn" title="New Chat">💬</button>
-      <button class="nav-icon-btn chat-back-btn" title="Back" style="margin-top:10px;">
+      <button id="chat-new-btn" class="chat-new-btn" title="New Chat" data-i18n-title="chat.newChat">💬</button>
+      <button class="nav-icon-btn chat-back-btn" title="Back" data-i18n-title="common.back" style="margin-top:10px;">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
-        <span class="icon-label">Menu</span>
+        <span class="icon-label" data-i18n="common.menu">Menu</span>
       </button>
     </div>
 
@@ -452,7 +463,7 @@
     <div id="new-entry-panel" class="custom-panel new-entry-panel" style="display: none;">
       <div class="panel-utility">
         <!-- Settings Button (upper right) -->
-        <button class="settings-btn" aria-label="Editor Settings">
+        <button class="settings-btn" aria-label="Editor Settings" data-i18n-aria-label="aria.editorSettings">
           <span class="settings-lines" aria-hidden="true">
             <span></span>
             <span></span>
@@ -469,7 +480,7 @@
       <!-- Form contents (hidden until expanded) -->
       <div class="new-entry-contents">
         <div class="panel-title">
-          <input type="text" class="entry-name" placeholder="Title" />
+          <input type="text" class="entry-name" placeholder="Title" data-i18n-placeholder="entry.titlePlaceholder" />
         </div>
         <div class="entry-meta">
           <span class="mood-badge"></span>
@@ -478,20 +489,20 @@
         <div class="panel-content">
           <!-- Rich Text Toolbar -->
           <div class="editor-toolbar">
-            <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)"><b>B</b></button>
-            <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)"><i>I</i></button>
-            <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+            <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)" data-i18n-title="editor.bold"><b>B</b></button>
+            <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)" data-i18n-title="editor.italic"><i>I</i></button>
+            <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)" data-i18n-title="editor.underline"><u>U</u></button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading">H</button>
-            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote">“</button>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading" data-i18n-title="editor.heading">H</button>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote" data-i18n-title="editor.quote">“</button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
-            <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List">1.</button>
+            <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List" data-i18n-title="editor.bullets">•</button>
+            <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List" data-i18n-title="editor.numbered">1.</button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn" data-command="createLink" title="Insert Link">🔗</button>
-            <button type="button" class="toolbar-btn insert-image-btn" title="Insert Image">🖼️</button>
+            <button type="button" class="toolbar-btn" data-command="createLink" title="Insert Link" data-i18n-title="editor.insertLink">🔗</button>
+            <button type="button" class="toolbar-btn insert-image-btn" title="Insert Image" data-i18n-title="editor.insertImage">🖼️</button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn audio-recorder-btn" title="Record Audio">
+            <button type="button" class="toolbar-btn audio-recorder-btn" title="Record Audio" data-i18n-title="editor.recordAudio">
               <div class="tape-recorder-3d">
                 <div class="tape-base">
                   <div class="tape-mini-reel left"></div>
@@ -502,24 +513,24 @@
             </button>
           </div>
           <!-- Rich Text Editor -->
-          <div class="entry-content rich-editor" contenteditable="true" data-placeholder="Start writing..."></div>
+          <div class="entry-content rich-editor" contenteditable="true" data-placeholder="Start writing..." data-i18n-placeholder="entry.contentPlaceholder"></div>
           <input type="file" class="image-upload-input" accept="image/*" style="display:none;" />
         </div>
         <div class="editor-buttons">
-          <button class="nav-icon-btn save-btn" title="Save">
+          <button class="nav-icon-btn save-btn" title="Save" data-i18n-title="common.save">
             <svg class="nav-icon-svg" viewBox="0 0 24 24">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
               <polyline points="7 3 7 8 15 8"></polyline>
             </svg>
-            <span class="icon-label">Save</span>
+            <span class="icon-label" data-i18n="common.save">Save</span>
           </button>
-          <button class="nav-icon-btn back-btn" title="Back">
+          <button class="nav-icon-btn back-btn" title="Back" data-i18n-title="common.back">
             <svg class="nav-icon-svg" viewBox="0 0 24 24">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
-            <span class="icon-label">Menu</span>
+            <span class="icon-label" data-i18n="common.menu">Menu</span>
           </button>
         </div>
       </div>
@@ -534,61 +545,61 @@
         <div class="current-date" id="current-date"></div>
         <div class="date-row" id="date-strip"></div>
       </div>
-      <h2 class="mood-panel-title">How are you feeling right now?</h2>
+      <h2 class="mood-panel-title" data-i18n="mood.heading">How are you feeling right now?</h2>
       <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
         <div class="mood-input-row">
           <span id="mood-prompt" class="mood-prompt"></span>
           <input id="mood-input" type="text" placeholder="..." class="mood-input" />
         </div>
-        <button class="nav-icon-btn mood-next-btn" title="Start Writing">
+        <button class="nav-icon-btn mood-next-btn" title="Start Writing" data-i18n-title="mood.startWriting">
           <svg class="nav-icon-svg" viewBox="0 0 24 24">
             <path d="M12 20h9"></path>
             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
           </svg>
-          <span class="icon-label">Write</span>
+          <span class="icon-label" data-i18n="common.write">Write</span>
         </button>
-        <button class="nav-icon-btn back-btn" title="Back">
+        <button class="nav-icon-btn back-btn" title="Back" data-i18n-title="common.back">
           <svg class="nav-icon-svg" viewBox="0 0 24 24">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
-          <span class="icon-label">Menu</span>
+          <span class="icon-label" data-i18n="common.menu">Menu</span>
         </button>
       </div>
     </div>
 
     <!-- Mood Attributes Panel (after mood input, select what's affecting your mood) -->
     <div id="mood-attributes-panel" class="custom-panel" style="display:none;">
-      <h2 class="attributes-title">What's making you feel this way?</h2>
-      <p class="attributes-subtitle">Tap to select • Hold to edit or reorder</p>
+      <h2 class="attributes-title" data-i18n="attributes.title">What's making you feel this way?</h2>
+      <p class="attributes-subtitle" data-i18n="attributes.subtitle">Tap to select • Hold to edit or reorder</p>
       <div class="attributes-grid"></div>
       <div class="attributes-nav">
-        <button class="nav-icon-btn attributes-back-btn" title="Back">
+        <button class="nav-icon-btn attributes-back-btn" title="Back" data-i18n-title="common.back">
           <svg class="nav-icon-svg" viewBox="0 0 24 24">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
-          <span class="icon-label">Back</span>
+          <span class="icon-label" data-i18n="common.back">Back</span>
         </button>
-        <button class="nav-icon-btn attributes-next-btn" title="Continue">
+        <button class="nav-icon-btn attributes-next-btn" title="Continue" data-i18n-title="common.continue">
           <svg class="nav-icon-svg" viewBox="0 0 24 24">
             <path d="M12 20h9"></path>
             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
           </svg>
-          <span class="icon-label">Write</span>
+          <span class="icon-label" data-i18n="common.write">Write</span>
         </button>
       </div>
     </div>
 
     <!-- Template Picker Panel -->
     <div id="template-panel" class="custom-panel template-panel" style="display:none;">
-      <h2>Choose a Template</h2>
+      <h2 data-i18n="templates.title">Choose a Template</h2>
       <div class="template-grid"></div>
-      <button class="nav-icon-btn tpl-back-btn" title="Back" style="position:absolute;">
+      <button class="nav-icon-btn tpl-back-btn" title="Back" data-i18n-title="common.back" style="position:absolute;">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
-        <span class="icon-label">Menu</span>
+        <span class="icon-label" data-i18n="common.menu">Menu</span>
       </button>
       <div id="template-info"></div>
     </div>
@@ -597,7 +608,7 @@
     <div id="edit-entry-panel" class="custom-panel edit-entry-panel" style="display: none;">
       <div class="panel-utility">
         <!-- Settings Button (upper right) -->
-        <button class="settings-btn" aria-label="Editor Settings">
+        <button class="settings-btn" aria-label="Editor Settings" data-i18n-aria-label="aria.editorSettings">
           <span class="settings-lines" aria-hidden="true">
             <span></span>
             <span></span>
@@ -607,7 +618,7 @@
       </div>
       <div class="new-entry-contents">
         <div class="panel-title">
-          <input type="text" class="entry-name" placeholder="Title" />
+          <input type="text" class="entry-name" placeholder="Title" data-i18n-placeholder="entry.titlePlaceholder" />
         </div>
         <div class="entry-meta">
           <span class="mood-badge"></span>
@@ -616,20 +627,20 @@
         <div class="panel-content">
           <!-- Rich Text Toolbar -->
           <div class="editor-toolbar">
-            <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)"><b>B</b></button>
-            <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)"><i>I</i></button>
-            <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+            <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)" data-i18n-title="editor.bold"><b>B</b></button>
+            <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)" data-i18n-title="editor.italic"><i>I</i></button>
+            <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)" data-i18n-title="editor.underline"><u>U</u></button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading">H</button>
-            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote">“</button>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading" data-i18n-title="editor.heading">H</button>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote" data-i18n-title="editor.quote">“</button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
-            <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List">1.</button>
+            <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List" data-i18n-title="editor.bullets">•</button>
+            <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List" data-i18n-title="editor.numbered">1.</button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn" data-command="createLink" title="Insert Link">🔗</button>
-            <button type="button" class="toolbar-btn insert-image-btn" title="Insert Image">🖼️</button>
+            <button type="button" class="toolbar-btn" data-command="createLink" title="Insert Link" data-i18n-title="editor.insertLink">🔗</button>
+            <button type="button" class="toolbar-btn insert-image-btn" title="Insert Image" data-i18n-title="editor.insertImage">🖼️</button>
             <span class="toolbar-divider"></span>
-            <button type="button" class="toolbar-btn audio-recorder-btn" title="Record Audio">
+            <button type="button" class="toolbar-btn audio-recorder-btn" title="Record Audio" data-i18n-title="editor.recordAudio">
               <div class="tape-recorder-3d">
                 <div class="tape-base">
                   <div class="tape-mini-reel left"></div>
@@ -640,24 +651,24 @@
             </button>
           </div>
           <!-- Rich Text Editor -->
-          <div class="entry-content rich-editor" contenteditable="true" data-placeholder="Start writing..."></div>
+          <div class="entry-content rich-editor" contenteditable="true" data-placeholder="Start writing..." data-i18n-placeholder="entry.contentPlaceholder"></div>
           <input type="file" class="image-upload-input" accept="image/*" style="display:none;" />
         </div>
         <div class="editor-buttons">
-          <button class="nav-icon-btn save-btn" title="Save">
+          <button class="nav-icon-btn save-btn" title="Save" data-i18n-title="common.save">
             <svg class="nav-icon-svg" viewBox="0 0 24 24">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
               <polyline points="7 3 7 8 15 8"></polyline>
             </svg>
-            <span class="icon-label">Save</span>
+            <span class="icon-label" data-i18n="common.save">Save</span>
           </button>
-          <button class="nav-icon-btn back-btn" title="Back">
+          <button class="nav-icon-btn back-btn" title="Back" data-i18n-title="common.back">
             <svg class="nav-icon-svg" viewBox="0 0 24 24">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
-            <span class="icon-label">Menu</span>
+            <span class="icon-label" data-i18n="common.menu">Menu</span>
           </button>
         </div>
       </div>
@@ -665,16 +676,16 @@
 
     <!-- Shared Settings Panel (slides in from the right) -->
     <div id="settings-panel">
-      <h3>Settings</h3>
-      <button id="settings-close-btn" class="nav-icon-btn" title="Close" style="position:absolute;bottom:20px;right:20px;">
+      <h3 data-i18n="settings.title">Settings</h3>
+      <button id="settings-close-btn" class="nav-icon-btn" title="Close" data-i18n-title="common.close" style="position:absolute;bottom:20px;right:20px;">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-        <span class="icon-label">Close</span>
+        <span class="icon-label" data-i18n="common.close">Close</span>
       </button>
       <div class="settings-group">
-        <label for="font-size-slider">Font Size</label>
+        <label for="font-size-slider" data-i18n="settings.fontSize">Font Size</label>
         <div class="settings-range">
           <input type="range" id="font-size-slider" min="12" max="24" value="16" />
           <span class="range-value" id="font-size-value">16px</span>
@@ -682,7 +693,7 @@
       </div>
 
       <div class="settings-group">
-        <label for="line-height-slider">Line Height</label>
+        <label for="line-height-slider" data-i18n="settings.lineHeight">Line Height</label>
         <div class="settings-range">
           <input type="range" id="line-height-slider" min="1.2" max="2.2" step="0.05" value="1.6" />
           <span class="range-value" id="line-height-value">1.6</span>
@@ -690,7 +701,7 @@
       </div>
 
       <div class="settings-group">
-        <label>Font Family</label>
+        <label data-i18n="settings.fontFamily">Font Family</label>
         <div class="custom-dropdown" id="font-dropdown">
           <div class="custom-dropdown-selected" id="font-dropdown-selected">Arial</div>
           <ul class="custom-dropdown-list" id="font-dropdown-list">
@@ -704,19 +715,19 @@
       </div>
 
       <div class="settings-group">
-        <label>Text Width</label>
+        <label data-i18n="settings.textWidth">Text Width</label>
         <div class="custom-dropdown" id="entry-width-dropdown">
           <div class="custom-dropdown-selected" id="entry-width-selected">Comfortable</div>
           <ul class="custom-dropdown-list" id="entry-width-list">
-            <li data-value="720px">Narrow</li>
-            <li data-value="1000px">Comfortable</li>
-            <li data-value="100%">Full</li>
+            <li data-value="720px" data-i18n="settings.widthNarrow">Narrow</li>
+            <li data-value="1000px" data-i18n="settings.widthComfortable">Comfortable</li>
+            <li data-value="100%" data-i18n="settings.widthFull">Full</li>
           </ul>
         </div>
       </div>
 
       <div class="settings-option">
-        <span class="settings-option-label">Show formatting toolbar</span>
+        <span class="settings-option-label" data-i18n="settings.showToolbar">Show formatting toolbar</span>
         <label class="toggle-switch">
           <input type="checkbox" id="toolbar-toggle" checked />
           <span class="toggle-slider"></span>
@@ -724,7 +735,7 @@
       </div>
 
       <div class="settings-option">
-        <span class="settings-option-label">Show word count</span>
+        <span class="settings-option-label" data-i18n="settings.showWordCount">Show word count</span>
         <label class="toggle-switch">
           <input type="checkbox" id="word-count-toggle" />
           <span class="toggle-slider"></span>
@@ -732,7 +743,7 @@
       </div>
 
       <div class="settings-option">
-        <span class="settings-option-label">Spellcheck</span>
+        <span class="settings-option-label" data-i18n="settings.spellcheck">Spellcheck</span>
         <label class="toggle-switch">
           <input type="checkbox" id="spellcheck-toggle" checked />
           <span class="toggle-slider"></span>
@@ -743,33 +754,33 @@
 
     <!-- NEW: Export/Import Popup Panel (hidden by default) -->
     <div id="export-import-popup" class="export-import-popup" style="display: none;">
-      <button id="export-btn" class="settings-icon-btn" title="Export">
+      <button id="export-btn" class="settings-icon-btn" title="Export" data-i18n-title="common.export">
         <svg class="settings-icon-svg" viewBox="0 0 24 24">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="17 8 12 3 7 8"></polyline>
           <line x1="12" y1="3" x2="12" y2="15"></line>
         </svg>
-        <span class="settings-icon-label">Export</span>
+        <span class="settings-icon-label" data-i18n="common.export">Export</span>
       </button>
-      <button id="import-btn" class="settings-icon-btn" title="Import">
+      <button id="import-btn" class="settings-icon-btn" title="Import" data-i18n-title="common.import">
         <svg class="settings-icon-svg" viewBox="0 0 24 24">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        <span class="settings-icon-label">Import</span>
+        <span class="settings-icon-label" data-i18n="common.import">Import</span>
       </button>
-      <button id="export-import-close-btn" class="nav-icon-btn" title="Close">
+      <button id="export-import-close-btn" class="nav-icon-btn" title="Close" data-i18n-title="common.close">
         <svg class="nav-icon-svg" viewBox="0 0 24 24">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-        <span class="icon-label">Close</span>
+        <span class="icon-label" data-i18n="common.close">Close</span>
       </button>
     </div>
 
     <!-- Custom Popup -->
-    <div id="custom-popup" class="custom-popup">Entry saved!</div>
+    <div id="custom-popup" class="custom-popup" data-i18n="entry.saved">Entry saved!</div>
 
     <!-- JavaScript Modules -->
     <script type="module" src="js/core/main.js"></script>

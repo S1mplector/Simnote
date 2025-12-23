@@ -56,8 +56,12 @@ import { OnboardingManager } from '../managers/onboardingManager.js';
 import { DailyMoodManager, getTodaysMood } from '../managers/dailyMoodManager.js';
 import { MoodAttributesManager } from '../managers/moodAttributesManager.js';
 import { MoodsSmileyAnimator } from '../animators/moodsSmileyAnimator.js';
+import { setLanguage, getLanguage, initI18n } from './i18n.js';
 import { JournalPenAnimator } from '../animators/journalPenAnimator.js';
 import { EntriesBookAnimator } from '../animators/entriesBookAnimator.js';
+
+// Initialize i18n system early
+initI18n();
 
 // Grab key panels from the DOM
 const mainPanel = document.getElementById('main-panel');
@@ -1332,6 +1336,7 @@ if (storageLocationPath) {
 const moodCheckinToggle = document.getElementById('mood-checkin-toggle');
 const previewToggle = document.getElementById('preview-toggle');
 const compactViewToggle = document.getElementById('compact-view-toggle');
+const languageSelector = document.getElementById('language-selector');
 
 // Load saved preferences
 document.addEventListener('DOMContentLoaded', () => {
@@ -1347,6 +1352,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (compactViewToggle.checked) {
       document.body.classList.add('compact-view');
     }
+  }
+  if (languageSelector) {
+    const currentLang = getLanguage();
+    languageSelector.querySelectorAll('.theme-block').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === currentLang);
+    });
   }
 });
 
@@ -1369,6 +1380,18 @@ if (compactViewToggle) {
     localStorage.setItem('compactViewEnabled', compactViewToggle.checked);
     document.body.classList.toggle('compact-view', compactViewToggle.checked);
     window.dispatchEvent(new Event('loadEntries'));
+  });
+}
+
+if (languageSelector) {
+  languageSelector.addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-block');
+    if (!btn) return;
+    const lang = btn.dataset.value;
+    setLanguage(lang);
+    languageSelector.querySelectorAll('.theme-block').forEach(b => {
+      b.classList.toggle('active', b.dataset.value === lang);
+    });
   });
 }
 

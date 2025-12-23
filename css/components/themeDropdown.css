@@ -101,6 +101,23 @@
   box-shadow: 0 0 0 2px var(--accent), 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
+/* Flag emoji variant for language selector */
+.theme-block__flag {
+  font-size: 18px;
+  line-height: 1;
+  display: block;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(calc(var(--lerp, 0) * -50%));
+}
+
+.theme-block.active .theme-block__flag {
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+:is(.theme-block:hover, .theme-block:focus-visible) .theme-block__flag {
+  transform: translateY(calc(var(--lerp, 0) * -50%)) scale(1.1);
+}
+
 /* Lerp-based scaling on hover */
 :is(.theme-block:hover, .theme-block:focus-visible) {
   --lerp: var(--lerp-0);
