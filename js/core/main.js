@@ -429,11 +429,11 @@ loadEntryBtn.addEventListener('click', () => {
   });
 });
 
-// Make drawer labels clickable - trigger same action as drawer buttons
-document.querySelectorAll('.drawer-label').forEach(label => {
-  label.addEventListener('click', () => {
-    const drawer = label.closest('.chest__drawer');
-    const trigger = drawer?.querySelector('.drawer-trigger');
+// Make entire drawers clickable - trigger same action as drawer buttons
+document.querySelectorAll('.chest__drawer').forEach(drawer => {
+  drawer.addEventListener('click', event => {
+    if (event.target.closest('.drawer-trigger')) return;
+    const trigger = drawer.querySelector('.drawer-trigger');
     if (trigger) trigger.click();
   });
 });

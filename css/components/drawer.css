@@ -151,6 +151,7 @@
   height: calc(var(--drawer-item-height) * 1vmin);
   width: calc((var(--drawer-width) - (2 * var(--drawer-frame))) * 1vmin);
   transform: translate3d(-50%, 0, calc((var(--drawer-depth) * 0.5vmin) + 0.01vmin));
+  cursor: pointer;
 }
 
 .chest__drawer[data-position="1"] {
