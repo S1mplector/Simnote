@@ -1,6 +1,8 @@
 // richEditorManager.js
 // Manages rich text editing functionality including formatting and image paste
 
+import { AudioRecorderManager } from './audioRecorderManager.js';
+
 export class RichEditorManager {
   constructor(panel) {
     this.panel = panel;
@@ -19,10 +21,18 @@ export class RichEditorManager {
     this.setupImageUpload();
     this.setupKeyboardShortcuts();
     this.setupActiveStateTracking();
+    this.setupAudioRecorder();
+  }
+
+  setupAudioRecorder() {
+    this.audioRecorder = new AudioRecorderManager(this.panel);
   }
 
   setupToolbar() {
     this.toolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
+      // Skip audio recorder button - it has its own handler
+      if (btn.classList.contains('audio-recorder-btn')) return;
+      
       btn.addEventListener('mousedown', (e) => {
         e.preventDefault(); // Prevent losing focus from editor
       });
@@ -288,6 +298,8 @@ export class RichEditorManager {
   // Set content from HTML
   setContent(html) {
     this.editor.innerHTML = html || '';
+    // Restore audio players from saved data
+    AudioRecorderManager.restoreAudioPlayers(this.editor);
   }
 
   // Get content as plain text (for word count, etc.)
