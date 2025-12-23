@@ -464,6 +464,9 @@ export class RichEditorManager {
     this.editor.innerHTML = html || '';
     // Restore audio players from saved data attributes
     AudioRecorderManager.restoreAudioPlayers(this.editor);
+    if (typeof window !== 'undefined' && typeof window.updateEntryWordCount === 'function') {
+      window.updateEntryWordCount(this.editor);
+    }
   }
 
   /**

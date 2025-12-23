@@ -68,7 +68,7 @@
   border-radius: 0 0 16px 16px;
   color: #fff;
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: var(--entry-line-height, 1.6);
   outline: none;
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
 }
@@ -179,6 +179,22 @@
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.4);
   pointer-events: none;
+}
+
+body.entry-word-count-hidden .word-count-display {
+  display: none;
+}
+
+body:not(.entry-word-count-hidden) .rich-editor {
+  padding-bottom: 32px;
+}
+
+body.entry-toolbar-hidden .editor-toolbar {
+  display: none;
+}
+
+body.entry-toolbar-hidden .rich-editor {
+  border-radius: 16px;
 }
 
 /* Link input dialog */

@@ -94,13 +94,15 @@ body.main-menu-active .utility-buttons:focus-within::before {
   justify-content: center;
 }
 
-.theme-settings-btn .gear-icon,
+.theme-settings-btn .settings-lines {
+  transition: transform 0.2s ease;
+}
+
 .manual-btn .manual-book {
   transition: filter 0.3s ease, transform 0.3s ease;
 }
 
-.theme-settings-btn:hover .gear-icon {
-  filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.28));
+.theme-settings-btn:hover .settings-lines {
   transform: translateY(-1px);
 }
 

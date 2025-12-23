@@ -39,19 +39,10 @@
       </button>
       <!-- Theme Settings Button -->
       <button id="theme-settings-btn" class="theme-settings-btn" aria-label="Settings">
-        <span class="gear-icon" aria-hidden="true">
-          <span class="gear-spin">
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-            <img src="img/gear.svg" alt="" />
-          </span>
+        <span class="settings-lines" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
         </span>
       </button>
     </div>
@@ -277,6 +268,7 @@
             </div>
           </div>
         </div>
+        
       </div>
     </div>
 
@@ -419,19 +411,10 @@
       <div class="panel-utility">
         <!-- Settings Button (upper right) -->
         <button class="settings-btn" aria-label="Editor Settings">
-          <span class="gear-icon" aria-hidden="true">
-            <span class="gear-spin">
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-            </span>
+          <span class="settings-lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
           </span>
         </button>
       </div>
@@ -573,19 +556,10 @@
       <div class="panel-utility">
         <!-- Settings Button (upper right) -->
         <button class="settings-btn" aria-label="Editor Settings">
-          <span class="gear-icon" aria-hidden="true">
-            <span class="gear-spin">
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-              <img src="img/gear.svg" alt="" />
-            </span>
+          <span class="settings-lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
           </span>
         </button>
       </div>
@@ -657,22 +631,70 @@
         </svg>
         <span class="icon-label">Close</span>
       </button>
-      <label for="font-size-slider">Font Size:</label>
-      <input type="range" id="font-size-slider" min="12" max="24" value="16" />
-      <br />
-      <!-- Custom Dropdown for Font Family -->
-      <label>Font Family:</label>
-      <div class="custom-dropdown" id="font-dropdown">
-        <!-- Displayed "selected" item -->
-        <div class="custom-dropdown-selected" id="font-dropdown-selected">Arial</div>
-        <!-- The hidden list of options -->
-        <ul class="custom-dropdown-list" id="font-dropdown-list">
-          <li data-value="Arial, sans-serif">Arial</li>
-          <li data-value="'Times New Roman', serif">Times New Roman</li>
-          <li data-value="'Courier New', monospace">Courier New</li>
-          <li data-value="'Georgia', serif">Georgia</li>
-          <li data-value="'Verdana', sans-serif">Verdana</li>
-        </ul>
+      <div class="settings-group">
+        <label for="font-size-slider">Font Size</label>
+        <div class="settings-range">
+          <input type="range" id="font-size-slider" min="12" max="24" value="16" />
+          <span class="range-value" id="font-size-value">16px</span>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label for="line-height-slider">Line Height</label>
+        <div class="settings-range">
+          <input type="range" id="line-height-slider" min="1.2" max="2.2" step="0.05" value="1.6" />
+          <span class="range-value" id="line-height-value">1.6</span>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label>Font Family</label>
+        <div class="custom-dropdown" id="font-dropdown">
+          <div class="custom-dropdown-selected" id="font-dropdown-selected">Arial</div>
+          <ul class="custom-dropdown-list" id="font-dropdown-list">
+            <li data-value="Arial, sans-serif">Arial</li>
+            <li data-value="'Times New Roman', serif">Times New Roman</li>
+            <li data-value="'Courier New', monospace">Courier New</li>
+            <li data-value="'Georgia', serif">Georgia</li>
+            <li data-value="'Verdana', sans-serif">Verdana</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label>Text Width</label>
+        <div class="custom-dropdown" id="entry-width-dropdown">
+          <div class="custom-dropdown-selected" id="entry-width-selected">Comfortable</div>
+          <ul class="custom-dropdown-list" id="entry-width-list">
+            <li data-value="720px">Narrow</li>
+            <li data-value="1000px">Comfortable</li>
+            <li data-value="100%">Full</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="settings-option">
+        <span class="settings-option-label">Show formatting toolbar</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toolbar-toggle" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-option">
+        <span class="settings-option-label">Show word count</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="word-count-toggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-option">
+        <span class="settings-option-label">Spellcheck</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="spellcheck-toggle" checked />
+          <span class="toggle-slider"></span>
+        </label>
       </div>
 
     </div>

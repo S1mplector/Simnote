@@ -636,6 +636,48 @@ html, body {
   width: 100%;
 }
 
+#settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#settings-panel h3 {
+  margin-bottom: 4px;
+}
+
+#settings-panel label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+#settings-panel .settings-group {
+  max-width: 520px;
+}
+
+#settings-panel .settings-range {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#settings-panel .settings-range input[type="range"] {
+  flex: 1;
+}
+
+#settings-panel .range-value {
+  min-width: 60px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#settings-panel .custom-dropdown {
+  max-width: 320px;
+}
+
 /* === Custom Dropdown (only once) === */
 .custom-dropdown {
   position: relative;
@@ -1212,7 +1254,7 @@ body[data-theme="light"] {
 #new-entry-panel .panel-content,
 #edit-entry-panel .panel-content {
   width: 100%;
-  max-width: 1000px;
+  max-width: var(--entry-content-width, 1000px);
   margin-left: auto;
   margin-right: auto;
 }

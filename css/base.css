@@ -28,6 +28,7 @@
 @import url("animations/journalPen.css");
 @import url("animations/entriesBook.css");
 @import url("components/checkbox.css");
+@import url("components/plant.css");
 
 /* ===== Global Reset & Body ===== */
 html, body {

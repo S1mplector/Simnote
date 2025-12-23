@@ -105,6 +105,9 @@ function startIntroAnimation() {
 
     setTimeout(() => {
       if (drawerNav) drawerNav.classList.add('visible');
+      // Reveal plant decoration with drawer
+      const plantScene = document.querySelector('.plant-scene');
+      if (plantScene) plantScene.classList.add('visible');
       // Reveal utility buttons together with the main menu
       manualBtn.style.display = 'block';
       themeSettingsBtn.style.display = 'block';
@@ -440,6 +443,8 @@ function animateMainPanelBack() {
   simnoteLogo.style.opacity = 1;
   simnoteLogo.style.transform = 'translateY(0)';
   if (drawerNav) drawerNav.classList.add('visible');
+  const plantScene = document.querySelector('.plant-scene');
+  if (plantScene) plantScene.classList.add('visible');
   manualBtn.style.display = 'block';
   themeSettingsBtn.style.display = 'block';
   document.body.classList.remove('journal-open');
@@ -449,12 +454,12 @@ function animateMainPanelBack() {
 window.animateMainPanelBack = animateMainPanelBack;
 
 /* -------------------------------------
-   Settings Panel (Font Family / Size)
+   Entry Settings Panel
 -------------------------------------- */
 const settingsPanel = document.getElementById('settings-panel');
 const settingsCloseBtn = document.getElementById('settings-close-btn');
 
-// Attach toggle behaviour to every settings gear in the editor panels
+// Attach toggle behaviour to every settings button in the editor panels
 document.querySelectorAll('.settings-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     settingsPanel.classList.toggle('visible');
@@ -467,39 +472,222 @@ if (settingsCloseBtn) {
   });
 }
 
-const fontSizeSlider = document.getElementById('font-size-slider');
-fontSizeSlider.addEventListener('input', (e) => {
-  const newSize = e.target.value + 'px';
-  document.querySelectorAll('.entry-content').forEach((el) => {
-    el.style.fontSize = newSize;
-  });
-});
+const ENTRY_SETTINGS_KEY = 'simnote_entry_settings';
+const defaultEntrySettings = {
+  fontSize: 16,
+  fontFamily: 'Arial, sans-serif',
+  lineHeight: 1.6,
+  contentWidth: '1000px',
+  showToolbar: true,
+  showWordCount: false,
+  spellcheck: true
+};
 
+const loadEntrySettings = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(ENTRY_SETTINGS_KEY));
+    return { ...defaultEntrySettings, ...(stored || {}) };
+  } catch (err) {
+    return { ...defaultEntrySettings };
+  }
+};
+
+const entrySettings = loadEntrySettings();
+
+const fontSizeSlider = document.getElementById('font-size-slider');
+const fontSizeValue = document.getElementById('font-size-value');
+const lineHeightSlider = document.getElementById('line-height-slider');
+const lineHeightValue = document.getElementById('line-height-value');
 const dropdownSelected = document.getElementById('font-dropdown-selected');
 const dropdownList = document.getElementById('font-dropdown-list');
+const entryWidthSelected = document.getElementById('entry-width-selected');
+const entryWidthList = document.getElementById('entry-width-list');
+const toolbarToggle = document.getElementById('toolbar-toggle');
+const wordCountToggle = document.getElementById('word-count-toggle');
+const spellcheckToggle = document.getElementById('spellcheck-toggle');
 
-dropdownSelected.addEventListener('click', () => {
-  dropdownList.classList.toggle('open');
-});
+const saveEntrySettings = () => {
+  localStorage.setItem(ENTRY_SETTINGS_KEY, JSON.stringify(entrySettings));
+};
 
-dropdownList.querySelectorAll('li').forEach(item => {
-  item.addEventListener('click', () => {
-    const newFont = item.getAttribute('data-value');
-    dropdownSelected.textContent = item.textContent;
-    document.documentElement.style.setProperty('--entry-font', newFont);
-    document.querySelectorAll('.entry-content').forEach(el => {
-      el.style.fontFamily = newFont;
-    });
-    document.querySelectorAll('input.entry-name').forEach(el => {
-      el.style.fontFamily = newFont;
-    });
-    dropdownList.classList.remove('open');
+const ensureWordCountDisplay = (panel) => {
+  if (!panel) return null;
+  const content = panel.querySelector('.panel-content');
+  if (!content) return null;
+  let display = content.querySelector('.word-count-display');
+  if (!display) {
+    display = document.createElement('div');
+    display.className = 'word-count-display';
+    content.appendChild(display);
+  }
+  return display;
+};
+
+const updateWordCountForEditor = (editor) => {
+  if (!editor) return;
+  const panel = editor.closest('#new-entry-panel, #edit-entry-panel');
+  const display = ensureWordCountDisplay(panel);
+  if (!display) return;
+  const text = editor.innerText || editor.textContent || '';
+  const count = StorageManager.countWords(text);
+  display.textContent = `${count} words`;
+};
+
+const updateWordCounts = () => {
+  document.querySelectorAll('.rich-editor').forEach(editor => {
+    updateWordCountForEditor(editor);
   });
+};
+
+window.updateEntryWordCount = (editor) => {
+  if (editor) {
+    updateWordCountForEditor(editor);
+  } else {
+    updateWordCounts();
+  }
+};
+
+const formatLineHeight = (value) => {
+  return Number(value).toFixed(2).replace(/\.?0+$/, '');
+};
+
+const applyEntrySettings = () => {
+  const fontSize = `${entrySettings.fontSize}px`;
+  document.documentElement.style.setProperty('--entry-line-height', entrySettings.lineHeight);
+  document.documentElement.style.setProperty('--entry-content-width', entrySettings.contentWidth);
+  document.documentElement.style.setProperty('--entry-font', entrySettings.fontFamily);
+  document.body.classList.toggle('entry-toolbar-hidden', !entrySettings.showToolbar);
+  document.body.classList.toggle('entry-word-count-hidden', !entrySettings.showWordCount);
+
+  document.querySelectorAll('.entry-content, .rich-editor').forEach(el => {
+    el.style.fontSize = fontSize;
+    el.style.fontFamily = entrySettings.fontFamily;
+    el.style.lineHeight = entrySettings.lineHeight;
+  });
+
+  document.querySelectorAll('input.entry-name').forEach(el => {
+    el.style.fontFamily = entrySettings.fontFamily;
+  });
+
+  document.querySelectorAll('.rich-editor').forEach(el => {
+    el.spellcheck = entrySettings.spellcheck;
+  });
+
+  updateWordCounts();
+};
+
+const syncEntrySettingsUI = () => {
+  if (fontSizeSlider) fontSizeSlider.value = entrySettings.fontSize;
+  if (fontSizeValue) fontSizeValue.textContent = `${entrySettings.fontSize}px`;
+  if (lineHeightSlider) lineHeightSlider.value = entrySettings.lineHeight;
+  if (lineHeightValue) lineHeightValue.textContent = formatLineHeight(entrySettings.lineHeight);
+  if (toolbarToggle) toolbarToggle.checked = entrySettings.showToolbar;
+  if (wordCountToggle) wordCountToggle.checked = entrySettings.showWordCount;
+  if (spellcheckToggle) spellcheckToggle.checked = entrySettings.spellcheck;
+
+  if (dropdownSelected && dropdownList) {
+    const match = dropdownList.querySelector(`li[data-value="${entrySettings.fontFamily}"]`);
+    if (match) dropdownSelected.textContent = match.textContent;
+  }
+
+  if (entryWidthSelected && entryWidthList) {
+    const match = entryWidthList.querySelector(`li[data-value="${entrySettings.contentWidth}"]`);
+    if (match) entryWidthSelected.textContent = match.textContent;
+  }
+};
+
+syncEntrySettingsUI();
+applyEntrySettings();
+
+if (fontSizeSlider) {
+  fontSizeSlider.addEventListener('input', (e) => {
+    entrySettings.fontSize = Number(e.target.value);
+    if (fontSizeValue) fontSizeValue.textContent = `${entrySettings.fontSize}px`;
+    applyEntrySettings();
+    saveEntrySettings();
+  });
+}
+
+if (lineHeightSlider) {
+  lineHeightSlider.addEventListener('input', (e) => {
+    entrySettings.lineHeight = Number(e.target.value);
+    if (lineHeightValue) lineHeightValue.textContent = formatLineHeight(entrySettings.lineHeight);
+    applyEntrySettings();
+    saveEntrySettings();
+  });
+}
+
+if (dropdownSelected && dropdownList) {
+  dropdownSelected.addEventListener('click', () => {
+    dropdownList.classList.toggle('open');
+  });
+
+  dropdownList.querySelectorAll('li').forEach(item => {
+    item.addEventListener('click', () => {
+      const newFont = item.getAttribute('data-value');
+      entrySettings.fontFamily = newFont;
+      dropdownSelected.textContent = item.textContent;
+      applyEntrySettings();
+      saveEntrySettings();
+      dropdownList.classList.remove('open');
+    });
+  });
+}
+
+if (entryWidthSelected && entryWidthList) {
+  entryWidthSelected.addEventListener('click', () => {
+    entryWidthList.classList.toggle('open');
+  });
+
+  entryWidthList.querySelectorAll('li').forEach(item => {
+    item.addEventListener('click', () => {
+      entrySettings.contentWidth = item.getAttribute('data-value');
+      entryWidthSelected.textContent = item.textContent;
+      applyEntrySettings();
+      saveEntrySettings();
+      entryWidthList.classList.remove('open');
+    });
+  });
+}
+
+if (toolbarToggle) {
+  toolbarToggle.addEventListener('change', (e) => {
+    entrySettings.showToolbar = e.target.checked;
+    applyEntrySettings();
+    saveEntrySettings();
+  });
+}
+
+if (wordCountToggle) {
+  wordCountToggle.addEventListener('change', (e) => {
+    entrySettings.showWordCount = e.target.checked;
+    applyEntrySettings();
+    saveEntrySettings();
+  });
+}
+
+if (spellcheckToggle) {
+  spellcheckToggle.addEventListener('change', (e) => {
+    entrySettings.spellcheck = e.target.checked;
+    applyEntrySettings();
+    saveEntrySettings();
+  });
+}
+
+document.querySelectorAll('.rich-editor').forEach(editor => {
+  editor.addEventListener('input', () => updateWordCountForEditor(editor));
 });
 
 document.addEventListener('click', (e) => {
-  if (!dropdownSelected.contains(e.target) && !dropdownList.contains(e.target)) {
-    dropdownList.classList.remove('open');
+  if (dropdownSelected && dropdownList) {
+    if (!dropdownSelected.contains(e.target) && !dropdownList.contains(e.target)) {
+      dropdownList.classList.remove('open');
+    }
+  }
+  if (entryWidthSelected && entryWidthList) {
+    if (!entryWidthSelected.contains(e.target) && !entryWidthList.contains(e.target)) {
+      entryWidthList.classList.remove('open');
+    }
   }
 });
 
