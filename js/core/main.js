@@ -76,6 +76,11 @@ let currentAttributes = [];
 // Initialize the editor logic immediately (it doesn't interfere with the splash)
 const editorManager = new EditorManager();
 
+window.pendingQuoteEntry = null;
+window.queueQuoteForEntry = (quote) => {
+  window.pendingQuoteEntry = quote;
+};
+
 // DOM elements used for main panel animations
 const blurOverlay = document.querySelector('.blur-overlay');
 const simnoteLogo = document.querySelector('.simnote-logo');
@@ -984,6 +989,23 @@ window.addEventListener('moodAttributesBack', () => {
   });
 });
 
+function escapeHtml(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildQuoteHtml(quote) {
+  if (!quote || !quote.text) return '';
+  const text = escapeHtml(quote.text);
+  const author = escapeHtml(quote.author || 'Unknown');
+  return `<blockquote>&ldquo;${text}&rdquo;</blockquote><p><em>- ${author}</em></p><p><br></p>`;
+}
+
 function goToEntryPanel() {
   const attrPanel = document.getElementById('mood-attributes-panel');
   if (!attrPanel) return;
@@ -1042,6 +1064,16 @@ function goToEntryPanel() {
       titleInput.value = '';
       if (richEditor) richEditor.innerHTML = '';
     }
+
+    const pendingQuote = window.pendingQuoteEntry;
+    if (pendingQuote && richEditor) {
+      const quoteHtml = buildQuoteHtml(pendingQuote);
+      if (quoteHtml) {
+        richEditor.innerHTML = quoteHtml + (richEditor.innerHTML || '');
+        richEditor.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      window.pendingQuoteEntry = null;
+    }
   });
 }
 
@@ -1058,9 +1090,14 @@ if (moodBackBtn) {
       fadeDuration: 300
     }).then(() => {
       if (returnPanel === mainPanel) {
+        if (window.pendingQuoteEntry) {
+          window.pendingQuoteEntry = null;
+        }
         blurOverlay.style.opacity = 1;
         manualBtn.style.display = 'block';
         themeSettingsBtn.style.display = 'block';
+        document.body.classList.add('main-menu-active');
+        if (drawerNav) drawerNav.classList.add('visible');
       }
     });
   });

@@ -33,6 +33,11 @@
   opacity: 0;
   transition: opacity 1s ease;
   margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transform: translateX(-17vmin);
 }
 
 .drawer-nav.visible {
@@ -45,6 +50,7 @@
   transform: translate3d(0, 0, 40vmin) rotateX(-24deg) rotateY(32deg);
   position: relative;
   color: rgba(255, 255, 255, 0.85);
+  transform-style: preserve-3d;
 }
 
 .chest__panel {
@@ -322,6 +328,241 @@
   box-shadow: 0 0 0 1px var(--accent), 0 0 8px rgba(var(--accent-rgb), 0.4);
 }
 
+/* Quote card above drawer - physically on top of the chest */
+.quote-card-wrap {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 6vmin;
+  height: 8vmin;
+  transform: 
+    translate(-50%, 0)
+    rotateX(90deg)
+    translateY(calc(var(--drawer-depth) * -0.15vmin));
+  transform-origin: center top;
+  transform-style: preserve-3d;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+/* Hover label for quote card */
+.quote-card-label {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 5vmin);
+  transform: translateY(-50%) translateX(-0.5vmin) rotateX(-90deg);
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0.6vmin 1.2vmin;
+  border-radius: 0.6vmin;
+  font-size: 1.6vmin;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.25s ease, transform 0.25s ease, color 0.2s ease, background 0.2s ease;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.quote-card-wrap:hover .quote-card-label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0) rotateX(-90deg);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.quote-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5vmin;
+  background: linear-gradient(145deg, #fafafa, #e8e8e8);
+  box-shadow: 
+    1px 1px 3px rgba(0, 0, 0, 0.12),
+    -0.5px -0.5px 2px rgba(255, 255, 255, 0.6);
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 
+    opacity 0.5s ease,
+    box-shadow 0.3s ease;
+}
+
+body.main-menu-active .quote-card {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.quote-card:hover {
+  box-shadow: 
+    2px 2px 6px rgba(0, 0, 0, 0.2),
+    -1px -1px 4px rgba(255, 255, 255, 0.8);
+}
+
+.quote-card__lines {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4vmin;
+}
+
+.quote-card__line {
+  height: 0.4vmin;
+  background: #d0d0d0;
+  border-radius: 999px;
+}
+
+.quote-card__line:nth-child(2) {
+  width: 85%;
+}
+
+.quote-card__line:nth-child(3) {
+  width: 65%;
+}
+
+
+.quote-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 5, 5, 0.35);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  z-index: 9000;
+}
+
+body.quote-overlay-open .quote-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Quote panel that slides in from left */
+.quote-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 420px;
+  transform: translate(-150%, -50%);
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.3),
+    0 10px 30px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  z-index: 9001;
+  opacity: 0;
+  pointer-events: none;
+  transition: 
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 16px;
+}
+
+body.quote-overlay-open .quote-panel {
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.quote-panel__quote {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: #222;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.quote-panel__author {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+}
+
+.quote-panel__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quote-panel__btn {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #f5f5f5;
+  color: #333;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  flex: 1;
+  text-align: center;
+}
+
+.quote-panel__btn:hover {
+  transform: translateY(-2px);
+  background: #eee;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quote-panel__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.quote-panel__btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.quote-panel__btn--accent {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.quote-panel__btn--favorite.is-favorite {
+  background: rgba(var(--accent-rgb), 0.15);
+  color: #c04a7b;
+}
+
+.quote-panel__btn--close {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  padding: 8px;
+  flex: none;
+  align-self: center;
+}
+
+.quote-panel__btn--close:hover {
+  color: #333;
+  transform: none;
+  box-shadow: none;
+}
+
+.quote-panel__status {
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.5);
+  min-height: 1.2em;
+  text-align: center;
+}
+
 /* Responsive scaling */
 @media (max-width: 600px) {
   :root {
@@ -332,6 +573,17 @@
   
   .chest {
     transform: translate3d(0, 0, 30vmin) rotateX(-24deg) rotateY(32deg);
+  }
+
+  .quote-card-wrap {
+    width: 5vmin;
+    height: 7vmin;
+  }
+
+  .quote-panel {
+    width: 290px;
+    height: 400px;
+    padding: 20px;
   }
 }
 

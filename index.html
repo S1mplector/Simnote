@@ -54,9 +54,9 @@
         Simnote is your calm journaling space. Notes save as you type, so you can focus on writing.
       </p>
       <ul>
-        <li>Start a new entry from Journal, or open past entries from Entries.</li>
+        <li>Start a new entry from the first drawer, or open past entries from the second drawer.</li>
         <li>Everything autosaves while you type. Press Esc to return to the main menu.</li>
-        <li>Add moods, tags, and templates to organize your thoughts.</li>
+        <li>Look at your mood data anytime from the third drawer.</li>
         <li>Customize themes, fonts, and preferences in Settings.</li>
       </ul>
       <p>Want a refresher? Run the quick tour anytime.</p>
@@ -202,6 +202,17 @@
         <!-- 3D Drawer Navigation -->
         <div class="drawer-nav" id="drawer-nav">
           <div class="chest">
+            <!-- Quote card sitting on top of the drawer -->
+            <div class="quote-card-wrap">
+              <div class="quote-card" id="quote-card" role="button" tabindex="0" aria-label="Open quotes" aria-expanded="false">
+                <div class="quote-card__lines">
+                  <span class="quote-card__line"></span>
+                  <span class="quote-card__line"></span>
+                  <span class="quote-card__line"></span>
+                </div>
+              </div>
+              <span class="quote-card-label">Quotes</span>
+            </div>
             <div class="chest__panel chest__panel--back"></div>
             <div class="chest__panel chest__panel--top"></div>
             <div class="chest__panel chest__panel--bottom"></div>
@@ -270,6 +281,24 @@
         </div>
         
       </div>
+    </div>
+
+    <div class="quote-overlay" id="quote-overlay" aria-hidden="true"></div>
+
+    <!-- Quote Panel (slides in from left) -->
+    <div class="quote-panel" id="quote-panel">
+      <div class="quote-panel__quote" id="quote-panel-text">Loading quote...</div>
+      <div class="quote-panel__author" id="quote-panel-author"></div>
+      <div class="quote-panel__actions">
+        <button class="quote-panel__btn quote-panel__btn--ghost" id="quote-panel-prev" type="button" title="Previous quote">← Prev</button>
+        <button class="quote-panel__btn" id="quote-panel-next" type="button" title="Next quote">Next →</button>
+      </div>
+      <div class="quote-panel__actions">
+        <button class="quote-panel__btn quote-panel__btn--favorite" id="quote-panel-favorite" type="button" title="Favorite quote" aria-pressed="false">♡ Favorite</button>
+        <button class="quote-panel__btn quote-panel__btn--accent" id="quote-panel-journal" type="button" title="Journal about this quote">Journal</button>
+      </div>
+      <button class="quote-panel__btn quote-panel__btn--close" id="quote-panel-close" type="button" title="Close">Put down</button>
+      <div class="quote-panel__status" id="quote-panel-status" aria-live="polite"></div>
     </div>
 
     <!-- Journal Panel -->
@@ -731,6 +760,7 @@
 
     <!-- JavaScript Modules -->
     <script type="module" src="js/core/main.js"></script>
+    <script type="module" src="js/managers/quoteCardManager.js"></script>
     <script type="module" src="js/managers/chatManager.js"></script>
     <script type="module" src="js/managers/statsManager.js"></script>
     
