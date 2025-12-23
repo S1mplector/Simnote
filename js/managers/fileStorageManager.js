@@ -6,6 +6,8 @@ const path = require('path');
 
 const SIMNOTE_EXTENSION = '.simnote';
 const SIMNOTE_VERSION = 1;
+const AUDIO_DIR_NAME = 'audio';
+const AUDIO_DATA_ATTR_REGEX = /data-audio-data=(["'])(data:audio\/[^"']+)\1/g;
 
 class FileStorageManager {
   constructor(storageDir) {
@@ -41,7 +43,8 @@ class FileStorageManager {
       fontSize: entry.fontSize || '',
       createdAt: entry.createdAt || entry.date || new Date().toISOString(),
       updatedAt: entry.updatedAt || new Date().toISOString(),
-      exportedAt: new Date().toISOString()
+      exportedAt: new Date().toISOString(),
+      audioFiles: entry.audioFiles || []
     };
   }
 
@@ -59,8 +62,88 @@ class FileStorageManager {
       fontSize: simnoteData.fontSize || '',
       createdAt: simnoteData.createdAt,
       updatedAt: simnoteData.updatedAt,
-      date: simnoteData.createdAt // backward compatibility
+      date: simnoteData.createdAt, // backward compatibility
+      audioFiles: Array.isArray(simnoteData.audioFiles) ? simnoteData.audioFiles : []
     };
+  }
+
+  _getAudioExtension(mimeType) {
+    switch (mimeType) {
+      case 'audio/wav':
+        return '.wav';
+      case 'audio/mpeg':
+        return '.mp3';
+      case 'audio/ogg':
+        return '.ogg';
+      case 'audio/mp4':
+        return '.m4a';
+      case 'audio/webm':
+      default:
+        return '.webm';
+    }
+  }
+
+  _clearAudioDir(entryId) {
+    if (!entryId) return;
+    const audioDir = path.join(this.storageDir, AUDIO_DIR_NAME, entryId);
+    if (fs.existsSync(audioDir)) {
+      fs.rmSync(audioDir, { recursive: true, force: true });
+    }
+  }
+
+  _collectAudioFileRefs(content) {
+    if (!content) return [];
+    const refs = [];
+    const regex = /data-audio-file=(["'])([^"']+)\1/g;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      refs.push({ path: match[2] });
+    }
+    return refs;
+  }
+
+  _extractAudioAssets(entry) {
+    if (!entry?.content) {
+      return { content: entry?.content || '', audioFiles: [] };
+    }
+
+    const matches = [...entry.content.matchAll(AUDIO_DATA_ATTR_REGEX)];
+    const hasAudioData = matches.length > 0;
+    const hasAudioFiles = /data-audio-file=/.test(entry.content);
+
+    if (!hasAudioData) {
+      if (!hasAudioFiles) {
+        this._clearAudioDir(entry.id);
+        return { content: entry.content, audioFiles: [] };
+      }
+      return { content: entry.content, audioFiles: this._collectAudioFileRefs(entry.content) };
+    }
+
+    this._clearAudioDir(entry.id);
+    const audioDir = path.join(this.storageDir, AUDIO_DIR_NAME, entry.id);
+    if (!fs.existsSync(audioDir)) {
+      fs.mkdirSync(audioDir, { recursive: true });
+    }
+
+    let clipIndex = 0;
+    const audioFiles = [];
+    const updatedContent = entry.content.replace(AUDIO_DATA_ATTR_REGEX, (_match, _quote, dataUrl) => {
+      const [header, base64] = dataUrl.split(',');
+      if (!base64) return _match;
+      const mimeMatch = header.match(/^data:([^;]+)(?:;[^,]+)?;base64/i);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'audio/webm';
+      clipIndex += 1;
+      const extension = this._getAudioExtension(mimeType);
+      const fileName = `clip-${clipIndex}${extension}`;
+      const filePath = path.join(audioDir, fileName);
+      const buffer = Buffer.from(base64, 'base64');
+      fs.writeFileSync(filePath, buffer);
+      const relPath = path.join(AUDIO_DIR_NAME, entry.id, fileName).replace(/\\/g, '/');
+      audioFiles.push({ path: relPath, mimeType, bytes: buffer.length });
+      return `data-audio-file="${relPath}"`;
+    });
+
+    return { content: updatedContent, audioFiles };
   }
 
   // Return an array of entry objects read from .simnote files
@@ -91,7 +174,12 @@ class FileStorageManager {
 
   // Save a new entry as .simnote file
   saveEntry(entry) {
-    const simnoteData = this._entryToSimnote(entry);
+    const audioResult = this._extractAudioAssets(entry);
+    const simnoteData = this._entryToSimnote({
+      ...entry,
+      content: audioResult.content,
+      audioFiles: audioResult.audioFiles
+    });
     const filename = this._generateFilename(entry);
     const filePath = path.join(this.storageDir, filename);
     fs.writeFileSync(filePath, JSON.stringify(simnoteData, null, 2), 'utf8');
@@ -101,14 +189,27 @@ class FileStorageManager {
 
   // Update an existing entry - find by ID and rewrite
   updateEntry(entry) {
-    // First, try to find and delete the old file
-    this.deleteEntryById(entry.id);
-    // Save with updated content
+    // Remove the old .simnote file but keep audio assets unless explicitly removed
+    this._deleteEntryFileOnly(entry.id);
     return this.saveEntry(entry);
   }
 
   // Delete entry by ID (finds the file first)
   deleteEntryById(id) {
+    const files = fs.readdirSync(this.storageDir);
+    for (const file of files) {
+      if (path.extname(file) === SIMNOTE_EXTENSION && file.includes(id)) {
+        const filePath = path.join(this.storageDir, file);
+        fs.unlinkSync(filePath);
+        console.log(`[FileStorage] Deleted: ${file}`);
+        this._clearAudioDir(id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  _deleteEntryFileOnly(id) {
     const files = fs.readdirSync(this.storageDir);
     for (const file of files) {
       if (path.extname(file) === SIMNOTE_EXTENSION && file.includes(id)) {
@@ -146,6 +247,10 @@ class FileStorageManager {
         fs.unlinkSync(filePath);
         deleted++;
       }
+    }
+    const audioRoot = path.join(this.storageDir, AUDIO_DIR_NAME);
+    if (fs.existsSync(audioRoot)) {
+      fs.rmSync(audioRoot, { recursive: true, force: true });
     }
     if (deleted > 0) {
       console.log(`[FileStorage] Cleared ${deleted} .simnote files`);

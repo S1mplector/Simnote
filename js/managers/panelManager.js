@@ -1,4 +1,36 @@
 // panelManager.js
+// Manages panel transitions and visibility throughout the application
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module provides static utility methods for smooth panel transitions.
+// All methods are static as no instance state is needed.
+//
+// INTEGRATION POINTS:
+// - Used by EditorManager for entry panel navigation
+// - Used by various UI components for panel switching
+// - Works with .custom-panel elements
+//
+// TRANSITION TYPES:
+// - smoothEntrance/smoothExit: Fade transitions with configurable duration
+// - transitionPanels: Legacy method that redirects to smoothEntrance
+//
+// DEPENDENCIES:
+// - DOM APIs for style manipulation
+// - CSS transitions for animation
+
+/**
+ * Static utility class for managing panel transitions and visibility.
+ * Provides smooth fade animations between different UI panels.
+ * 
+ * @class PanelManager
+ * @example
+ * // Transition from journal to edit panel
+ * await PanelManager.smoothEntrance(journalPanel, editPanel);
+ * 
+ * // With custom duration
+ * await PanelManager.transitionPanels(panelA, panelB, 500);
+ */
 export class PanelManager {
     /**
      * Simple elegant fade transition between panels

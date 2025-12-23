@@ -1,21 +1,60 @@
+// guidedPromptManager.js
+// Manages guided writing prompts for journal entries
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module provides a step-by-step writing prompt overlay for
+// journal entries. Features include:
+// - Sequential prompt display with "Next" button
+// - Dynamic spacer creation based on typed content height
+// - Textarea padding adjustment to keep prompts visible
+// - Support for template-based prompt arrays
+//
+// VISUAL BEHAVIOR:
+// - Prompts appear as overlay boxes above the textarea
+// - Spacers match the height of user's typed responses
+// - Each prompt scrolls into view when displayed
+//
+// DEPENDENCIES:
+// - DOM APIs for overlay positioning
+
+/**
+ * Manages guided writing prompts for journal entries.
+ * Displays sequential prompts as overlays above the textarea.
+ * 
+ * @class GuidedPromptManager
+ */
 export class GuidedPromptManager {
+  /**
+   * Creates GuidedPromptManager and displays first prompt.
+   * 
+   * @param {HTMLElement} panel - Entry panel containing textarea
+   * @param {Object} template - Template with prompts array
+   * @constructor
+   */
   constructor(panel, template) {
+    /** @type {HTMLElement} Entry panel element */
     this.panel = panel;
+    /** @type {HTMLTextAreaElement} Content textarea */
     this.textarea = panel.querySelector('textarea.entry-content');
+    /** @type {string[]} Array of prompt questions */
     this.prompts = (template.prompts || []).slice();
+    /** @type {number} Current prompt index */
     this.currentIdx = 0;
-    // Track textarea height after each prompt so we can insert spacer divs that match the amount of text typed for the previous question.
+    /** @type {number} Last recorded textarea content height */
     this.lastContentHeight = 0;
     if (this.prompts.length === 0) return;
 
     this.buildContainer();
     this.createPromptBox(this.prompts[this.currentIdx], true);
-    // At start there is no user text yet, so lastContentHeight is current scrollHeight (likely minimal but capture it).
     this.lastContentHeight = this.textarea.scrollHeight;
     this.updateTextareaPadding();
   }
 
-  /* Build a container that will hold all prompt boxes */
+  /**
+   * Builds the container element for prompt boxes.
+   * @private
+   */
   buildContainer() {
     const contentParent = this.textarea.parentElement;
     this.container = document.createElement('div');
@@ -38,7 +77,13 @@ export class GuidedPromptManager {
     }
   }
 
-  /* Create a visual prompt box. If active, it contains the Next button */
+  /**
+   * Creates a visual prompt box element.
+   * 
+   * @param {string} text - Prompt question text
+   * @param {boolean} isActive - Whether to include Next button
+   * @private
+   */
   createPromptBox(text, isActive) {
     const box = document.createElement('div');
     box.className = 'guided-prompt-box';
@@ -61,8 +106,13 @@ export class GuidedPromptManager {
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
+  /**
+   * Handles Next button click - advances to next prompt.
+   * 
+   * @param {HTMLElement} currentBox - The current prompt box element
+   * @private
+   */
   handleNext(currentBox) {
-    // Remove the Next button from the current box so users can't trigger again
     const btn = currentBox.querySelector('.guided-prompt-btn');
     if (btn) btn.remove();
 
@@ -93,7 +143,10 @@ export class GuidedPromptManager {
     }
   }
 
-  /* Adjust textarea padding so user input starts below the prompt boxes */
+  /**
+   * Adjusts textarea padding so input starts below prompt boxes.
+   * @private
+   */
   updateTextareaPadding() {
     if (!this.container) return;
     // Wait a frame so layout updates are reflected
@@ -103,7 +156,9 @@ export class GuidedPromptManager {
     });
   }
 
-  /* Called externally to clean everything up */
+  /**
+   * Cleans up all prompt UI elements.
+   */
   destroy() {
     if (this.container) this.container.remove();
     if (this.textarea) this.textarea.style.paddingTop = '';

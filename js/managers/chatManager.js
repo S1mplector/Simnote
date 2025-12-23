@@ -1,30 +1,87 @@
 // chatManager.js
+// AI-powered chat companion ("Serenity") for emotional support
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module manages an AI chat interface for calming conversation
+// and gentle CBT-style guidance. Features include:
+// - Streaming chat responses via Electron IPC
+// - Sentiment detection for ambient color shifts
+// - Memory/summary persistence across sessions
+// - Breathing exercise integration
+// - Auto-scrolling with "new message" indicator
+// - History compaction for long conversations
+//
+// INTEGRATION POINTS:
+// - PanelManager: Panel transitions
+// - BreathingOverlay: Guided breathing exercises
+// - Electron IPC: chatStream, summarize, loadMemory, saveMemory
+//
+// SPECIAL COMMANDS:
+// - /breathe: Triggers breathing overlay
+// - [BREATH]: Model can suggest breathing exercise
+// - [COLOR:hex]: Model can change ambient color
+//
+// DEPENDENCIES:
+// - PanelManager, BreathingOverlay
+// - Electron IPC for AI communication
+
 import { PanelManager } from './panelManager.js';
 import { BreathingOverlay } from '../components/breathingOverlay.js';
 
+/**
+ * Manages the AI chat companion interface.
+ * Provides calming conversation with sentiment-aware ambient colors.
+ * 
+ * @class ChatManager
+ */
 class ChatManager{
+  /**
+   * Creates the ChatManager and initializes UI.
+   * @constructor
+   */
   constructor(){
-    // DOM refs
+    // DOM element references
+    /** @type {HTMLElement} Chat button in main menu */
     this.chatBtn = document.getElementById('chat-btn');
+    /** @type {HTMLElement} Chat panel container */
     this.chatPanel = document.getElementById('chat-panel');
+    /** @type {HTMLElement} Main menu panel */
     this.mainPanel = document.getElementById('main-panel');
+    /** @type {HTMLElement} Back button in chat */
     this.backBtn = this.chatPanel?.querySelector('.chat-back-btn');
+    /** @type {HTMLElement} Messages container */
     this.messagesDiv = document.getElementById('chat-messages');
+    /** @type {HTMLInputElement} Chat input field */
     this.input = document.getElementById('chat-input');
+    /** @type {HTMLElement|null} Send button (unused) */
     this.sendBtn = null;
+    /** @type {HTMLElement} Input row container */
     this.inputRow = document.getElementById('chat-input-row');
+    /** @type {HTMLElement} New conversation button */
     this.newBtn = document.getElementById('chat-new-btn');
 
+    // Chat state
+    /** @type {Array<{role: string, content: string}>} Conversation history */
     this.history = [];
+    /** @type {string} Summary of conversation for context */
     this.memorySummary = '';
+    /** @type {string} User's current mood for context */
     this.userMood = window.currentMood || '';
+    /** @type {boolean} Whether intro message has been shown */
     this.introShown = false;
+    /** @type {number} Messages before compacting history */
     this.collapseThreshold = 20;
-    this.autoScrollThreshold = 120; // px
+    /** @type {number} Pixels from bottom to auto-scroll */
+    this.autoScrollThreshold = 120;
 
     this.init();
   }
 
+  /**
+   * Initializes event listeners and UI components.
+   * @private
+   */
   init(){
     // Load memory summary once
     window.electronAPI.loadMemory().then(sum=>{if(sum){this.memorySummary=sum;}});
@@ -118,6 +175,13 @@ class ChatManager{
     }
   }
 
+  /**
+   * Appends a message to the chat display.
+   * 
+   * @param {string} text - Message content
+   * @param {string} role - 'user' or 'assistant'
+   * @param {boolean} [isIntro=false] - Whether this is an intro message
+   */
   appendMessage(text, role, isIntro = false){
     const msg=document.createElement('div');
     msg.className = `msg ${role}`;
@@ -132,6 +196,12 @@ class ChatManager{
     // input box stays fixed-height; no resize
   }
 
+  /**
+   * Requests and streams an AI response.
+   * Handles special tokens like [BREATH] and [COLOR:hex].
+   * 
+   * @async
+   */
   async requestAssistantReply(){
     // show typing indicator
     const typing = document.createElement('div');
@@ -198,6 +268,10 @@ class ChatManager{
   }
 
   // ---------- Breathing helpers ----------
+  
+  /**
+   * Shows buttons to start or skip breathing exercise.
+   */
   showBreathingPrompt(){
     const msg=document.createElement('div');
     msg.className='msg assistant';
@@ -222,10 +296,17 @@ class ChatManager{
     });
   }
 
+  /**
+   * Starts the breathing exercise overlay.
+   */
   showBreathingOverlay(){
     BreathingOverlay.start();
   }
 
+  /**
+   * Updates conversation memory summary via AI.
+   * @async
+   */
   async updateMemory(){
     try{
       const summary = await window.electronAPI.summarize(this.history);
@@ -236,6 +317,11 @@ class ChatManager{
     }catch(e){console.error('memory update failed',e);}
   }
 
+  /**
+   * Manages auto-scroll and new message indicator.
+   * 
+   * @param {boolean} [force=false] - Force scroll to bottom
+   */
   manageAutoScroll(force=false){
     const nearBottom = (this.messagesDiv.scrollHeight - this.messagesDiv.scrollTop - this.messagesDiv.clientHeight) < this.autoScrollThreshold;
     if(force || nearBottom){
@@ -246,6 +332,11 @@ class ChatManager{
     }
   }
 
+  /**
+   * Scrolls messages container to bottom.
+   * 
+   * @param {boolean} [now] - Immediate scroll (vs animated)
+   */
   scrollMessagesToBottom(now){
     if(now){
       this.messagesDiv.scrollTop = this.messagesDiv.scrollHeight;
@@ -254,6 +345,10 @@ class ChatManager{
     }
   }
 
+  /**
+   * Compacts old messages into a collapsible section.
+   * Triggers when message count exceeds collapseThreshold.
+   */
   compactHistory(){
     const children=[...this.messagesDiv.children];
     if(children.length <= this.collapseThreshold) return;
@@ -286,6 +381,11 @@ class ChatManager{
     wrapper.querySelector('button').textContent=`Show ${wrapper.stored.length} earlier messages`;
   }
 
+  /**
+   * Applies ambient color to chat panel background.
+   * 
+   * @param {string} color - CSS color value (hex or named)
+   */
   applyAmbientColor(color){
     // Accept hex or css color
     let rgb;
@@ -300,6 +400,12 @@ class ChatManager{
     this.chatPanel.style.setProperty('--chat-border', border);
   }
 
+  /**
+   * Detects sentiment from user text.
+   * 
+   * @param {string} txt - User input text
+   * @returns {'positive'|'negative'|'angry'|'neutral'} Detected sentiment
+   */
   detectSentiment(txt){
     const low=txt.toLowerCase();
     const negativeWords=['sad','down','terrible','depressed','anxious','anxiety','worried','scared','lonely','hopeless','tired','exhausted','angry','frustrated'];

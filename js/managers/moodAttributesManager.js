@@ -1,25 +1,70 @@
 // moodAttributesManager.js
 // Manages mood attributes (reasons/tags for how user feels) with iOS-style interactions
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module provides an iOS-style grid of selectable mood attributes
+// (reasons why user feels a certain way). Features include:
+// - Selectable attribute grid with emoji icons
+// - Long-press to enter edit mode (iOS-style jiggle)
+// - Drag-and-drop reordering
+// - Add/delete custom attributes
+// - Persistent storage in localStorage
+//
+// INTERACTIONS:
+// - Tap: Toggle selection
+// - Long press (500ms): Enter edit mode
+// - Drag in edit mode: Reorder attributes
+// - Delete badge (edit mode): Remove attribute
+//
+// DEPENDENCIES:
+// - localStorage for persistence
 
+/**
+ * Manages mood attributes grid with iOS-style interactions.
+ * Supports selection, editing, drag-drop reordering, and custom attributes.
+ * 
+ * @class MoodAttributesManager
+ */
 export class MoodAttributesManager {
+  /**
+   * Creates MoodAttributesManager and initializes UI.
+   * @constructor
+   */
   constructor() {
+    /** @type {string} localStorage key for attributes */
     this.storageKey = 'simnote_mood_attributes';
+    /** @type {HTMLElement} Attributes panel element */
     this.panel = document.getElementById('mood-attributes-panel');
+    /** @type {HTMLElement} Grid container for attribute items */
     this.grid = this.panel?.querySelector('.attributes-grid');
+    /** @type {HTMLElement} Add attribute button */
     this.addBtn = this.panel?.querySelector('.add-attribute-btn');
+    /** @type {HTMLElement} Next/continue button */
     this.nextBtn = this.panel?.querySelector('.attributes-next-btn');
+    /** @type {HTMLElement} Back button */
     this.backBtn = this.panel?.querySelector('.attributes-back-btn');
     
+    /** @type {Array} Array of attribute objects */
     this.attributes = this.loadAttributes();
+    /** @type {string[]} IDs of currently selected attributes */
     this.selectedAttributes = [];
+    /** @type {boolean} Whether in edit/reorder mode */
     this.editMode = false;
+    /** @type {HTMLElement|null} Currently dragged element */
     this.draggedEl = null;
+    /** @type {number|null} Long press timer ID */
     this.longPressTimer = null;
-    this.longPressDelay = 500; // ms
+    /** @type {number} Milliseconds for long press detection */
+    this.longPressDelay = 500;
     
     this.init();
   }
 
+  /**
+   * Returns default attribute set.
+   * @returns {Array<{id: string, name: string, emoji: string, order: number}>}
+   */
   getDefaultAttributes() {
     return [
       { id: 'work', name: 'Work', emoji: '💼', order: 0 },
@@ -37,6 +82,10 @@ export class MoodAttributesManager {
     ];
   }
 
+  /**
+   * Loads attributes from localStorage or returns defaults.
+   * @returns {Array} Attribute objects
+   */
   loadAttributes() {
     const stored = localStorage.getItem(this.storageKey);
     if (stored) {
@@ -52,10 +101,18 @@ export class MoodAttributesManager {
     return defaults;
   }
 
+  /**
+   * Saves attributes to localStorage.
+   * @param {Array} [attrs=this.attributes] - Attributes to save
+   */
   saveAttributes(attrs = this.attributes) {
     localStorage.setItem(this.storageKey, JSON.stringify(attrs));
   }
 
+  /**
+   * Initializes the grid and event bindings.
+   * @private
+   */
   init() {
     if (!this.panel || !this.grid) return;
     
@@ -63,6 +120,10 @@ export class MoodAttributesManager {
     this.bindEvents();
   }
 
+  /**
+   * Renders the attribute grid with all items.
+   * @private
+   */
   renderGrid() {
     if (!this.grid) return;
     
@@ -87,6 +148,12 @@ export class MoodAttributesManager {
     this.grid.appendChild(addItem);
   }
 
+  /**
+   * Creates a DOM element for an attribute.
+   * @param {Object} attr - Attribute object
+   * @returns {HTMLElement} Attribute element
+   * @private
+   */
   createAttributeElement(attr) {
     const item = document.createElement('div');
     item.className = 'attribute-item';
@@ -107,6 +174,12 @@ export class MoodAttributesManager {
     return item;
   }
 
+  /**
+   * Binds touch/mouse events to an attribute item.
+   * @param {HTMLElement} item - The item element
+   * @param {Object} attr - The attribute data
+   * @private
+   */
   bindItemEvents(item, attr) {
     const deleteBadge = item.querySelector('.delete-badge');
     
@@ -184,6 +257,10 @@ export class MoodAttributesManager {
     });
   }
 
+  /**
+   * Toggles selection state of an attribute.
+   * @param {string} id - Attribute ID
+   */
   toggleSelection(id) {
     const idx = this.selectedAttributes.indexOf(id);
     if (idx === -1) {
@@ -199,6 +276,9 @@ export class MoodAttributesManager {
     }
   }
 
+  /**
+   * Enters edit mode with haptic feedback.
+   */
   enterEditMode() {
     this.editMode = true;
     this.panel.classList.add('edit-mode');
@@ -209,12 +289,21 @@ export class MoodAttributesManager {
     }
   }
 
+  /**
+   * Exits edit mode.
+   */
   exitEditMode() {
     this.editMode = false;
     this.panel.classList.remove('edit-mode');
     this.draggedEl = null;
   }
 
+  /**
+   * Starts drag operation on an item.
+   * @param {HTMLElement} item - Item to drag
+   * @param {Event} e - Mouse/touch event
+   * @private
+   */
   startDrag(item, e) {
     if (item.classList.contains('add-new')) return;
     
@@ -228,6 +317,11 @@ export class MoodAttributesManager {
     this.dragOffsetY = 0;
   }
 
+  /**
+   * Handles drag movement.
+   * @param {Event} e - Mouse/touch event
+   * @private
+   */
   onDrag(e) {
     if (!this.draggedEl) return;
     
@@ -243,6 +337,12 @@ export class MoodAttributesManager {
     this.checkSwap(touch.clientX, touch.clientY);
   }
 
+  /**
+   * Checks if dragged item should swap with another.
+   * @param {number} x - Current X position
+   * @param {number} y - Current Y position
+   * @private
+   */
   checkSwap(x, y) {
     const items = this.grid.querySelectorAll('.attribute-item:not(.add-new):not(.dragging)');
     
@@ -259,6 +359,12 @@ export class MoodAttributesManager {
     });
   }
 
+  /**
+   * Swaps order of two attributes.
+   * @param {string} id1 - First attribute ID
+   * @param {string} id2 - Second attribute ID
+   * @private
+   */
   swapAttributes(id1, id2) {
     const attr1 = this.attributes.find(a => a.id === id1);
     const attr2 = this.attributes.find(a => a.id === id2);
@@ -281,6 +387,10 @@ export class MoodAttributesManager {
     }
   }
 
+  /**
+   * Ends drag operation.
+   * @private
+   */
   endDrag() {
     if (this.draggedEl) {
       this.draggedEl.style.transform = '';
@@ -289,8 +399,11 @@ export class MoodAttributesManager {
     }
   }
 
+  /**
+   * Deletes an attribute by ID.
+   * @param {string} id - Attribute ID to delete
+   */
   deleteAttribute(id) {
-    // Confirm deletion
     const attr = this.attributes.find(a => a.id === id);
     if (!attr) return;
     
@@ -314,6 +427,11 @@ export class MoodAttributesManager {
     }
   }
 
+  /**
+   * Adds a new custom attribute.
+   * @param {string} name - Attribute name
+   * @param {string} emoji - Emoji icon
+   */
   addAttribute(name, emoji) {
     const id = 'custom_' + Date.now();
     const maxOrder = Math.max(...this.attributes.map(a => a.order), -1);
@@ -335,8 +453,10 @@ export class MoodAttributesManager {
     }
   }
 
+  /**
+   * Shows dialog for adding a new attribute.
+   */
   showAddDialog() {
-    // Exit edit mode first
     this.exitEditMode();
     
     // Create dialog overlay
@@ -403,6 +523,10 @@ export class MoodAttributesManager {
     });
   }
 
+  /**
+   * Binds global event listeners.
+   * @private
+   */
   bindEvents() {
     // Click outside grid to exit edit mode
     document.addEventListener('click', (e) => {
@@ -438,25 +562,42 @@ export class MoodAttributesManager {
     });
   }
 
+  /**
+   * Gets full objects for selected attributes.
+   * @returns {Array} Selected attribute objects
+   */
   getSelectedAttributeObjects() {
     return this.attributes.filter(a => this.selectedAttributes.includes(a.id));
   }
 
+  /**
+   * Gets names of selected attributes.
+   * @returns {string[]} Array of selected attribute names
+   */
   getSelectedAttributeNames() {
     return this.getSelectedAttributeObjects().map(a => a.name);
   }
 
+  /**
+   * Resets selection and edit mode.
+   */
   reset() {
     this.selectedAttributes = [];
     this.exitEditMode();
     this.renderGrid();
   }
 
+  /**
+   * Shows the attributes panel.
+   */
   show() {
     this.reset();
     this.panel.style.display = 'block';
   }
 
+  /**
+   * Hides the attributes panel.
+   */
   hide() {
     this.exitEditMode();
     this.panel.style.display = 'none';

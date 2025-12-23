@@ -1,22 +1,71 @@
 // storageManager.js
 // Unified storage API that uses SQLite (via DatabaseManager) when available,
 // with localStorage fallback for compatibility
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This is the central persistence layer for Simnote. It provides a unified API
+// that automatically selects the best available storage backend:
+// 1. Electron native SQLite (better-sqlite3) - for desktop app
+// 2. Browser SQLite (sql.js/WASM) - for PWA with persistence
+// 3. localStorage fallback - for basic browser support
+//
+// STORAGE BACKENDS:
+// - Electron: Uses native better-sqlite3 via IPC (window.electronAPI.nativeDb)
+// - Browser: Uses sql.js WASM module via DatabaseManager
+// - Fallback: localStorage with JSON serialization
+//
+// DATA TYPES:
+// - Entries: Journal entries with content, mood, tags, etc.
+// - Daily Moods: Standalone mood tracking separate from entries
+// - Metadata: App settings, streaks, statistics
+//
+// FEATURES:
+// - Entry CRUD with auto-generated IDs
+// - Tag management across entries
+// - Streak calculation and statistics
+// - Import/export in JSON and legacy text formats
+// - File storage integration for .simnote files
+//
+// MIGRATION:
+// - Auto-migrates localStorage data to SQLite on first run
+// - Auto-migrates localStorage to native DB in Electron
+// - Version tracking for future schema changes
+//
+// DEPENDENCIES:
+// - DatabaseManager for SQLite operations
+// - Electron IPC for native database (optional)
 
 import { dbManager } from './databaseManager.js';
 
+/** @constant {number} Current storage schema version */
 const STORAGE_VERSION = 2;
+/** @constant {string} localStorage key for entries array */
 const ENTRIES_KEY = 'entries';
+/** @constant {string} localStorage key for app metadata */
 const META_KEY = 'simnote_meta';
+/** @constant {string} localStorage key for daily mood data */
 const DAILY_MOOD_KEY = 'simnote_daily_mood';
+/** @constant {string} localStorage key to track native DB migration status */
 const NATIVE_DB_MIGRATION_KEY = 'simnote_native_db_migrated';
+/** @constant {boolean} Whether running in Electron with native DB support */
 const isElectron = typeof window !== 'undefined' && window.electronAPI?.nativeDb;
 
-// Flag to track if SQLite is ready
+/** @type {boolean} Whether SQLite (browser) is initialized and ready */
 let sqliteReady = false;
+/** @type {Promise|null} Pending SQLite initialization promise */
 let sqliteInitPromise = null;
+/** @type {Promise|null} Pending native DB initialization promise */
 let nativeDbInitPromise = null;
 
-// Initialize SQLite database
+/**
+ * Initializes the browser SQLite database via sql.js.
+ * Only used in non-Electron environments.
+ * 
+ * @async
+ * @returns {Promise<boolean>} Whether initialization succeeded
+ * @private
+ */
 async function initSQLite() {
   if (sqliteInitPromise) return sqliteInitPromise;
   
@@ -40,6 +89,15 @@ async function initSQLite() {
   return sqliteInitPromise;
 }
 
+/**
+ * Builds a mood history array for the specified number of days.
+ * Fills in missing days with null moods.
+ * 
+ * @param {number} days - Number of days to include
+ * @param {Object} moodMap - Map of date strings to mood objects
+ * @returns {Array<{date: string, mood: string|null}>} Mood history array
+ * @private
+ */
 function buildMoodHistory(days, moodMap) {
   const result = [];
   const today = new Date();
@@ -58,6 +116,14 @@ function buildMoodHistory(days, moodMap) {
   return result;
 }
 
+/**
+ * Migrates localStorage data to Electron's native SQLite database.
+ * Only runs once; tracks migration status in localStorage.
+ * 
+ * @async
+ * @returns {Promise<boolean>} Whether migration succeeded or was already done
+ * @private
+ */
 async function migrateLocalStorageToNativeDb() {
   if (!isElectron) return false;
   if (localStorage.getItem(NATIVE_DB_MIGRATION_KEY) === 'true') return true;
@@ -114,6 +180,13 @@ async function migrateLocalStorageToNativeDb() {
   }
 }
 
+/**
+ * Initializes the Electron native database and triggers migration.
+ * 
+ * @async
+ * @returns {Promise<boolean>} Whether initialization succeeded
+ * @private
+ */
 async function initNativeDb() {
   if (nativeDbInitPromise) return nativeDbInitPromise;
 
@@ -134,8 +207,31 @@ if (isElectron) {
   initSQLite();
 }
 
+/**
+ * Unified storage API for Simnote data persistence.
+ * Automatically selects best available backend (native SQLite, browser SQLite, or localStorage).
+ * All methods are static as this is a stateless utility class.
+ * 
+ * @class StorageManager
+ * @example
+ * // Initialize storage (call early in app startup)
+ * await StorageManager.init();
+ * 
+ * // Create entry
+ * const entry = StorageManager.saveEntry('My Title', 'Content...', 'happy');
+ * 
+ * // Get all entries
+ * const entries = StorageManager.getEntries();
+ */
 export class StorageManager {
-  // Initialize storage (call this early in app startup)
+  /**
+   * Initializes the storage backend.
+   * Should be called early in app startup.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether initialization succeeded
+   * @static
+   */
   static async init() {
     if (isElectron) {
       return initNativeDb();
@@ -143,18 +239,34 @@ export class StorageManager {
     return initSQLite();
   }
 
-  // Check if SQLite is ready
+  /**
+   * Checks if SQLite storage is being used (vs localStorage fallback).
+   * 
+   * @returns {boolean} True if using SQLite (native or browser)
+   * @static
+   */
   static isUsingSQL() {
     if (isElectron) return true;
     return sqliteReady;
   }
 
-  // Generate unique ID for entries
+  /**
+   * Generates a unique ID for entries.
+   * Format: timestamp-randomstring
+   * 
+   * @returns {string} Unique entry ID
+   * @static
+   */
   static generateId() {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // Get metadata (version, stats, etc.)
+  /**
+   * Gets app metadata including version, stats, and streak info.
+   * 
+   * @returns {Object} Metadata object with version, createdAt, streaks, etc.
+   * @static
+   */
   static getMeta() {
     if (isElectron) {
       return window.electronAPI.nativeDb.getMetadata('app_meta') || {
@@ -181,6 +293,12 @@ export class StorageManager {
     return meta;
   }
 
+  /**
+   * Saves app metadata to storage.
+   * 
+   * @param {Object} meta - Metadata object to save
+   * @static
+   */
   static saveMeta(meta) {
     if (isElectron) {
       window.electronAPI.nativeDb.setMetadata('app_meta', meta);
@@ -191,7 +309,12 @@ export class StorageManager {
     }
   }
 
-  // Migrate old entries to new format (localStorage only)
+  /**
+   * Migrates old localStorage entries to current format if needed.
+   * Adds missing fields like id, tags, favorite, timestamps.
+   * 
+   * @static
+   */
   static migrateIfNeeded() {
     if (sqliteReady || isElectron) return; // SQLite handles its own migration
     
@@ -215,6 +338,12 @@ export class StorageManager {
     console.log(`Migrated ${migratedEntries.length} entries to v${STORAGE_VERSION}`);
   }
 
+  /**
+   * Gets all journal entries from storage.
+   * 
+   * @returns {Array<Object>} Array of entry objects
+   * @static
+   */
   static getEntries() {
     if (isElectron) {
       return window.electronAPI.nativeDb.getEntries() || [];
@@ -228,6 +357,13 @@ export class StorageManager {
     return JSON.parse(localStorage.getItem(ENTRIES_KEY)) || [];
   }
 
+  /**
+   * Gets a single entry by its ID.
+   * 
+   * @param {string} id - Entry ID to find
+   * @returns {Object|null} Entry object or null if not found
+   * @static
+   */
   static getEntryById(id) {
     if (isElectron) {
       return window.electronAPI.nativeDb.getEntryById(id);
@@ -241,11 +377,26 @@ export class StorageManager {
     return entries.find(e => e.id === id) || null;
   }
 
+  /**
+   * Gets the array index of an entry by its ID.
+   * 
+   * @param {string} id - Entry ID to find
+   * @returns {number} Index in entries array, or -1 if not found
+   * @static
+   */
   static getEntryIndexById(id) {
     const entries = StorageManager.getEntries();
     return entries.findIndex(e => e.id === id);
   }
 
+  /**
+   * Resolves an entry from either index or ID.
+   * 
+   * @param {number|string} indexOrId - Entry index or ID
+   * @returns {Object|null} Entry object or null
+   * @private
+   * @static
+   */
   static _resolveEntry(indexOrId) {
     const entries = StorageManager.getEntries();
     if (typeof indexOrId === 'number') {
@@ -254,6 +405,18 @@ export class StorageManager {
     return entries.find(e => e.id === indexOrId) || null;
   }
 
+  /**
+   * Creates and saves a new journal entry.
+   * 
+   * @param {string} name - Entry title
+   * @param {string} content - Entry content (HTML)
+   * @param {string} [mood=''] - Mood descriptor
+   * @param {string} [fontFamily=''] - Font family used
+   * @param {string} [fontSize=''] - Font size used
+   * @param {string[]} [tags=[]] - Array of tag strings
+   * @returns {Object} The created entry object
+   * @static
+   */
   static saveEntry(name, content, mood = '', fontFamily = '', fontSize = '', tags = []) {
     if (isElectron) {
       return window.electronAPI.nativeDb.saveEntry({
@@ -299,6 +462,19 @@ export class StorageManager {
     return newEntry;
   }
 
+  /**
+   * Updates an existing journal entry.
+   * 
+   * @param {number|string} indexOrId - Entry index or ID
+   * @param {string} name - Updated title
+   * @param {string} content - Updated content
+   * @param {string} mood - Updated mood
+   * @param {string} [fontFamily=''] - Updated font family
+   * @param {string} [fontSize=''] - Updated font size
+   * @param {string[]|null} [tags=null] - Updated tags (null to keep existing)
+   * @returns {Object|null} Updated entry or null if not found
+   * @static
+   */
   static updateEntry(indexOrId, name, content, mood, fontFamily = '', fontSize = '', tags = null) {
     if (isElectron) {
       const id = typeof indexOrId === 'number'
@@ -357,6 +533,13 @@ export class StorageManager {
     return null;
   }
 
+  /**
+   * Deletes a journal entry.
+   * 
+   * @param {number|string} indexOrId - Entry index or ID
+   * @returns {boolean} Whether deletion succeeded
+   * @static
+   */
   static deleteEntry(indexOrId) {
     if (isElectron) {
       const id = typeof indexOrId === 'number'
@@ -389,7 +572,13 @@ export class StorageManager {
     return false;
   }
 
-  // Toggle favorite status
+  /**
+   * Toggles the favorite status of an entry.
+   * 
+   * @param {number|string} indexOrId - Entry index or ID
+   * @returns {boolean} New favorite status
+   * @static
+   */
   static toggleFavorite(indexOrId) {
     if (isElectron) {
       const id = typeof indexOrId === 'number'
@@ -422,7 +611,14 @@ export class StorageManager {
     return false;
   }
 
-  // Tag management
+  /**
+   * Adds a tag to an entry.
+   * 
+   * @param {number|string} indexOrId - Entry index or ID
+   * @param {string} tag - Tag to add (will be normalized to lowercase)
+   * @returns {string[]} Updated tags array
+   * @static
+   */
   static addTag(indexOrId, tag) {
     if (isElectron) {
       const entry = StorageManager._resolveEntry(indexOrId);
@@ -479,6 +675,14 @@ export class StorageManager {
     return [];
   }
 
+  /**
+   * Removes a tag from an entry.
+   * 
+   * @param {number|string} indexOrId - Entry index or ID
+   * @param {string} tag - Tag to remove
+   * @returns {string[]} Updated tags array
+   * @static
+   */
   static removeTag(indexOrId, tag) {
     if (isElectron) {
       const entry = StorageManager._resolveEntry(indexOrId);
@@ -532,7 +736,12 @@ export class StorageManager {
     return [];
   }
 
-  // Get all unique tags across all entries
+  /**
+   * Gets all unique tags across all entries.
+   * 
+   * @returns {string[]} Sorted array of unique tags
+   * @static
+   */
   static getAllTags() {
     const entries = StorageManager.getEntries();
     const tagSet = new Set();
@@ -542,7 +751,13 @@ export class StorageManager {
     return Array.from(tagSet).sort();
   }
 
-  // Streak calculation
+  /**
+   * Recalculates and updates streak information.
+   * A streak is consecutive days with at least one entry.
+   * 
+   * @returns {Object} Updated metadata with streak info
+   * @static
+   */
   static updateStreaks() {
     const meta = StorageManager.getMeta();
     const entries = StorageManager.getEntries();
@@ -592,7 +807,13 @@ export class StorageManager {
     return meta;
   }
 
-  // Statistics
+  /**
+   * Calculates and returns journal statistics.
+   * 
+   * @returns {Object} Stats object with totalEntries, totalWords, avgWords,
+   *                   currentStreak, longestStreak, moodCounts, monthlyEntries
+   * @static
+   */
   static getStats() {
     const entries = StorageManager.getEntries();
     const meta = StorageManager.updateStreaks();
@@ -627,7 +848,12 @@ export class StorageManager {
     };
   }
 
-  // Daily mood helpers
+  /**
+   * Gets today's standalone mood (separate from entry moods).
+   * 
+   * @returns {string|null} Today's mood or null if not set
+   * @static
+   */
   static getTodaysMood() {
     if (isElectron) {
       return window.electronAPI.nativeDb.getTodaysMood();
@@ -642,6 +868,12 @@ export class StorageManager {
     return data[today]?.mood || null;
   }
 
+  /**
+   * Sets today's standalone mood.
+   * 
+   * @param {string} mood - The mood to set
+   * @static
+   */
   static setTodaysMood(mood) {
     if (isElectron) {
       return window.electronAPI.nativeDb.setTodaysMood(mood);
@@ -670,6 +902,13 @@ export class StorageManager {
     localStorage.setItem(DAILY_MOOD_KEY, JSON.stringify(data));
   }
 
+  /**
+   * Gets mood history for the specified number of days.
+   * 
+   * @param {number} [days=30] - Number of days to retrieve
+   * @returns {Array<{date: string, mood: string|null}>} Array of daily moods
+   * @static
+   */
   static getMoodHistory(days = 30) {
     if (isElectron) {
       const rows = window.electronAPI.nativeDb.getMoodHistory(days) || [];
@@ -693,7 +932,13 @@ export class StorageManager {
     return buildMoodHistory(days, data);
   }
 
-  // Export entries to JSON format (v2)
+  /**
+   * Generates JSON export content for entries.
+   * 
+   * @param {number[]|null} [selectedIndices=null] - Specific indices to export, or null for all
+   * @returns {string} JSON string of export data
+   * @static
+   */
   static generateExportContent(selectedIndices = null) {
     if (isElectron) {
       return window.electronAPI.nativeDb.exportToJSON();
@@ -726,7 +971,13 @@ export class StorageManager {
     return JSON.stringify(exportData, null, 2);
   }
 
-  // Legacy text export format for backward compatibility
+  /**
+   * Generates legacy text export format for backward compatibility.
+   * 
+   * @param {number[]|null} [selectedIndices=null] - Specific indices to export, or null for all
+   * @returns {string} Text format export content
+   * @static
+   */
   static generateExportContentLegacy(selectedIndices = null) {
     const entries = StorageManager.getEntries();
     const toExport = (selectedIndices === null)
@@ -748,7 +999,15 @@ export class StorageManager {
     return content;
   }
 
-  // Import entries from JSON or legacy format
+  /**
+   * Imports entries from JSON or legacy text format.
+   * Automatically detects format and handles both.
+   * 
+   * @async
+   * @param {string} fileContent - File content to import
+   * @returns {Promise<number>} Number of entries imported
+   * @static
+   */
   static async importEntries(fileContent) {
     let importedCount = 0;
     
@@ -865,7 +1124,14 @@ export class StorageManager {
     return importedCount;
   }
 
-  // Add imported entry with proper format
+  /**
+   * Adds an imported entry with proper formatting.
+   * Handles both object format and legacy parameters.
+   * 
+   * @param {Object} entryData - Entry data to import
+   * @returns {Object} The added/updated entry
+   * @static
+   */
   static addImportedEntry(entryData) {
     const entries = StorageManager.getEntries();
     const now = new Date().toISOString();
@@ -899,13 +1165,31 @@ export class StorageManager {
     return entry;
   }
 
-  // Helper to count words in content
+  /**
+   * Counts words in text content.
+   * 
+   * @param {string} text - Text to count words in
+   * @returns {number} Word count
+   * @static
+   */
   static countWords(text) {
     if (!text) return 0;
     return text.trim().split(/\s+/).filter(Boolean).length;
   }
 
-  // Search entries
+  /**
+   * Searches entries by text and optional filters.
+   * 
+   * @param {string} query - Search query for name/content
+   * @param {Object} [options] - Search options
+   * @param {string[]} [options.tags] - Filter by tags
+   * @param {string} [options.mood] - Filter by mood
+   * @param {boolean} [options.favoritesOnly] - Only return favorites
+   * @param {string} [options.dateFrom] - Start date filter (ISO string)
+   * @param {string} [options.dateTo] - End date filter (ISO string)
+   * @returns {Object[]} Matching entries
+   * @static
+   */
   static searchEntries(query, options = {}) {
     const entries = StorageManager.getEntries();
     const q = query.toLowerCase();
@@ -931,7 +1215,13 @@ export class StorageManager {
     });
   }
 
-  // Get storage info
+  /**
+   * Gets storage usage information.
+   * 
+   * @async
+   * @returns {Promise<Object>} Storage info with entriesCount, totalSize, imagesCount
+   * @static
+   */
   static async getStorageInfo() {
     if (isElectron) {
       return window.electronAPI.nativeDb.getStorageInfo();
@@ -970,7 +1260,13 @@ export class StorageManager {
     };
   }
 
-  // Format bytes to human readable
+  /**
+   * Formats byte count to human-readable string.
+   * 
+   * @param {number} bytes - Byte count
+   * @returns {string} Formatted string (e.g., "1.5 MB")
+   * @static
+   */
   static formatBytes(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -979,7 +1275,13 @@ export class StorageManager {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  // Clear all data
+  /**
+   * Clears all stored data (entries, moods, metadata).
+   * Use with caution - this is destructive.
+   * 
+   * @async
+   * @static
+   */
   static async clearAllData() {
     if (isElectron) {
       await window.electronAPI.nativeDb.clearAllData();
@@ -996,7 +1298,12 @@ export class StorageManager {
     }
   }
 
-  // Export to JSON (uses SQLite if available)
+  /**
+   * Exports all data to JSON string.
+   * 
+   * @returns {string} JSON export string
+   * @static
+   */
   static exportToJSON() {
     if (isElectron) {
       return window.electronAPI.nativeDb.exportToJSON();
@@ -1008,7 +1315,14 @@ export class StorageManager {
     return StorageManager.generateExportContent();
   }
 
-  // Import from JSON (uses SQLite if available)  
+  /**
+   * Imports data from JSON string.
+   * 
+   * @async
+   * @param {string} jsonString - JSON data to import
+   * @returns {Promise<number>} Number of entries imported
+   * @static
+   */
   static async importFromJSON(jsonString) {
     if (isElectron) {
       const count = await window.electronAPI.nativeDb.importFromJSON(jsonString);
@@ -1028,7 +1342,12 @@ export class StorageManager {
 
   // ==================== File Storage (.simnote files) ====================
 
-  // Check if file storage is enabled
+  /**
+   * Checks if file storage is enabled.
+   * 
+   * @returns {boolean} Whether file storage is enabled
+   * @static
+   */
   static isFileStorageEnabled() {
     if (isElectron) {
       return true;
@@ -1040,12 +1359,24 @@ export class StorageManager {
     return false;
   }
 
-  // Check if File System Access API is supported (browser only)
+  /**
+   * Checks if File System Access API is supported.
+   * 
+   * @returns {boolean} Whether file storage is supported
+   * @static
+   */
   static isFileStorageSupported() {
     return 'showDirectoryPicker' in window || (typeof window !== 'undefined' && window.electronAPI);
   }
 
-  // Enable file storage by selecting a directory (browser) or auto-enable (Electron)
+  /**
+   * Enables file storage by selecting a directory.
+   * In Electron, file storage is auto-enabled.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether enabling succeeded
+   * @static
+   */
   static async enableFileStorage() {
     if (isElectron) {
       return true;
@@ -1057,7 +1388,13 @@ export class StorageManager {
     return false;
   }
 
-  // Get file storage directory name
+  /**
+   * Gets the file storage directory name.
+   * 
+   * @async
+   * @returns {Promise<string|null>} Directory name or null
+   * @static
+   */
   static async getFileStorageDirectory() {
     if (typeof window !== 'undefined' && window.electronAPI?.getStorageDir) {
       return window.electronAPI.getStorageDir();
@@ -1074,7 +1411,13 @@ export class StorageManager {
     return null;
   }
 
-  // Sync all entries to file storage
+  /**
+   * Syncs all entries to file storage (.simnote files).
+   * 
+   * @async
+   * @returns {Promise<number>} Number of entries synced
+   * @static
+   */
   static async syncAllToFiles() {
     if (isElectron) {
       const entries = StorageManager.getEntries();

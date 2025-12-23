@@ -1,4 +1,40 @@
 // editorManager.js
+// Central manager for journal entry editing, display, and navigation
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This is the main controller for the journal functionality. It orchestrates:
+// - Entry creation, editing, and deletion workflows
+// - Panel navigation between journal list, new entry, and edit entry views
+// - Entry list display with filtering, sorting, and search
+// - Autosave functionality with debouncing
+// - Tag management for entries
+// - Calendar date picker for filtering
+//
+// INTEGRATION POINTS:
+// - StorageManager: Persistence layer for entries
+// - PanelManager: Panel transition animations
+// - RichEditorManager: Rich text editing in entry panels
+// - MoodEmojiMapper: Mood display formatting
+// - PaintDropAnimator: Entry panel expansion animation
+//
+// STATE MANAGEMENT:
+// - currentEntryId/Index: Currently selected entry for editing
+// - filterDate/filterTags/showFavoritesOnly: Active filters
+// - searchQuery: Text search filter
+// - sortMode: Entry list sorting (newest/oldest/az/mood)
+// - currentTags: Tags for the entry being edited
+// - richEditors: Map of panel IDs to RichEditorManager instances
+//
+// AUTOSAVE:
+// - Live autosave triggers on input with 300ms debounce
+// - Interval-based autosave configurable via settings
+// - State snapshots prevent redundant saves
+//
+// DEPENDENCIES:
+// - StorageManager, PanelManager, RichEditorManager
+// - PaintDropAnimator, MoodEmojiMapper, typeText utility
+
 import { StorageManager } from './storageManager.js';
 import { PanelManager } from './panelManager.js';
 import { PaintDropAnimator } from '../animators/paintDropAnimator.js';
@@ -6,43 +42,91 @@ import { typeText } from '../utils/typingEffect.js';
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 import { RichEditorManager } from './richEditorManager.js';
 
+/**
+ * Central manager for journal entry operations and UI coordination.
+ * Handles entry CRUD, filtering, sorting, autosave, and panel navigation.
+ * 
+ * @class EditorManager
+ * @example
+ * // Instantiated once in main.js:
+ * window.editorManager = new EditorManager();
+ */
 export class EditorManager {
+  /**
+   * Creates the EditorManager and initializes all UI components.
+   * Automatically called on instantiation.
+   * 
+   * @constructor
+   */
   constructor() {
-    // Panels
+    // Panel element references
+    /** @type {HTMLElement} The journal entries list panel */
     this.journalPanel = document.getElementById('journal-panel');
+    /** @type {HTMLElement} The main menu panel */
     this.mainPanel = document.getElementById('main-panel');
+    /** @type {HTMLElement} The new entry creation panel */
     this.newEntryPanel = document.getElementById('new-entry-panel');
+    /** @type {HTMLElement} The entry editing panel */
     this.editEntryPanel = document.getElementById('edit-entry-panel');
+    /** @type {HTMLElement} Container for entry list items */
     this.entriesListDiv = document.querySelector('.entry-list');
 
-    // Track current entry by ID (not index)
+    // Current entry tracking
+    /** @type {string|null} ID of the entry currently being edited */
     this.currentEntryId = null;
-    this.currentEntryIndex = null; // Keep for backward compatibility
-    this.filterDate = null; // YYYY-MM-DD string
-    this.filterTags = []; // Array of tag strings
+    /** @type {number|null} Index of current entry (legacy compatibility) */
+    this.currentEntryIndex = null;
+    
+    // Filter state
+    /** @type {string|null} Date filter in YYYY-MM-DD format */
+    this.filterDate = null;
+    /** @type {string[]} Active tag filters */
+    this.filterTags = [];
+    /** @type {boolean} Whether to show only favorited entries */
     this.showFavoritesOnly = false;
-
-    // Global search filter
+    /** @type {string} Current search query text */
     this.searchQuery = '';
 
-    // Sorting mode
+    // Sorting
+    /** @type {string} Sort mode: 'newest'|'oldest'|'az'|'mood' */
     this.sortMode = localStorage.getItem('sortMode') || 'newest';
 
-    // Autosave timer reference
+    // Autosave state
+    /** @type {number|null} Interval timer ID for periodic autosave */
     this.autosaveTimer = null;
+    /** @type {Map<string, number>} Panel ID to debounce timer ID */
     this.liveAutosaveTimers = new Map();
+    /** @type {Map<string, string>} Panel ID to last saved state snapshot */
     this.lastAutosaveState = new Map();
+    /** @type {string|null} ID of draft entry in new-entry-panel */
     this.newEntryDraftId = null;
 
-    // Current entry tags (for editing)
+    // Tag editing
+    /** @type {string[]} Tags for the entry currently being edited */
     this.currentTags = [];
 
     // Rich text editors
+    /** @type {Map<string, RichEditorManager>} Panel ID to editor instance */
     this.richEditors = new Map();
 
     this.initializeUI();
   }
 
+  /**
+   * Initializes all UI event listeners and components.
+   * Called automatically from constructor.
+   * 
+   * Sets up:
+   * - Back/save button handlers
+   * - Tag input system
+   * - Favorites filter
+   * - Rich text editors
+   * - Autosave listeners
+   * - Search and sort controls
+   * - Calendar date picker
+   * 
+   * @private
+   */
   initializeUI() {
     // Back buttons in new/edit panel
     document.querySelectorAll('.back-btn').forEach(btn => {
@@ -178,6 +262,12 @@ export class EditorManager {
     }
   }
 
+  /**
+   * Configures the new entry panel animation.
+   * Currently skips paint-drop and immediately expands panel.
+   * 
+   * @private
+   */
   setupNewEntryAnimation() {
     // Skip paint-drop interaction: immediately show panel contents
     const intro = document.querySelector('#new-entry-panel .new-entry-intro');
@@ -186,6 +276,13 @@ export class EditorManager {
     if (panel) panel.classList.add('expand');
   }
 
+  /**
+   * Handles back button clicks to navigate away from current panel.
+   * Clears form state, shows exit feedback if content exists, transitions to main panel.
+   * 
+   * @param {HTMLElement} btn - The clicked back button element
+   * @private
+   */
   handleBackButton(btn) {
     const panel = btn.closest('#journal-panel, #new-entry-panel, #edit-entry-panel');
     if (!panel) return;
@@ -243,6 +340,13 @@ export class EditorManager {
     });
   }
 
+  /**
+   * Handles save button clicks to persist entry changes.
+   * Creates new entry or updates existing based on panel context.
+   * 
+   * @param {HTMLElement} btn - The clicked save button element
+   * @private
+   */
   handleSaveButton(btn) {
     const panel = btn.closest('#new-entry-panel, #edit-entry-panel');
     if (!panel) return;
@@ -286,8 +390,20 @@ export class EditorManager {
   }
   
 
-  // Removed handleDeleteButton since deletion is now only handled from the entries list
-
+  /**
+   * Renders the entry list with current filters, sorting, and search applied.
+   * Binds click handlers for entry selection, favorites, and deletion.
+   * 
+   * Filter/sort order:
+   * 1. Favorites filter (if enabled)
+   * 2. Date filter (if set)
+   * 3. Tag filter (if tags selected)
+   * 4. Text search (name, content, tags)
+   * 5. Sort by mode (newest/oldest/az/mood)
+   * 6. Favorites always sorted to top
+   * 
+   * @public
+   */
   displayEntries() {
     let entries = StorageManager.getEntries().map((e,i)=>({...e,__index:i}));
 
@@ -447,7 +563,19 @@ export class EditorManager {
     });
   }
 
-  // Render a single entry item HTML
+  /**
+   * Generates HTML for a single entry list item.
+   * 
+   * @param {Object} entry - The entry object to render
+   * @param {string} entry.id - Entry unique ID
+   * @param {string} entry.name - Entry title
+   * @param {string[]} [entry.tags] - Entry tags
+   * @param {boolean} [entry.favorite] - Whether entry is favorited
+   * @param {string} entry.createdAt - ISO date string
+   * @param {number} [entry.wordCount] - Word count
+   * @returns {string} HTML string for the entry list item
+   * @private
+   */
   renderEntryItem(entry) {
     const formattedDate = new Date(entry.createdAt || entry.date).toLocaleString();
     const tagsHtml = (entry.tags || []).length > 0 
@@ -473,8 +601,13 @@ export class EditorManager {
       </li>`;
   }
 
-  // Helper method to show custom popup
-
+  /**
+   * Displays a temporary popup notification message.
+   * Auto-hides after 2 seconds with slide animation.
+   * 
+   * @param {string} message - The message to display
+   * @public
+   */
   showPopup(message) {
     const popup = document.getElementById('custom-popup');
     popup.textContent = message;
@@ -492,6 +625,12 @@ export class EditorManager {
     }, 2000);
   }
   
+  /**
+   * Initializes the custom calendar date picker for filtering entries.
+   * Creates month navigation and day selection grid.
+   * 
+   * @private
+   */
   initCustomCalendar() {
     const btn = document.getElementById('date-picker-btn');
     const pop = document.getElementById('custom-calendar');
@@ -565,6 +704,12 @@ export class EditorManager {
     });
   }
 
+  /**
+   * Configures the interval-based autosave timer from settings.
+   * Clears existing timer and creates new one based on autosaveInterval setting.
+   * 
+   * @private
+   */
   setupAutosave() {
     if(this.autosaveTimer){ clearInterval(this.autosaveTimer); this.autosaveTimer=null; }
     const intervalSec = parseInt(localStorage.getItem('autosaveInterval') || '30');
@@ -572,13 +717,23 @@ export class EditorManager {
     this.autosaveTimer = setInterval(()=> this.performAutosave(), intervalSec*1000);
   }
 
+  /**
+   * Performs interval-triggered autosave for the edit panel.
+   * Only saves if edit panel is visible.
+   * 
+   * @private
+   */
   performAutosave(){
-    // Only autosave in edit-entry-panel for simplicity
     if(!this.editEntryPanel || this.editEntryPanel.style.display==='none') return;
     this.performLiveAutosave(this.editEntryPanel);
   }
 
-  // Setup tag input functionality
+  /**
+   * Sets up tag input UI and autocomplete for entry panels.
+   * Creates tag input field, suggestion dropdown, and handles tag add/remove.
+   * 
+   * @private
+   */
   setupTagInput() {
     // Add tag input to both new and edit panels
     [this.newEntryPanel, this.editEntryPanel].forEach(panel => {
@@ -655,7 +810,14 @@ export class EditorManager {
     });
   }
 
-  // Render tags in a panel
+  /**
+   * Renders the current tags as pills in the specified panel.
+   * 
+   * @param {HTMLElement} panel - The panel containing the tags list
+   * @param {Object} [options] - Render options
+   * @param {boolean} [options.autosave=true] - Whether to trigger autosave after render
+   * @private
+   */
   renderTagsUI(panel, { autosave = true } = {}) {
     if (!panel) return;
     const tagsList = panel.querySelector('.tags-list');
@@ -683,7 +845,12 @@ export class EditorManager {
     }
   }
 
-  // Setup favorites filter toggle
+  /**
+   * Creates and configures the favorites filter toggle button.
+   * Adds button to entries header if not already present.
+   * 
+   * @private
+   */
   setupFavoritesFilter() {
     const header = document.querySelector('.entries-header');
     if (!header || header.querySelector('.favorites-filter-btn')) return;
@@ -709,7 +876,12 @@ export class EditorManager {
     }
   }
 
-  // Clear all filters
+  /**
+   * Resets all active filters and refreshes the entry list.
+   * Clears: date, tags, favorites, and search query.
+   * 
+   * @public
+   */
   clearFilters() {
     this.filterDate = null;
     this.filterTags = [];
@@ -728,7 +900,12 @@ export class EditorManager {
     this.displayEntries();
   }
 
-  // Initialize rich text editors for new and edit panels
+  /**
+   * Creates RichEditorManager instances for new and edit entry panels.
+   * Stores references in this.richEditors map.
+   * 
+   * @private
+   */
   initRichEditors() {
     const panels = [this.newEntryPanel, this.editEntryPanel];
     
@@ -740,6 +917,12 @@ export class EditorManager {
     });
   }
 
+  /**
+   * Sets up input listeners for live (debounced) autosave.
+   * Triggers autosave on title input, editor input/keyup/paste.
+   * 
+   * @private
+   */
   setupLiveAutosave() {
     const panels = [this.newEntryPanel, this.editEntryPanel];
     panels.forEach(panel => {
@@ -755,6 +938,13 @@ export class EditorManager {
     });
   }
 
+  /**
+   * Schedules a debounced autosave for the given panel.
+   * Cancels any pending save and schedules new one in 300ms.
+   * 
+   * @param {HTMLElement} panel - The panel to autosave
+   * @private
+   */
   scheduleAutosave(panel) {
     if (!panel || !this.isAutosaveEnabled()) return;
     const panelId = panel.id;
@@ -765,6 +955,13 @@ export class EditorManager {
     this.liveAutosaveTimers.set(panelId, timer);
   }
 
+  /**
+   * Executes the actual autosave operation for a panel.
+   * Compares current state to last saved state to avoid redundant writes.
+   * 
+   * @param {HTMLElement} panel - The panel to save
+   * @private
+   */
   performLiveAutosave(panel) {
     if (!panel || !this.isAutosaveEnabled()) return;
     const panelId = panel.id;
@@ -810,6 +1007,13 @@ export class EditorManager {
     this.lastAutosaveState.set(panelId, snapshot);
   }
 
+  /**
+   * Clears autosave state for a panel when navigating away.
+   * Cancels pending timers and clears state snapshot.
+   * 
+   * @param {string} panelId - The panel ID to clear state for
+   * @private
+   */
   clearAutosaveState(panelId) {
     if (!panelId) return;
     const timer = this.liveAutosaveTimers.get(panelId);
@@ -821,6 +1025,12 @@ export class EditorManager {
     }
   }
 
+  /**
+   * Shows a brief overlay animation when exiting an entry panel.
+   * Displays a checkmark to indicate content was saved.
+   * 
+   * @private
+   */
   showExitOverlay() {
     if (document.getElementById('panel-exit-overlay')) return;
     const overlay = document.createElement('div');
@@ -839,6 +1049,12 @@ export class EditorManager {
     requestAnimationFrame(() => overlay.classList.add('visible'));
   }
 
+  /**
+   * Hides the exit overlay with fade animation.
+   * Ensures minimum visible time of 650ms for user feedback.
+   * 
+   * @private
+   */
   hideExitOverlay() {
     const overlay = document.getElementById('panel-exit-overlay');
     if (!overlay) return;
@@ -851,6 +1067,14 @@ export class EditorManager {
     }, delay);
   }
 
+  /**
+   * Determines if exit feedback overlay should be shown.
+   * Returns true if panel has content (title or body text).
+   * 
+   * @param {HTMLElement} panel - The panel being exited
+   * @returns {boolean} Whether to show exit feedback
+   * @private
+   */
   shouldShowExitFeedback(panel) {
     if (!panel || (panel.id !== 'new-entry-panel' && panel.id !== 'edit-entry-panel')) {
       return false;
@@ -862,6 +1086,13 @@ export class EditorManager {
     return Boolean(name || plainText);
   }
 
+  /**
+   * Checks if autosave is currently enabled.
+   * Currently always returns true; could be extended to check settings.
+   * 
+   * @returns {boolean} Whether autosave is enabled
+   * @private
+   */
   isAutosaveEnabled() {
     return true;
   }

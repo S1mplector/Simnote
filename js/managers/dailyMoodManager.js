@@ -1,66 +1,139 @@
 // dailyMoodManager.js
 // Handles daily mood check-in on app launch
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module manages the daily mood check-in feature that prompts users
+// to log their mood when opening the app. Features include:
+// - Conditional display (only if enabled and no mood logged today)
+// - Animated typing effect for the prompt
+// - Integration with StorageManager for persistence
+// - Panel transitions with PanelManager
+//
+// INTEGRATION POINTS:
+// - StorageManager: Daily mood persistence
+// - PanelManager: Panel transitions
+// - MoodEmojiMapper: Mood to emoji conversion
+//
+// SETTINGS:
+// - simnote_mood_checkin_enabled: localStorage key for feature toggle
+//
+// DEPENDENCIES:
+// - MoodEmojiMapper, StorageManager, PanelManager
 
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 import { StorageManager } from './storageManager.js';
 import { PanelManager } from './panelManager.js';
 
+/**
+ * Manages daily mood check-in functionality.
+ * Prompts user to log mood on app launch if not already logged today.
+ * 
+ * @class DailyMoodManager
+ * @example
+ * const moodManager = new DailyMoodManager();
+ */
 export class DailyMoodManager {
+  /**
+   * Creates DailyMoodManager and initializes check-in.
+   * @constructor
+   */
   constructor() {
+    /** @type {string} localStorage key for enabled setting */
     this.settingsKey = 'simnote_mood_checkin_enabled';
+    /** @type {HTMLElement} Mood panel element */
     this.moodPanel = document.getElementById('mood-panel');
+    /** @type {HTMLElement} Main menu panel */
     this.mainPanel = document.getElementById('main-panel');
+    /** @type {HTMLElement} Panel heading element */
     this.headingEl = this.moodPanel ? this.moodPanel.querySelector('.mood-panel-title') : null;
+    /** @type {string} Original heading text to restore */
     this.originalHeadingText = this.headingEl ? this.headingEl.textContent : '';
     const backBtn = this.moodPanel ? this.moodPanel.querySelector('.back-btn') : null;
     const backLabel = backBtn ? (backBtn.querySelector('.icon-label') || backBtn.querySelector('.settings-icon-label')) : null;
+    /** @type {string} Original back button label */
     this.originalBackLabel = backLabel ? backLabel.textContent : '';
+    /** @type {string} Original back button emoji */
     this.originalBackEmoji = backBtn ? backBtn.dataset.emoji : '';
+    /** @type {Function|null} Skip button click handler */
     this.skipHandler = null;
+    /** @type {boolean} Whether check-in has been shown this session */
     this.hasShownCheckin = false;
+    /** @type {Function|null} Main menu ready event handler */
     this.readyHandler = null;
+    /** @type {number|null} Fallback timer ID */
     this.fallbackTimer = null;
     
     this.init();
   }
 
+  /**
+   * Initializes check-in if conditions are met.
+   * @private
+   */
   init() {
-    // Check if we should show mood check-in
     if (this.shouldShowMoodCheckin()) {
       this.setupMoodPanel();
     }
   }
 
+  /**
+   * Checks if mood check-in is enabled.
+   * @returns {boolean} Whether feature is enabled (defaults to true)
+   */
   isEnabled() {
-    // Default to true if not set
     const setting = localStorage.getItem(this.settingsKey);
     return setting === null ? true : setting === 'true';
   }
 
+  /**
+   * Sets the enabled state for mood check-in.
+   * @param {boolean} enabled - Whether to enable
+   */
   setEnabled(enabled) {
     localStorage.setItem(this.settingsKey, enabled.toString());
   }
 
+  /**
+   * Determines if mood check-in should be shown.
+   * @returns {boolean} True if enabled and no mood logged today
+   */
   shouldShowMoodCheckin() {
     if (!this.isEnabled()) return false;
-    
     const todaysMood = this.getTodaysMood();
-    return !todaysMood; // Show if no mood logged today
+    return !todaysMood;
   }
 
+  /**
+   * Gets today's logged mood.
+   * @returns {string|null} Today's mood or null
+   */
   getTodaysMood() {
     return StorageManager.getTodaysMood();
   }
 
+  /**
+   * Sets today's mood.
+   * @param {string} mood - Mood to set
+   */
   setTodaysMood(mood) {
     StorageManager.setTodaysMood(mood);
-    window.todaysMood = mood; // Make available globally for entries
+    window.todaysMood = mood;
   }
 
+  /**
+   * Gets mood history for specified days.
+   * @param {number} [days=30] - Number of days
+   * @returns {Array} Mood history array
+   */
   getMoodHistory(days = 30) {
     return StorageManager.getMoodHistory(days);
   }
 
+  /**
+   * Sets up mood panel to show after main menu is ready.
+   * @private
+   */
   setupMoodPanel() {
     if (!this.moodPanel) return;
 
@@ -96,6 +169,10 @@ export class DailyMoodManager {
     }, fallbackMs);
   }
 
+  /**
+   * Shows the mood check-in panel with animations.
+   * @private
+   */
   showMoodCheckin() {
     if (!this.moodPanel || !this.mainPanel) return;
     
@@ -152,6 +229,10 @@ export class DailyMoodManager {
     }, 360);
   }
 
+  /**
+   * Animates the typing effect for mood prompt.
+   * @private
+   */
   animateMoodInput() {
     const moodPrompt = document.getElementById('mood-prompt');
     const moodInput = document.getElementById('mood-input');
@@ -183,6 +264,10 @@ export class DailyMoodManager {
     }, 80);
   }
 
+  /**
+   * Hides the mood check-in panel and restores original state.
+   * @private
+   */
   hideMoodCheckin() {
     if (!this.moodPanel || !this.mainPanel) return;
 
@@ -236,16 +321,27 @@ export class DailyMoodManager {
   }
 }
 
-// Export for use in settings
+/**
+ * Gets mood check-in enabled state (standalone function).
+ * @returns {boolean} Whether feature is enabled
+ */
 export function getMoodCheckinEnabled() {
   const setting = localStorage.getItem('simnote_mood_checkin_enabled');
   return setting === null ? true : setting === 'true';
 }
 
+/**
+ * Sets mood check-in enabled state (standalone function).
+ * @param {boolean} enabled - Whether to enable
+ */
 export function setMoodCheckinEnabled(enabled) {
   localStorage.setItem('simnote_mood_checkin_enabled', enabled.toString());
 }
 
+/**
+ * Gets today's mood (standalone function).
+ * @returns {string|null} Today's mood or null
+ */
 export function getTodaysMood() {
   return StorageManager.getTodaysMood();
 }

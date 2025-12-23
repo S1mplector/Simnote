@@ -1,15 +1,52 @@
 // keyboardManager.js
 // Global keyboard shortcuts for Simnote
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module manages global keyboard shortcuts throughout the app.
+// Features include:
+// - Customizable shortcut registration
+// - Modifier key support (Ctrl, Shift, Alt, Meta)
+// - Auto-disable when typing in inputs
+// - Help modal showing all shortcuts
+//
+// DEFAULT SHORTCUTS:
+// - Ctrl+N: New Entry
+// - Ctrl+E: View Entries
+// - Ctrl+I: View Insights
+// - Ctrl+S: Save Entry
+// - Escape: Go Back
+// - Ctrl+/: Search
+// - Ctrl+,: Settings
+// - Shift+?: Show Help
+//
+// DEPENDENCIES:
+// - DOM APIs
 
+/**
+ * Manages global keyboard shortcuts.
+ * Auto-disables when focus is in text inputs.
+ * 
+ * @class KeyboardManager
+ */
 export class KeyboardManager {
+  /**
+   * Creates KeyboardManager and registers default shortcuts.
+   * @constructor
+   */
   constructor() {
+    /** @type {Map<string, Object>} Map of shortcut keys to handlers */
     this.shortcuts = new Map();
+    /** @type {boolean} Whether shortcuts are currently enabled */
     this.enabled = true;
     this.init();
   }
 
+  /**
+   * Initializes shortcuts and event listeners.
+   * @private
+   */
   init() {
-    // Register default shortcuts
     this.registerDefaults();
     
     // Global keyboard listener
@@ -29,6 +66,10 @@ export class KeyboardManager {
     });
   }
 
+  /**
+   * Registers all default keyboard shortcuts.
+   * @private
+   */
   registerDefaults() {
     // Navigation shortcuts
     this.register('n', { ctrl: true }, () => {
@@ -94,11 +135,27 @@ export class KeyboardManager {
     }, 'Show Shortcuts');
   }
 
+  /**
+   * Registers a keyboard shortcut.
+   * 
+   * @param {string} key - The key (e.g., 'n', 'Escape')
+   * @param {Object} [modifiers={}] - Modifier keys {ctrl, shift, alt, meta}
+   * @param {Function} callback - Handler function
+   * @param {string} [description=''] - Description for help modal
+   */
   register(key, modifiers = {}, callback, description = '') {
     const shortcutKey = this.getShortcutKey(key, modifiers);
     this.shortcuts.set(shortcutKey, { callback, description, key, modifiers });
   }
 
+  /**
+   * Generates a unique key string for a shortcut.
+   * 
+   * @param {string} key - The key
+   * @param {Object} modifiers - Modifier keys
+   * @returns {string} Combined shortcut key
+   * @private
+   */
   getShortcutKey(key, modifiers) {
     const parts = [];
     if (modifiers.ctrl) parts.push('ctrl');
@@ -109,8 +166,13 @@ export class KeyboardManager {
     return parts.join('+');
   }
 
+  /**
+   * Handles keydown events and triggers matching shortcuts.
+   * 
+   * @param {KeyboardEvent} e - The keyboard event
+   * @private
+   */
   handleKeydown(e) {
-    // Skip if shortcuts disabled or in input
     if (!this.enabled && !e.key.match(/^(Escape)$/i)) return;
     
     const shortcutKey = this.getShortcutKey(e.key, {
@@ -126,14 +188,22 @@ export class KeyboardManager {
     }
   }
 
+  /**
+   * Checks if main panel is currently visible.
+   * 
+   * @returns {boolean} Whether main panel is visible
+   * @private
+   */
   isMainPanelVisible() {
     const mainPanel = document.getElementById('main-panel');
     return mainPanel && mainPanel.style.display !== 'none' && 
            mainPanel.style.opacity !== '0';
   }
 
+  /**
+   * Shows/hides the keyboard shortcuts help modal.
+   */
   showShortcutsHelp() {
-    // Check if modal already exists
     let modal = document.getElementById('shortcuts-modal');
     if (modal) {
       modal.remove();
@@ -180,6 +250,14 @@ export class KeyboardManager {
     });
   }
 
+  /**
+   * Formats a shortcut for display with kbd tags.
+   * 
+   * @param {string} key - The key
+   * @param {Object} modifiers - Modifier keys
+   * @returns {string} HTML string with kbd elements
+   * @private
+   */
   formatShortcut(key, modifiers) {
     const parts = [];
     if (modifiers.ctrl) parts.push('<kbd>Ctrl</kbd>');

@@ -1,11 +1,47 @@
 // onboardingManager.js
 // First-time user onboarding flow
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module provides a guided onboarding experience for first-time users.
+// Features include:
+// - Multi-step tutorial with progress tracking
+// - Targeted highlighting of UI elements
+// - Responsive tooltip positioning
+// - Skip functionality and keyboard support (Escape)
+// - One-time display via localStorage flag
+//
+// STEPS:
+// 1. Welcome message (centered)
+// 2. Journal drawer highlight
+// 3. Entries drawer highlight
+// 4. Moods drawer highlight
+// 5. Settings button highlight
+// 6. Completion message
+//
+// DEPENDENCIES:
+// - localStorage for completion tracking
+// - DOM APIs for positioning and overlay
 
+/**
+ * Manages first-time user onboarding flow.
+ * Shows guided tooltips highlighting key features.
+ * 
+ * @class OnboardingManager
+ */
 export class OnboardingManager {
+  /**
+   * Creates OnboardingManager with step definitions.
+   * @constructor
+   */
   constructor() {
+    /** @type {string} localStorage key for completion status */
     this.storageKey = 'simnote_onboarding_complete';
+    /** @type {number} Current step index */
     this.currentStep = 0;
+    /** @type {Function|null} Escape key handler reference */
     this.keyHandler = null;
+    /** @type {Array<{title: string, content: string, target: string|null, position: string}>} */
     this.steps = [
       {
         title: 'Welcome to Simnote! 📝',
@@ -46,19 +82,29 @@ export class OnboardingManager {
     ];
   }
 
+  /**
+   * Checks if onboarding should be shown.
+   * @returns {boolean} True if not yet completed
+   */
   shouldShowOnboarding() {
     return !localStorage.getItem(this.storageKey);
   }
 
+  /**
+   * Starts the onboarding flow after splash animation.
+   */
   start() {
     if (!this.shouldShowOnboarding()) return;
     
-    // Wait for splash animation to complete
     setTimeout(() => {
       this.showStep(0);
     }, 4000);
   }
 
+  /**
+   * Shows a specific onboarding step.
+   * @param {number} stepIndex - Step index to show
+   */
   showStep(stepIndex) {
     this.currentStep = stepIndex;
     const step = this.steps[stepIndex];
@@ -146,6 +192,14 @@ export class OnboardingManager {
     }
   }
 
+  /**
+   * Positions tooltip relative to target element.
+   * Falls back to center if target not found or on small screens.
+   * 
+   * @param {HTMLElement} tooltip - Tooltip element
+   * @param {Object} step - Step definition with target and position
+   * @private
+   */
   positionTooltip(tooltip, step) {
     tooltip.classList.remove('arrow-left', 'arrow-right', 'arrow-top', 'arrow-bottom');
 
@@ -209,6 +263,10 @@ export class OnboardingManager {
     }
   }
 
+  /**
+   * Creates the semi-transparent background overlay.
+   * @private
+   */
   createOverlay() {
     let overlay = document.getElementById('onboarding-overlay');
     if (overlay) {
@@ -224,6 +282,10 @@ export class OnboardingManager {
     requestAnimationFrame(() => overlay.classList.add('visible'));
   }
 
+  /**
+   * Removes tooltip and target highlights.
+   * @private
+   */
   removeTooltip() {
     const tooltip = document.querySelector('.onboarding-tooltip');
     if (tooltip) tooltip.remove();
@@ -234,18 +296,27 @@ export class OnboardingManager {
     });
   }
 
+  /**
+   * Advances to next step.
+   */
   next() {
     if (this.currentStep < this.steps.length - 1) {
       this.showStep(this.currentStep + 1);
     }
   }
 
+  /**
+   * Goes back to previous step.
+   */
   prev() {
     if (this.currentStep > 0) {
       this.showStep(this.currentStep - 1);
     }
   }
 
+  /**
+   * Completes onboarding, saving flag to localStorage.
+   */
   complete() {
     localStorage.setItem(this.storageKey, 'true');
     this.removeTooltip();
@@ -262,6 +333,9 @@ export class OnboardingManager {
     }
   }
 
+  /**
+   * Resets onboarding to show again.
+   */
   reset() {
     localStorage.removeItem(this.storageKey);
   }

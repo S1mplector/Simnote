@@ -1,29 +1,97 @@
 // databaseManager.js
 // SQLite-based persistence using sql.js (WebAssembly)
 // Hybrid storage: SQLite + IndexedDB + localStorage + .simnote files
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module provides SQLite database functionality in the browser using sql.js
+// (a WebAssembly port of SQLite). It implements a hybrid storage strategy:
+//
+// STORAGE LAYERS:
+// 1. SQLite (sql.js) - Primary in-memory database for fast queries
+// 2. IndexedDB - Persists the SQLite database binary between sessions
+// 3. localStorage - Backup storage for entries (dual-write for safety)
+// 4. .simnote files - Optional file-based storage via File System Access API
+//
+// DATA PERSISTENCE:
+// - SQLite database is exported as binary and stored in IndexedDB
+// - Auto-saves every 30 seconds to both IndexedDB and localStorage
+// - Entries are also synced to .simnote files when file storage is enabled
+//
+// MIGRATION:
+// - On first run, migrates existing localStorage data to SQLite
+// - Handles both entries, metadata, and daily moods
+//
+// TABLES:
+// - entries: Journal entries with content, mood, tags, etc.
+// - metadata: Key-value store for app settings and stats
+// - daily_moods: Standalone mood tracking by date
+//
+// DEPENDENCIES:
+// - sql.js (loaded from /js/lib/)
+// - IndexedDB for binary persistence
+// - fileStorageBrowser.js for browser file storage (lazy-loaded)
+// - Electron IPC for desktop file storage
 
+/** @constant {string} Database file name (not actually used as file, just identifier) */
 const DB_NAME = 'simnote.db';
+/** @constant {number} Current database schema version */
 const DB_VERSION = 1;
+/** @constant {string} localStorage key for entries backup */
 const ENTRIES_BACKUP_KEY = 'entries';
+/** @constant {string} localStorage key for metadata backup */
 const META_BACKUP_KEY = 'simnote_meta';
 
-// File storage will be lazy-loaded to avoid circular dependencies
+/** @type {Object|null} Lazy-loaded browser file storage module */
 let fileStorage = null;
 
-// Check if running in Electron (dynamic check)
+/**
+ * Checks if running in Electron environment with IPC available.
+ * 
+ * @returns {boolean} True if in Electron with electronAPI
+ * @private
+ */
 function isElectron() {
   return typeof window !== 'undefined' && window.electronAPI;
 }
 
+/**
+ * Manages SQLite database operations using sql.js WebAssembly.
+ * Provides CRUD operations for entries, moods, and metadata with
+ * multi-layer persistence (SQLite → IndexedDB → localStorage → files).
+ * 
+ * @class DatabaseManager
+ * @example
+ * // Initialize and use:
+ * await dbManager.init();
+ * const entries = dbManager.getEntries();
+ */
 class DatabaseManager {
+  /**
+   * Creates the DatabaseManager instance.
+   * Call init() to actually initialize the database.
+   * 
+   * @constructor
+   */
   constructor() {
+    /** @type {Object|null} sql.js Database instance */
     this.db = null;
+    /** @type {boolean} Whether database is initialized and ready */
     this.ready = false;
+    /** @type {Promise|null} Pending initialization promise */
     this.initPromise = null;
+    /** @type {boolean} Whether file storage is enabled */
     this.fileStorageEnabled = false;
   }
 
-  // Enable file storage (call after user selects directory in browser, or auto in Electron)
+  /**
+   * Enables file storage for entries.
+   * In Electron: auto-enables via IPC.
+   * In browser: tries to restore previously selected directory.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether file storage was enabled
+   */
   async enableFileStorage() {
     console.log('[DB] enableFileStorage called, isElectron:', isElectron());
     if (isElectron()) {
@@ -53,7 +121,13 @@ class DatabaseManager {
     return false;
   }
 
-  // Prompt user to select file storage directory (browser only)
+  /**
+   * Prompts user to select a directory for file storage (browser only).
+   * Syncs existing entries to the new directory after selection.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether directory was selected
+   */
   async selectFileStorageDirectory() {
     if (isElectron()) return true;
     
@@ -77,7 +151,14 @@ class DatabaseManager {
     return false;
   }
 
-  // Sync single entry to file storage
+  /**
+   * Syncs a single entry to file storage.
+   * Handles both Electron IPC and browser File System Access API.
+   * 
+   * @async
+   * @param {Object} entry - The entry to sync
+   * @private
+   */
   async _syncEntryToFile(entry) {
     if (!this.fileStorageEnabled) {
       console.log('[DB] File storage not enabled, skipping sync');
@@ -115,7 +196,13 @@ class DatabaseManager {
     }
   }
 
-  // Delete entry from file storage
+  /**
+   * Deletes an entry file from file storage.
+   * 
+   * @async
+   * @param {string} id - Entry ID to delete
+   * @private
+   */
   async _deleteEntryFile(id) {
     if (!this.fileStorageEnabled) return;
     
@@ -134,6 +221,13 @@ class DatabaseManager {
     }
   }
 
+  /**
+   * Initializes the database. Safe to call multiple times.
+   * Returns existing promise if already initializing.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether initialization succeeded
+   */
   async init() {
     if (this.initPromise) return this.initPromise;
     
@@ -141,9 +235,17 @@ class DatabaseManager {
     return this.initPromise;
   }
 
+  /**
+   * Internal initialization logic.
+   * Loads sql.js, creates/restores database, runs migrations, enables file storage.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether initialization succeeded
+   * @private
+   */
   async _initialize() {
     try {
-      // Load sql.js from local files (for offline support)
+      // Load sql.js WASM module from local files (for offline support)
       const SQL = await initSqlJs({
         locateFile: file => `/js/lib/${file}`
       });
@@ -191,6 +293,12 @@ class DatabaseManager {
     }
   }
 
+  /**
+   * Creates database tables if they don't exist.
+   * Called on first database creation.
+   * 
+   * @private
+   */
   _createTables() {
     // Entries table
     this.db.run(`
@@ -232,6 +340,13 @@ class DatabaseManager {
     console.log('[DB] Tables created');
   }
 
+  /**
+   * Migrates data from localStorage to SQLite on first run.
+   * Handles entries, metadata, and daily moods.
+   * 
+   * @async
+   * @private
+   */
   async _migrateFromLocalStorage() {
     try {
       // Migrate entries
@@ -281,6 +396,13 @@ class DatabaseManager {
     }
   }
 
+  /**
+   * Inserts or replaces an entry in the database.
+   * 
+   * @param {Object} entry - Entry data to insert
+   * @returns {string} The entry ID
+   * @private
+   */
   _insertEntry(entry) {
     const id = entry.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const tags = JSON.stringify(entry.tags || []);
@@ -308,7 +430,13 @@ class DatabaseManager {
     return id;
   }
 
-  // IndexedDB operations for persisting SQLite database
+  /**
+   * Loads SQLite database binary from IndexedDB.
+   * 
+   * @async
+   * @returns {Promise<Uint8Array|null>} Database binary or null
+   * @private
+   */
   async _loadFromIndexedDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open('SimnoteDB', 1);
@@ -337,6 +465,12 @@ class DatabaseManager {
     });
   }
 
+  /**
+   * Saves SQLite database binary to IndexedDB.
+   * 
+   * @async
+   * @private
+   */
   async _saveToIndexedDB() {
     if (!this.db) return;
     
@@ -371,8 +505,13 @@ class DatabaseManager {
     });
   }
 
-  // Public API - Entries
+  // ==================== Public API - Entries ====================
   
+  /**
+   * Gets all entries from the database.
+   * 
+   * @returns {Object[]} Array of entry objects, newest first
+   */
   getEntries() {
     if (!this.ready) return [];
     
@@ -385,6 +524,12 @@ class DatabaseManager {
     return results[0].values.map(row => this._rowToEntry(results[0].columns, row));
   }
 
+  /**
+   * Gets a single entry by ID.
+   * 
+   * @param {string} id - Entry ID
+   * @returns {Object|null} Entry object or null
+   */
   getEntryById(id) {
     if (!this.ready) return null;
     
@@ -402,6 +547,17 @@ class DatabaseManager {
     return null;
   }
 
+  /**
+   * Creates a new entry.
+   * 
+   * @param {string} name - Entry title
+   * @param {string} content - Entry content (HTML)
+   * @param {string} mood - Mood descriptor
+   * @param {string} fontFamily - Font family used
+   * @param {string} fontSize - Font size used
+   * @param {string[]} [tags=[]] - Entry tags
+   * @returns {string|null} New entry ID or null
+   */
   saveEntry(name, content, mood, fontFamily, fontSize, tags = []) {
     if (!this.ready) return null;
     
@@ -429,6 +585,18 @@ class DatabaseManager {
     return id;
   }
 
+  /**
+   * Updates an existing entry.
+   * 
+   * @param {string} id - Entry ID
+   * @param {string} name - Updated title
+   * @param {string} content - Updated content
+   * @param {string} mood - Updated mood
+   * @param {string} fontFamily - Updated font family
+   * @param {string} fontSize - Updated font size
+   * @param {string[]} [tags=[]] - Updated tags
+   * @returns {boolean} Whether update succeeded
+   */
   updateEntry(id, name, content, mood, fontFamily, fontSize, tags = []) {
     if (!this.ready) return false;
     
@@ -452,6 +620,12 @@ class DatabaseManager {
     return true;
   }
 
+  /**
+   * Deletes an entry by ID.
+   * 
+   * @param {string} id - Entry ID
+   * @returns {boolean} Whether deletion succeeded
+   */
   deleteEntry(id) {
     if (!this.ready) return false;
     
@@ -464,6 +638,12 @@ class DatabaseManager {
     return true;
   }
 
+  /**
+   * Toggles favorite status for an entry.
+   * 
+   * @param {string} id - Entry ID
+   * @returns {boolean} New favorite status
+   */
   toggleFavorite(id) {
     if (!this.ready) return false;
     
@@ -482,7 +662,13 @@ class DatabaseManager {
     return newFavorite === 1;
   }
 
-  // Tags
+  // ==================== Tags ====================
+  
+  /**
+   * Gets all unique tags across all entries.
+   * 
+   * @returns {string[]} Sorted array of unique tags
+   */
   getAllTags() {
     if (!this.ready) return [];
     
@@ -500,7 +686,13 @@ class DatabaseManager {
     return Array.from(tagSet).sort();
   }
 
-  // Statistics
+  // ==================== Statistics ====================
+  
+  /**
+   * Gets journal statistics including entry counts, word counts, and streaks.
+   * 
+   * @returns {Object} Stats object
+   */
   getStats() {
     if (!this.ready) {
       return {
@@ -542,7 +734,14 @@ class DatabaseManager {
     };
   }
 
-  // Metadata
+  // ==================== Metadata ====================
+  
+  /**
+   * Gets a metadata value by key.
+   * 
+   * @param {string} key - Metadata key
+   * @returns {*} Parsed JSON value or raw string
+   */
   getMetadata(key) {
     if (!this.ready) return null;
     
@@ -563,6 +762,12 @@ class DatabaseManager {
     return null;
   }
 
+  /**
+   * Sets a metadata value.
+   * 
+   * @param {string} key - Metadata key
+   * @param {*} value - Value to store (will be JSON stringified)
+   */
   setMetadata(key, value) {
     if (!this.ready) return;
     
@@ -573,7 +778,13 @@ class DatabaseManager {
     this._saveToIndexedDB();
   }
 
-  // Daily Moods
+  // ==================== Daily Moods ====================
+  
+  /**
+   * Gets today's mood.
+   * 
+   * @returns {string|null} Mood string or null
+   */
   getTodaysMood() {
     if (!this.ready) return null;
     
@@ -591,6 +802,11 @@ class DatabaseManager {
     return null;
   }
 
+  /**
+   * Sets today's mood.
+   * 
+   * @param {string} mood - Mood to set
+   */
   setTodaysMood(mood) {
     if (!this.ready) return;
     
@@ -604,6 +820,12 @@ class DatabaseManager {
     this._saveToIndexedDB();
   }
 
+  /**
+   * Gets mood history for the specified number of days.
+   * 
+   * @param {number} [days=30] - Number of days to retrieve
+   * @returns {Array<{date: string, mood: string, timestamp: string}>} Mood history
+   */
   getMoodHistory(days = 30) {
     if (!this.ready) return [];
 
@@ -626,7 +848,14 @@ class DatabaseManager {
     return rows;
   }
 
-  // Storage Info
+  // ==================== Storage Info ====================
+  
+  /**
+   * Gets storage usage information.
+   * 
+   * @async
+   * @returns {Promise<Object>} Storage info with counts and sizes
+   */
   async getStorageInfo() {
     const info = {
       entriesCount: 0,
@@ -662,7 +891,13 @@ class DatabaseManager {
     return info;
   }
 
-  // Export/Import
+  // ==================== Export/Import ====================
+  
+  /**
+   * Exports all data to JSON string.
+   * 
+   * @returns {string|null} JSON export or null if not ready
+   */
   exportToJSON() {
     if (!this.ready) return null;
     
@@ -681,6 +916,14 @@ class DatabaseManager {
     }, null, 2);
   }
 
+  /**
+   * Imports data from JSON string.
+   * Handles both entries and daily moods.
+   * 
+   * @async
+   * @param {string} jsonString - JSON data to import
+   * @returns {Promise<number>} Number of entries imported
+   */
   async importFromJSON(jsonString) {
     if (!this.ready) return 0;
     
@@ -759,7 +1002,11 @@ class DatabaseManager {
     }
   }
 
-  // Clear all data
+  /**
+   * Clears all data from the database.
+   * 
+   * @async
+   */
   async clearAllData() {
     if (!this.ready) return;
     
@@ -771,7 +1018,16 @@ class DatabaseManager {
     console.log('[DB] All data cleared');
   }
 
-  // Helper methods
+  // ==================== Helper Methods ====================
+  
+  /**
+   * Converts a database row to an entry object.
+   * 
+   * @param {string[]} columns - Column names
+   * @param {*[]} values - Row values
+   * @returns {Object} Entry object
+   * @private
+   */
   _rowToEntry(columns, values) {
     const entry = {};
     columns.forEach((col, i) => {
@@ -791,10 +1047,24 @@ class DatabaseManager {
     return entry;
   }
 
+  /**
+   * Converts snake_case to camelCase.
+   * 
+   * @param {string} str - Snake case string
+   * @returns {string} Camel case string
+   * @private
+   */
   _snakeToCamel(str) {
     return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
   }
 
+  /**
+   * Counts words in content, stripping HTML tags.
+   * 
+   * @param {string} text - HTML content
+   * @returns {number} Word count
+   * @private
+   */
   _countWords(text) {
     if (!text) return 0;
     // Strip HTML tags for word count
@@ -802,6 +1072,13 @@ class DatabaseManager {
     return plainText.trim().split(/\s+/).filter(w => w.length > 0).length;
   }
 
+  /**
+   * Formats byte count to human-readable string.
+   * 
+   * @param {number} bytes - Byte count
+   * @returns {string} Formatted string
+   * @private
+   */
   _formatBytes(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -810,6 +1087,11 @@ class DatabaseManager {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  /**
+   * Recalculates and updates streak information.
+   * 
+   * @private
+   */
   _updateStreak() {
     const entries = this.getEntries();
     const dates = new Set(entries.map(e => (e.createdAt || '').split('T')[0]));
@@ -837,7 +1119,11 @@ class DatabaseManager {
     this.setMetadata('streak', { current: currentStreak, longest: longestStreak });
   }
 
-  // Sync entries to localStorage as backup (dual-write strategy)
+  /**
+   * Syncs entries to localStorage as backup (dual-write strategy).
+   * 
+   * @private
+   */
   _syncToLocalStorage() {
     try {
       const entries = this.getEntries();
@@ -848,13 +1134,17 @@ class DatabaseManager {
     }
   }
 
-  // Force save
+  /**
+   * Forces an immediate save to IndexedDB.
+   * 
+   * @async
+   */
   async save() {
     await this._saveToIndexedDB();
   }
 }
 
-// Singleton instance
+/** @type {DatabaseManager} Singleton database manager instance */
 const dbManager = new DatabaseManager();
 
 export { dbManager, DatabaseManager };

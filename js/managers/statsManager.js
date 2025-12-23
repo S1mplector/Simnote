@@ -1,18 +1,60 @@
 // statsManager.js
+// Statistics panel manager for journal analytics
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module manages the statistics panel displaying:
+// - Entry counts and word statistics
+// - Writing streak tracking
+// - GitHub-style activity heatmap (365 days)
+// - Mood distribution chart
+// - Top tags analysis
+//
+// VISUALIZATION COMPONENTS:
+// - Heatmap: Calendar grid showing entry activity by day
+// - Mood Chart: Horizontal bar chart of mood distribution
+// - Stat Cards: Animated number counters
+//
+// INTEGRATION POINTS:
+// - StorageManager: Data retrieval
+// - PanelManager: Panel transitions
+// - MoodEmojiMapper: Emoji display for moods
+//
+// DEPENDENCIES:
+// - StorageManager, PanelManager, MoodEmojiMapper
+
 import { StorageManager } from './storageManager.js';
 import { PanelManager } from './panelManager.js';
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 
+/**
+ * Manages the statistics panel with journal analytics.
+ * Displays entry counts, streaks, heatmap, mood chart, and tag analysis.
+ * 
+ * @class StatsManager
+ */
 export class StatsManager {
+  /**
+   * Creates StatsManager and initializes event listeners.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLElement} Stats panel element */
     this.statsPanel = document.getElementById('stats-panel');
+    /** @type {HTMLElement} Main menu panel */
     this.mainPanel = document.getElementById('main-panel');
+    /** @type {HTMLElement} Stats button in main menu */
     this.statsBtn = document.getElementById('stats-btn');
+    /** @type {HTMLElement} Back button in stats panel */
     this.backBtn = document.querySelector('.stats-back-btn');
     
     this.init();
   }
 
+  /**
+   * Initializes button event listeners.
+   * @private
+   */
   init() {
     if (this.statsBtn) {
       this.statsBtn.addEventListener('click', () => this.animateAndShow());
@@ -23,6 +65,9 @@ export class StatsManager {
     }
   }
 
+  /**
+   * Animates drawer opening and shows stats panel.
+   */
   animateAndShow() {
     const drawer = this.statsBtn.closest('.chest__drawer');
     if (drawer) {
@@ -36,6 +81,9 @@ export class StatsManager {
     }
   }
 
+  /**
+   * Shows the stats panel and renders statistics.
+   */
   showStats() {
     // Hide utility buttons
     const manualBtn = document.getElementById('manual-btn');
@@ -49,6 +97,9 @@ export class StatsManager {
     });
   }
 
+  /**
+   * Hides stats panel and returns to main menu.
+   */
   hideStats() {
     PanelManager.transitionPanels(this.statsPanel, this.mainPanel).then(() => {
       if (window.animateMainPanelBack) {
@@ -57,6 +108,9 @@ export class StatsManager {
     });
   }
 
+  /**
+   * Renders all statistics components.
+   */
   renderStats() {
     const stats = StorageManager.getStats();
     const entries = StorageManager.getEntries();
@@ -75,6 +129,12 @@ export class StatsManager {
     this.renderTopTags(entries);
   }
 
+  /**
+   * Animates a number counter from 0 to target value.
+   * 
+   * @param {string} elementId - DOM element ID
+   * @param {number} targetValue - Target number to animate to
+   */
   animateValue(elementId, targetValue) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -101,6 +161,12 @@ export class StatsManager {
     requestAnimationFrame(animate);
   }
 
+  /**
+   * Formats large numbers with K/M suffix.
+   * 
+   * @param {number} num - Number to format
+   * @returns {string} Formatted string
+   */
   formatNumber(num) {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
@@ -110,6 +176,12 @@ export class StatsManager {
     return num.toString();
   }
 
+  /**
+   * Renders the GitHub-style activity heatmap.
+   * Shows entry activity for the last 365 days.
+   * 
+   * @param {Object[]} entries - Array of entry objects
+   */
   renderHeatmap(entries) {
     const grid = document.getElementById('heatmap-grid');
     const monthsContainer = document.getElementById('heatmap-months');
@@ -208,6 +280,12 @@ export class StatsManager {
     });
   }
 
+  /**
+   * Determines heat level (0-4) based on entry count.
+   * 
+   * @param {number} count - Number of entries on a day
+   * @returns {number} Heat level 0-4
+   */
   getHeatLevel(count) {
     if (count === 0) return 0;
     if (count === 1) return 1;
@@ -216,6 +294,11 @@ export class StatsManager {
     return 4;
   }
 
+  /**
+   * Renders the mood distribution bar chart.
+   * 
+   * @param {Object} moodCounts - Map of mood to count
+   */
   renderMoodChart(moodCounts) {
     const chart = document.getElementById('mood-chart');
     if (!chart) return;
@@ -261,6 +344,11 @@ export class StatsManager {
     });
   }
 
+  /**
+   * Renders the top 3 most used tags.
+   * 
+   * @param {Object[]} entries - Array of entry objects
+   */
   renderTopTags(entries) {
     const topTagsEl = document.getElementById('top-tags');
     if (!topTagsEl) return;
