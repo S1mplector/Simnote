@@ -1,24 +1,71 @@
 // fileStorageBrowser.js
 // Browser-compatible .simnote file storage using File System Access API
 // Falls back gracefully when API is not available
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module provides file-based storage in browsers using the
+// File System Access API. Features include:
+// - Directory picker for user-selected storage location
+// - IndexedDB persistence of directory handles
+// - .simnote JSON file format for entries
+// - Graceful fallback when API not available
+//
+// FILE FORMAT:
+// - Extension: .simnote
+// - Content: JSON with entry data and metadata
+// - Filename: sanitized-name-entryid.simnote
+//
+// PERSISTENCE:
+// - Directory handle stored in IndexedDB
+// - Permissions re-requested on session restore
+//
+// DEPENDENCIES:
+// - File System Access API (Chrome, Edge)
+// - IndexedDB for handle persistence
 
+/** @constant {string} File extension for simnote files */
 const SIMNOTE_EXTENSION = '.simnote';
+/** @constant {number} Current file format version */
 const SIMNOTE_VERSION = 1;
+/** @constant {string} IndexedDB key for directory handle */
 const STORAGE_DIR_HANDLE_KEY = 'simnote_dir_handle';
 
+/**
+ * Browser-based file storage using File System Access API.
+ * Stores entries as .simnote JSON files in user-selected directory.
+ * 
+ * @class BrowserFileStorage
+ */
 class BrowserFileStorage {
+  /**
+   * Creates BrowserFileStorage instance.
+   * @constructor
+   */
   constructor() {
+    /** @type {FileSystemDirectoryHandle|null} Selected directory handle */
     this.dirHandle = null;
+    /** @type {boolean} Whether File System Access API is available */
     this.isAvailable = 'showDirectoryPicker' in window;
+    /** @type {boolean} Whether file storage is currently enabled */
     this.isEnabled = false;
   }
 
-  // Check if File System Access API is available
+  /**
+   * Checks if File System Access API is supported.
+   * @static
+   * @returns {boolean} Whether API is available
+   */
   static isSupported() {
     return 'showDirectoryPicker' in window;
   }
 
-  // Prompt user to select a directory for storing .simnote files
+  /**
+   * Prompts user to select a directory for storing files.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether selection succeeded
+   */
   async selectDirectory() {
     if (!this.isAvailable) {
       console.warn('[FileStorageBrowser] File System Access API not available');
@@ -47,7 +94,13 @@ class BrowserFileStorage {
     }
   }
 
-  // Try to restore previously selected directory handle
+  /**
+   * Restores previously selected directory from IndexedDB.
+   * Re-requests permission if needed.
+   * 
+   * @async
+   * @returns {Promise<boolean>} Whether restore succeeded
+   */
   async restoreDirectory() {
     if (!this.isAvailable) return false;
 
@@ -78,7 +131,12 @@ class BrowserFileStorage {
     return false;
   }
 
-  // Persist directory handle to IndexedDB
+  /**
+   * Persists directory handle to IndexedDB.
+   * 
+   * @async
+   * @private
+   */
   async _persistHandle() {
     if (!this.dirHandle) return;
     
@@ -105,7 +163,13 @@ class BrowserFileStorage {
     });
   }
 
-  // Get persisted directory handle from IndexedDB
+  /**
+   * Gets persisted directory handle from IndexedDB.
+   * 
+   * @async
+   * @returns {Promise<FileSystemDirectoryHandle|null>}
+   * @private
+   */
   async _getPersistedHandle() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open('SimnoteFileStorage', 1);
@@ -131,7 +195,13 @@ class BrowserFileStorage {
     });
   }
 
-  // Generate a safe filename from entry
+  /**
+   * Generates a safe filename from entry data.
+   * 
+   * @param {Object} entry - Entry object
+   * @returns {string} Safe filename with .simnote extension
+   * @private
+   */
   _generateFilename(entry) {
     const safeName = (entry.name || 'untitled')
       .toLowerCase()
@@ -141,7 +211,13 @@ class BrowserFileStorage {
     return `${safeName}-${entry.id}${SIMNOTE_EXTENSION}`;
   }
 
-  // Convert entry to .simnote file format
+  /**
+   * Converts entry object to .simnote file format.
+   * 
+   * @param {Object} entry - Entry object
+   * @returns {Object} Simnote format object
+   * @private
+   */
   _entryToSimnote(entry) {
     return {
       simnoteVersion: SIMNOTE_VERSION,
@@ -160,7 +236,13 @@ class BrowserFileStorage {
     };
   }
 
-  // Convert .simnote content back to entry
+  /**
+   * Converts .simnote file content back to entry object.
+   * 
+   * @param {Object} simnoteData - Parsed simnote file data
+   * @returns {Object} Entry object
+   * @private
+   */
   _simnoteToEntry(simnoteData) {
     return {
       id: simnoteData.id,
@@ -178,7 +260,13 @@ class BrowserFileStorage {
     };
   }
 
-  // Save entry as .simnote file
+  /**
+   * Saves entry as .simnote file.
+   * 
+   * @async
+   * @param {Object} entry - Entry to save
+   * @returns {Promise<string|null>} Filename or null on failure
+   */
   async saveEntry(entry) {
     if (!this.isEnabled || !this.dirHandle) {
       return null;
@@ -201,13 +289,25 @@ class BrowserFileStorage {
     }
   }
 
-  // Update entry (delete old, save new)
+  /**
+   * Updates entry by deleting old file and saving new.
+   * 
+   * @async
+   * @param {Object} entry - Entry to update
+   * @returns {Promise<string|null>} Filename or null
+   */
   async updateEntry(entry) {
     await this.deleteEntryById(entry.id);
     return this.saveEntry(entry);
   }
 
-  // Delete entry file by ID
+  /**
+   * Deletes entry file by ID.
+   * 
+   * @async
+   * @param {string} id - Entry ID
+   * @returns {Promise<boolean>} Whether deletion succeeded
+   */
   async deleteEntryById(id) {
     if (!this.isEnabled || !this.dirHandle) return false;
 
@@ -225,7 +325,12 @@ class BrowserFileStorage {
     return false;
   }
 
-  // Get all entries from .simnote files
+  /**
+   * Gets all entries from .simnote files in directory.
+   * 
+   * @async
+   * @returns {Promise<Object[]>} Array of entry objects
+   */
   async getEntries() {
     if (!this.isEnabled || !this.dirHandle) return [];
 
@@ -250,7 +355,13 @@ class BrowserFileStorage {
     return entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
-  // Sync all entries to files
+  /**
+   * Syncs all entries to files.
+   * 
+   * @async
+   * @param {Object[]} entries - Entries to sync
+   * @returns {Promise<number>} Count of synced entries
+   */
   async syncAllEntries(entries) {
     if (!this.isEnabled) return 0;
 
@@ -263,19 +374,24 @@ class BrowserFileStorage {
     return synced;
   }
 
-  // Get directory name
+  /**
+   * Gets the selected directory name.
+   * @returns {string|null} Directory name or null
+   */
   getDirectoryName() {
     return this.dirHandle?.name || null;
   }
 
-  // Disable file storage
+  /**
+   * Disables file storage.
+   */
   disable() {
     this.dirHandle = null;
     this.isEnabled = false;
   }
 }
 
-// Singleton instance
+/** @type {BrowserFileStorage} Singleton browser file storage instance */
 const browserFileStorage = new BrowserFileStorage();
 
 export { browserFileStorage, BrowserFileStorage, SIMNOTE_EXTENSION, SIMNOTE_VERSION };

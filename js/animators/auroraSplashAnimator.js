@@ -1,6 +1,36 @@
 // auroraSplashAnimator.js
-// Aurora Swirl Splash – soft glowing orbs spiral toward the centre, overlap with additive blending then fade.
+// Aurora theme splash with spiraling glowing orbs
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates the splash screen for aurora theme.
+// Glowing orbs spiral inward with additive blending.
+// Features:
+// - Screen composite blending for glow
+// - Radial gradient particles
+// - Spiral convergence animation
+// - Radial fade transition
+//
+// ANIMATION:
+// - Duration: 3.2 seconds
+// - 50 glowing particles spiral inward
+// - Fade overlay appears in last 40%
+//
+// DEPENDENCIES:
+// - Canvas overlay created dynamically
+
+/**
+ * Aurora splash screen animator.
+ * Glowing orbs spiral to center with additive blending.
+ * 
+ * @class AuroraSplashAnimator
+ */
 export class AuroraSplashAnimator {
+  /**
+   * Creates AuroraSplashAnimator and starts animation.
+   * @param {Function} [onComplete] - Callback when splash finishes
+   * @constructor
+   */
   constructor(onComplete = () => {}) {
     this.onComplete = onComplete;
 

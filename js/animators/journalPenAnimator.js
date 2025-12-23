@@ -1,5 +1,36 @@
+// journalPenAnimator.js
+// Animated pen icon for new entry button
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator replaces the new entry button icon with an animated
+// pen that writes on hover. Features:
+// - Paper with lines element
+// - Pen with tip and body
+// - Ink dots appearing during writing
+// - Auto-stop after timeout
+//
+// STATES:
+// - idle: Pen resting, no animation
+// - writing: Pen moving, ink dots appearing
+//
+// DEPENDENCIES:
+// - New entry button with id 'new-entry-btn'
+// - CSS animations for writing effect
+
+/**
+ * Animated pen icon for new entry button.
+ * Shows writing animation on hover.
+ * 
+ * @class JournalPenAnimator
+ */
 export class JournalPenAnimator {
+  /**
+   * Creates JournalPenAnimator and replaces icon.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLElement} Journal button element */
     this.journalBtn = document.getElementById('new-entry-btn');
     if (!this.journalBtn) return;
 

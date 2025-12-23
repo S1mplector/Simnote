@@ -1,9 +1,38 @@
 // auroraAnimator.js
-// Simple animated aurora (northern lights) background using ribbon-like sine waves.
-// Creates luminous ribbons that gently wave across the sky with additive blending.
+// Animated aurora (northern lights) background using ribbon-like sine waves
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates luminous aurora ribbons that wave across the screen.
+// Features:
+// - Canvas-based sine wave rendering
+// - Additive blending for glow effect
+// - Dynamic ribbon count (3-6 ribbons)
+// - Breathing animation (amplitude pulses)
+// - Edge fading to blend with background
+//
+// RIBBON PROPERTIES:
+// - baseAmp/pulseAmp: Wave amplitude with breathing
+// - frequency: Wave density
+// - speed: Horizontal movement
+// - verticalShift: Y position as percentage of height
+//
+// DEPENDENCIES:
+// - Canvas element with id 'bg-canvas'
 
+/**
+ * Aurora (northern lights) background animator.
+ * Creates glowing ribbon waves with additive blending.
+ * 
+ * @class AuroraAnimator
+ */
 export class AuroraAnimator {
+  /**
+   * Creates AuroraAnimator and starts animation.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLCanvasElement} Background canvas */
     this.canvas = document.getElementById('bg-canvas');
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');

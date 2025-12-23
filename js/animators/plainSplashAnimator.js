@@ -1,5 +1,28 @@
 // plainSplashAnimator.js
-// Minimal fade-in/out splash for plain themes (dark / light). It simply shows an overlay with the app name then fades.
+// Minimal fade-in/out splash for plain themes
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// Simple splash showing app name with fade animation.
+// Features:
+// - Full-screen overlay
+// - "Simnote" text centered
+// - Fade in, hold, fade out sequence
+//
+// TIMING:
+// - Fade in: instant
+// - Hold: 1.2 seconds
+// - Fade out: 0.8 seconds
+//
+// DEPENDENCIES:
+// - None (self-contained DOM creation)
+
+/**
+ * Minimal text splash animator for plain themes.
+ * Shows "Simnote" text with fade animation.
+ * 
+ * @class PlainSplashAnimator
+ */
 export class PlainSplashAnimator {
   /**
    * @param {Function} onComplete Callback executed when the splash has finished and disappeared.

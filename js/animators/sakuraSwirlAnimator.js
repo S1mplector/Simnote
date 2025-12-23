@@ -1,6 +1,31 @@
 // sakuraSwirlAnimator.js
-// High-quality splash animation: multiple sakura petals spiral toward the centre, then fade.
+// Splash animation with spiraling sakura petals
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates the default splash screen animation.
+// Petals spiral inward toward the center then fade out.
+// Features:
+// - Canvas overlay for splash
+// - Polar coordinate spiral animation
+// - Staggered petal delays
+// - Radial gradient fade transition
+// - Hi-DPI support
+//
+// ANIMATION PHASES:
+// 1. Petals spiral inward (0-60%)
+// 2. Radial fade overlay appears (60-100%)
+// 3. Canvas removed, callback fired
+//
+// DEPENDENCIES:
+// - Petal images in /img/petal1-9.png
 
+/**
+ * Sakura swirl splash screen animator.
+ * Petals spiral toward center then fade.
+ * 
+ * @class SakuraSwirlAnimator
+ */
 export class SakuraSwirlAnimator {
   /**
    * @param {Function} onComplete Callback fired once the splash finishes.

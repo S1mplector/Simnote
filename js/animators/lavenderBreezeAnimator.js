@@ -1,5 +1,38 @@
+// lavenderBreezeAnimator.js
+// Lavender petal background with layered depth effect
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates upward-drifting lavender petals with parallax.
+// Features:
+// - Three-layer depth system (background, midground, foreground)
+// - Mouse repulsion effect
+// - Sway and drift animations
+// - Wind simulation (rightward breeze)
+// - 8 lavender petal images
+//
+// LAYER SYSTEM:
+// - background: Small, transparent, slow
+// - midground: Medium size/opacity/speed
+// - foreground: Large, opaque, fast
+//
+// DEPENDENCIES:
+// - Canvas element with id 'bg-canvas'
+// - Lavender images in /img/lavender1-8.png
+
+/**
+ * Lavender breeze background animator with layered depth.
+ * Creates upward-drifting petals with parallax effect.
+ * 
+ * @class LavenderBreezeAnimator
+ */
 export class LavenderBreezeAnimator {
+  /**
+   * Creates LavenderBreezeAnimator and starts animation.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLCanvasElement} Background canvas */
     this.canvas = document.getElementById('bg-canvas');
     this.ctx = this.canvas.getContext('2d');
 

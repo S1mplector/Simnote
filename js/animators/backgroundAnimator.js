@@ -1,6 +1,39 @@
 // backgroundAnimator.js
+// Sakura petal particle system for background animation
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates falling sakura petals as the default
+// background animation. Features:
+// - Canvas-based particle rendering
+// - Mouse attraction effect
+// - Wind simulation
+// - Petal rotation and fading
+// - 9 different petal images
+//
+// PARTICLE BEHAVIOR:
+// - Petals fall with configurable speed and wind
+// - Mouse cursor attracts nearby petals
+// - Petals fade after passing halfway point
+// - Reset to top when fully faded or off-screen
+//
+// DEPENDENCIES:
+// - Canvas element with id 'bg-canvas'
+// - Petal images in /img/petal1-9.png
+
+/**
+ * Sakura petal particle animator for background.
+ * Creates falling petals with mouse interaction.
+ * 
+ * @class BackgroundAnimator
+ */
 export class BackgroundAnimator {
+  /**
+   * Creates BackgroundAnimator and starts animation.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLCanvasElement} Background canvas */
     this.canvas = document.getElementById('bg-canvas');
     this.ctx = this.canvas.getContext('2d');
 

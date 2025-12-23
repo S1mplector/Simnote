@@ -1,7 +1,41 @@
+// preload.js
+// Electron preload script - exposes IPC APIs to renderer process
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This script runs in a privileged context between Electron's main process
+// and the renderer. It safely exposes specific IPC channels via contextBridge.
+//
+// API CATEGORIES:
+// - Entry operations: save, file storage
+// - Chat: AI chat with streaming support
+// - Memory: Conversation memory persistence
+// - File Storage: .simnote file operations
+// - Native DB: SQLite database operations (Electron-only)
+//
+// SECURITY:
+// - Only exposes specific IPC channels
+// - Uses contextBridge for safe exposure
+// - Renderer cannot access Node.js directly
+//
+// DEPENDENCIES:
+// - Electron contextBridge, ipcRenderer
+
 const { contextBridge, ipcRenderer } = require('electron');
 
+/**
+ * Exposes Electron IPC APIs to the renderer process.
+ * All methods communicate with main process via IPC.
+ */
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Existing saveEntry API
+  // ==================== Entry Operations ====================
+  
+  /**
+   * Saves a new entry via main process.
+   * @param {string} entryName - Entry title
+   * @param {string} entryContent - Entry content
+   * @returns {Promise<string>} Result message
+   */
   saveEntry: (entryName, entryContent) =>
     ipcRenderer.invoke('save-entry', { entryName, entryContent }),
   // New API to get system RAM info.

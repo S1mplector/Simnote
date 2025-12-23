@@ -1,6 +1,33 @@
 // themePreviewAnimators.js
-// Lightweight animations used only inside the dropdown preview canvases.
+// Lightweight preview animations for theme selector dropdown
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module contains mini-versions of theme animators for the
+// theme selector dropdown previews. Each animator runs on a small
+// canvas and shows a simplified version of the theme's animation.
+//
+// CLASSES:
+// - FirefliesPreviewAnimator: Blinking dots for fireflies theme
+// - AuroraPreviewAnimator: Wavy ribbons for aurora theme
+// - SakuraPreviewAnimator: Falling petals for sakura theme
+// - LavenderPreviewAnimator: Rising petals for lavender theme
+//
+// OPTIMIZATION:
+// - Reduced particle counts for performance
+// - Simplified rendering logic
+// - Each animator has destroy() for cleanup
+//
+// DEPENDENCIES:
+// - Canvas elements from theme selector UI
+// - Petal images for sakura/lavender previews
 
+/**
+ * Fireflies preview animator for theme selector.
+ * Simplified blinking dots effect.
+ * 
+ * @class FirefliesPreviewAnimator
+ */
 export class FirefliesPreviewAnimator {
   constructor(canvas) {
     this.canvas = canvas;

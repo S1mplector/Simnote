@@ -1,6 +1,31 @@
-// splashAnimator.js (ES Module)
-// Simple splash / intro animation: a single petal drops, sways, fades, then fires a callback.
+// splashAnimator.js
+// Single petal drop splash animation
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// Simple splash showing a single petal dropping and swaying.
+// Features:
+// - Canvas overlay for animation
+// - Single petal with sway motion
+// - Rotation for natural feel
+// - Fade out at end
+// - Hi-DPI support
+//
+// ANIMATION:
+// - Duration: 3.5 seconds
+// - Petal drops from top to center
+// - Sine wave sway motion
+// - Fades during last 20%
+//
+// DEPENDENCIES:
+// - Petal image at /img/petal1.png
 
+/**
+ * Single petal drop splash animator.
+ * Shows one petal swaying down then fading.
+ * 
+ * @class SplashAnimator
+ */
 export class SplashAnimator {
   /**
    * @param {Function} onComplete Callback fired once the splash is done.

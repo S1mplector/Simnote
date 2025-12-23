@@ -1,6 +1,31 @@
 // lavenderSplashAnimator.js
-// Wind-sweep splash: lavender petals rush in from the left like a real gust
+// Lavender theme splash with wind-swept petals
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates the splash screen for lavender theme.
+// Petals sweep across screen from left to right like a gust of wind.
+// Features:
+// - Three-layer depth system for parallax
+// - Sine wave vertical motion
+// - Rotation animation
+// - Fade in/out per particle
+// - Hi-DPI support
+//
+// LAYER SYSTEM:
+// - background: Smaller, slower, more transparent
+// - midground: Medium properties
+// - foreground: Larger, faster, more opaque
+//
+// DEPENDENCIES:
+// - Lavender images in /img/lavender1-8.png
 
+/**
+ * Lavender wind-sweep splash screen animator.
+ * Petals rush across screen from left to right.
+ * 
+ * @class LavenderSplashAnimator
+ */
 export class LavenderSplashAnimator {
   /**
    * @param {Function} onComplete Callback fired after splash complete

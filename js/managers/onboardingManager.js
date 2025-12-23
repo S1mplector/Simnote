@@ -41,6 +41,8 @@ export class OnboardingManager {
     this.currentStep = 0;
     /** @type {Function|null} Escape key handler reference */
     this.keyHandler = null;
+    /** @type {Function|null} Window resize handler reference */
+    this.resizeHandler = null;
     /** @type {Array<{title: string, content: string, target: string|null, position: string}>} */
     this.steps = [
       {
@@ -112,10 +114,8 @@ export class OnboardingManager {
     // Remove existing tooltip
     this.removeTooltip();
     
-    // Create overlay if first step
-    if (stepIndex === 0) {
-      this.createOverlay();
-    }
+    // Ensure overlay exists for all steps
+    this.createOverlay();
     
     // Create tooltip
     const tooltip = document.createElement('div');
@@ -156,6 +156,8 @@ export class OnboardingManager {
         target.classList.add('onboarding-highlight');
       }
     }
+
+    this.updateOverlaySpotlight(step);
     
     // Animate in
     requestAnimationFrame(() => tooltip.classList.add('visible'));
@@ -189,6 +191,16 @@ export class OnboardingManager {
         }
       };
       document.addEventListener('keydown', this.keyHandler);
+    }
+
+    if (!this.resizeHandler) {
+      this.resizeHandler = () => {
+        const current = this.steps[this.currentStep];
+        if (current) {
+          this.updateOverlaySpotlight(current);
+        }
+      };
+      window.addEventListener('resize', this.resizeHandler);
     }
   }
 
@@ -277,9 +289,56 @@ export class OnboardingManager {
     overlay = document.createElement('div');
     overlay.className = 'onboarding-overlay';
     overlay.id = 'onboarding-overlay';
-    overlay.addEventListener('click', () => this.complete());
+    overlay.dataset.spotlight = 'off';
+    overlay.innerHTML = `
+      <div class="onboarding-overlay__slice onboarding-overlay__slice--top"></div>
+      <div class="onboarding-overlay__slice onboarding-overlay__slice--left"></div>
+      <div class="onboarding-overlay__slice onboarding-overlay__slice--right"></div>
+      <div class="onboarding-overlay__slice onboarding-overlay__slice--bottom"></div>
+      <div class="onboarding-overlay__spotlight" aria-hidden="true"></div>
+    `;
+    overlay.querySelectorAll('.onboarding-overlay__slice').forEach(slice => {
+      slice.addEventListener('click', () => this.complete());
+    });
     document.body.appendChild(overlay);
     requestAnimationFrame(() => overlay.classList.add('visible'));
+  }
+
+  updateOverlaySpotlight(step) {
+    const overlay = document.getElementById('onboarding-overlay');
+    if (!overlay) return;
+
+    const target = step?.target ? document.querySelector(step.target) : null;
+    if (!target || step.position === 'center') {
+      overlay.dataset.spotlight = 'off';
+      overlay.style.setProperty('--spotlight-top', '0px');
+      overlay.style.setProperty('--spotlight-left', '0px');
+      overlay.style.setProperty('--spotlight-width', '0px');
+      overlay.style.setProperty('--spotlight-height', '0px');
+      overlay.style.setProperty('--spotlight-radius', '0px');
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      overlay.dataset.spotlight = 'off';
+      return;
+    }
+
+    const padding = 14;
+    const top = Math.max(0, rect.top - padding);
+    const left = Math.max(0, rect.left - padding);
+    const width = Math.min(window.innerWidth - left, rect.width + padding * 2);
+    const height = Math.min(window.innerHeight - top, rect.height + padding * 2);
+    const computedRadius = parseFloat(getComputedStyle(target).borderRadius) || 10;
+    const radius = Math.max(8, computedRadius + Math.round(padding / 2));
+
+    overlay.dataset.spotlight = 'on';
+    overlay.style.setProperty('--spotlight-top', `${Math.round(top)}px`);
+    overlay.style.setProperty('--spotlight-left', `${Math.round(left)}px`);
+    overlay.style.setProperty('--spotlight-width', `${Math.round(width)}px`);
+    overlay.style.setProperty('--spotlight-height', `${Math.round(height)}px`);
+    overlay.style.setProperty('--spotlight-radius', `${Math.round(radius)}px`);
   }
 
   /**
@@ -330,6 +389,11 @@ export class OnboardingManager {
     if (this.keyHandler) {
       document.removeEventListener('keydown', this.keyHandler);
       this.keyHandler = null;
+    }
+
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+      this.resizeHandler = null;
     }
   }
 

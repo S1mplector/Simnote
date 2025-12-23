@@ -1,6 +1,40 @@
 // paintDropAnimator.js
+// Paint drop expand animation for panel reveals
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates a paint-drop expand effect when clicking
+// a circular button. The effect expands from the button center.
+// Features:
+// - Circular overlay expanding from click point
+// - CSS custom properties for position
+// - Panel reveal after expansion
+// - Fade out of overlay
+//
+// ANIMATION SEQUENCE:
+// 1. Click on paint-circle-btn
+// 2. Overlay circle expands from button center
+// 3. Panel gets 'expand' class
+// 4. Overlay fades out and removes itself
+//
+// DEPENDENCIES:
+// - Panel element with .paint-circle-btn child
+// - CSS for .paint-drop-overlay animations
+
+/**
+ * Paint drop expand animation for panel reveals.
+ * Creates circular expansion from button click.
+ * 
+ * @class PaintDropAnimator
+ */
 export class PaintDropAnimator {
+  /**
+   * Creates PaintDropAnimator for a panel.
+   * @param {HTMLElement} panelEl - Panel element containing paint button
+   * @constructor
+   */
   constructor(panelEl) {
+    /** @type {HTMLElement} Panel element */
     this.panel = panelEl;
     this.button = panelEl.querySelector('.paint-circle-btn');
     if (this.button) {

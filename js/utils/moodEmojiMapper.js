@@ -1,5 +1,29 @@
+// moodEmojiMapper.js
+// Maps mood text to appropriate emojis
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This utility class maps user-entered mood text to matching emojis.
+// Uses keyword matching to find the best emoji for a given mood.
+//
+// USAGE:
+// - MoodEmojiMapper.getEmoji('happy') → '😊'
+// - MoodEmojiMapper.getEmoji('tired') → '😴'
+//
+// MATCHING:
+// - Case-insensitive partial matching
+// - First matching keyword wins
+// - Returns empty string if no match
+
+/**
+ * Maps mood text to appropriate emojis via keyword matching.
+ * 
+ * @class MoodEmojiMapper
+ * @example
+ * MoodEmojiMapper.getEmoji('happy') // Returns '😊'
+ */
 export class MoodEmojiMapper {
-  // Extensive list of keyword groups mapped to an emoji that best represents the mood
+  /** @type {Array<{emoji: string, keywords: string[]}>} Keyword-to-emoji mappings */
   static #mappings = [
     { emoji: "😊", keywords: ["happy", "joy", "joyful", "glad", "great", "good", "content", "cheerful", "delighted"] },
     { emoji: "😢", keywords: ["sad", "down", "blue", "unhappy", "depressed", "tear", "cry", "sorrow"] },

@@ -1,24 +1,69 @@
 // fileStorageManager.js (CommonJS style for Electron)
 // Handles .simnote file persistence with full metadata
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This module provides file-based storage for Electron desktop app.
+// Uses Node.js fs module for direct file system access. Features:
+// - .simnote JSON file format for entries
+// - Audio asset extraction and external file storage
+// - Automatic directory creation
+// - Batch sync operations
+//
+// FILE FORMAT:
+// - Extension: .simnote
+// - Content: JSON with entry data, metadata, and audio file references
+// - Filename: sanitized-name-entryid.simnote
+//
+// AUDIO HANDLING:
+// - Base64 audio data in content is extracted to separate files
+// - Audio stored in audio/{entryId}/ subdirectory
+// - Content updated to reference external files
+//
+// DEPENDENCIES:
+// - Node.js fs module
+// - Node.js path module
 
 const fs = require('fs');
 const path = require('path');
 
+/** @constant {string} File extension for simnote files */
 const SIMNOTE_EXTENSION = '.simnote';
+/** @constant {number} Current file format version */
 const SIMNOTE_VERSION = 1;
+/** @constant {string} Subdirectory name for audio files */
 const AUDIO_DIR_NAME = 'audio';
+/** @constant {RegExp} Pattern to match inline base64 audio data */
 const AUDIO_DATA_ATTR_REGEX = /data-audio-data=(["'])(data:audio\/[^"']+)\1/g;
 
+/**
+ * File-based storage manager for Electron desktop app.
+ * Stores entries as .simnote JSON files with external audio assets.
+ * 
+ * @class FileStorageManager
+ */
 class FileStorageManager {
+  /**
+   * Creates FileStorageManager for specified directory.
+   * 
+   * @param {string} storageDir - Path to storage directory
+   * @constructor
+   */
   constructor(storageDir) {
+    /** @type {string} Storage directory path */
     this.storageDir = storageDir;
-    // Ensure the storage directory exists
     if (!fs.existsSync(this.storageDir)) {
       fs.mkdirSync(this.storageDir, { recursive: true });
     }
   }
 
-  // Generate a safe filename from entry name and id
+  /**
+   * Generates safe filename from entry name and ID.
+   * 
+   * @param {Object} entry - Entry object
+   * @returns {string} Safe filename
+   * @private
+   */
   _generateFilename(entry) {
     const safeName = (entry.name || 'untitled')
       .toLowerCase()
@@ -28,7 +73,13 @@ class FileStorageManager {
     return `${safeName}-${entry.id}${SIMNOTE_EXTENSION}`;
   }
 
-  // Convert entry to .simnote file format
+  /**
+   * Converts entry to .simnote file format.
+   * 
+   * @param {Object} entry - Entry object
+   * @returns {Object} Simnote format object
+   * @private
+   */
   _entryToSimnote(entry) {
     return {
       simnoteVersion: SIMNOTE_VERSION,
@@ -48,7 +99,13 @@ class FileStorageManager {
     };
   }
 
-  // Convert .simnote file content back to entry
+  /**
+   * Converts .simnote content back to entry object.
+   * 
+   * @param {Object} simnoteData - Parsed simnote data
+   * @returns {Object} Entry object
+   * @private
+   */
   _simnoteToEntry(simnoteData) {
     return {
       id: simnoteData.id,
@@ -67,6 +124,13 @@ class FileStorageManager {
     };
   }
 
+  /**
+   * Gets file extension for audio MIME type.
+   * 
+   * @param {string} mimeType - Audio MIME type
+   * @returns {string} File extension with dot
+   * @private
+   */
   _getAudioExtension(mimeType) {
     switch (mimeType) {
       case 'audio/wav':
@@ -83,6 +147,12 @@ class FileStorageManager {
     }
   }
 
+  /**
+   * Clears audio directory for an entry.
+   * 
+   * @param {string} entryId - Entry ID
+   * @private
+   */
   _clearAudioDir(entryId) {
     if (!entryId) return;
     const audioDir = path.join(this.storageDir, AUDIO_DIR_NAME, entryId);
@@ -91,6 +161,13 @@ class FileStorageManager {
     }
   }
 
+  /**
+   * Collects audio file references from content.
+   * 
+   * @param {string} content - Entry content
+   * @returns {Array<{path: string}>} Audio file references
+   * @private
+   */
   _collectAudioFileRefs(content) {
     if (!content) return [];
     const refs = [];
@@ -102,6 +179,13 @@ class FileStorageManager {
     return refs;
   }
 
+  /**
+   * Extracts base64 audio from content to external files.
+   * 
+   * @param {Object} entry - Entry object
+   * @returns {{content: string, audioFiles: Array}} Updated content and file list
+   * @private
+   */
   _extractAudioAssets(entry) {
     if (!entry?.content) {
       return { content: entry?.content || '', audioFiles: [] };
@@ -146,7 +230,11 @@ class FileStorageManager {
     return { content: updatedContent, audioFiles };
   }
 
-  // Return an array of entry objects read from .simnote files
+  /**
+   * Gets all entries from .simnote files.
+   * 
+   * @returns {Object[]} Array of entry objects, sorted by date
+   */
   getEntries() {
     const entries = [];
     const files = fs.readdirSync(this.storageDir);
@@ -166,13 +254,24 @@ class FileStorageManager {
     return entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
-  // Get entry by ID
+  /**
+   * Gets entry by ID.
+   * 
+   * @param {string} id - Entry ID
+   * @returns {Object|null} Entry object or null
+   */
   getEntryById(id) {
     const entries = this.getEntries();
     return entries.find(e => e.id === id) || null;
   }
 
-  // Save a new entry as .simnote file
+  /**
+   * Saves entry as .simnote file.
+   * Extracts audio assets to external files.
+   * 
+   * @param {Object} entry - Entry to save
+   * @returns {string} Saved filename
+   */
   saveEntry(entry) {
     const audioResult = this._extractAudioAssets(entry);
     const simnoteData = this._entryToSimnote({
@@ -187,14 +286,23 @@ class FileStorageManager {
     return filename;
   }
 
-  // Update an existing entry - find by ID and rewrite
+  /**
+   * Updates existing entry file.
+   * 
+   * @param {Object} entry - Entry to update
+   * @returns {string} Saved filename
+   */
   updateEntry(entry) {
-    // Remove the old .simnote file but keep audio assets unless explicitly removed
     this._deleteEntryFileOnly(entry.id);
     return this.saveEntry(entry);
   }
 
-  // Delete entry by ID (finds the file first)
+  /**
+   * Deletes entry and its audio files by ID.
+   * 
+   * @param {string} id - Entry ID
+   * @returns {boolean} Whether deletion succeeded
+   */
   deleteEntryById(id) {
     const files = fs.readdirSync(this.storageDir);
     for (const file of files) {
@@ -209,6 +317,13 @@ class FileStorageManager {
     return false;
   }
 
+  /**
+   * Deletes only the .simnote file (keeps audio).
+   * 
+   * @param {string} id - Entry ID
+   * @returns {boolean} Whether deletion succeeded
+   * @private
+   */
   _deleteEntryFileOnly(id) {
     const files = fs.readdirSync(this.storageDir);
     for (const file of files) {
@@ -222,7 +337,12 @@ class FileStorageManager {
     return false;
   }
 
-  // Sync all entries from database to files
+  /**
+   * Syncs all entries from database to files.
+   * 
+   * @param {Object[]} entries - Entries to sync
+   * @returns {number} Count of synced entries
+   */
   syncAllEntries(entries) {
     let synced = 0;
     for (const entry of entries) {
@@ -237,7 +357,11 @@ class FileStorageManager {
     return synced;
   }
 
-  // Delete all .simnote files in the storage directory
+  /**
+   * Deletes all .simnote files and audio directory.
+   * 
+   * @returns {number} Count of deleted files
+   */
   clearAllEntries() {
     const files = fs.readdirSync(this.storageDir);
     let deleted = 0;
@@ -258,17 +382,22 @@ class FileStorageManager {
     return deleted;
   }
 
-  // Get storage directory path
+  /**
+   * Gets storage directory path.
+   * @returns {string} Storage directory path
+   */
   getStorageDir() {
     return this.storageDir;
   }
 
-  // Get list of all .simnote files
+  /**
+   * Lists all .simnote files in storage directory.
+   * @returns {string[]} Array of filenames
+   */
   listFiles() {
     const files = fs.readdirSync(this.storageDir);
     return files.filter(f => path.extname(f) === SIMNOTE_EXTENSION);
   }
 }
 
-// Export with module.exports
 module.exports = { FileStorageManager, SIMNOTE_EXTENSION, SIMNOTE_VERSION };

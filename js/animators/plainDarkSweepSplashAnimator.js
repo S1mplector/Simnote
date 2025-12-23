@@ -1,5 +1,28 @@
 // plainDarkSweepSplashAnimator.js
-// Minimal mac-style grey gradient sweep for plain-dark theme.
+// Grey gradient sweep splash for dark themes
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// Mac-style gradient sweep animation for dark theme splash.
+// Features:
+// - Full-screen dark overlay
+// - Horizontal gradient bar sweep
+// - Fade out after sweep completes
+//
+// ANIMATION:
+// - Gradient sweeps left to right (1.4s)
+// - Overlay fades out (0.6s)
+// - Safety timeout at 3 seconds
+//
+// DEPENDENCIES:
+// - None (self-contained DOM creation)
+
+/**
+ * Dark gradient sweep splash animator.
+ * Mac-style sweep for plain-dark, dracula, monokai themes.
+ * 
+ * @class PlainDarkSweepSplashAnimator
+ */
 export class PlainDarkSweepSplashAnimator {
   /**
    * @param {Function} onComplete Callback fired once the sweep finishes.

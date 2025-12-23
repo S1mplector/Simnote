@@ -1,5 +1,37 @@
+// moodsSmileyAnimator.js
+// Animated smiley face icon for stats button
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator replaces the stats button icon with an animated
+// smiley face that responds to hover. Features:
+// - Sleeping state with animated ZZZs
+// - Wake-up animation on hover
+// - Eye tracking following cursor
+// - Auto-sleep after timeout
+//
+// STATES:
+// - sleeping: Eyes closed, ZZZs floating
+// - waking: Eyes opening transition
+// - awake: Eyes open, tracking cursor
+//
+// DEPENDENCIES:
+// - Stats button with id 'stats-btn'
+// - CSS animations for transitions
+
+/**
+ * Animated smiley face for stats button.
+ * Eyes track cursor, sleeps when idle.
+ * 
+ * @class MoodsSmileyAnimator
+ */
 export class MoodsSmileyAnimator {
+  /**
+   * Creates MoodsSmileyAnimator and replaces icon.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLElement} Stats button element */
     this.statsBtn = document.getElementById('stats-btn');
     if (!this.statsBtn) return;
 

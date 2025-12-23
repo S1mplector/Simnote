@@ -1,5 +1,36 @@
+// entriesBookAnimator.js
+// Animated book icon for entries button
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator replaces the entries button icon with an animated
+// book that opens on hover. Features:
+// - Book cover with left/right sides
+// - Pages with lines inside
+// - Opening animation on hover
+// - Returns to closed on leave
+//
+// STATES:
+// - idle: Book closed
+// - opening: Book opening animation
+//
+// DEPENDENCIES:
+// - Entries button with id 'load-entry-btn'
+// - CSS animations for opening effect
+
+/**
+ * Animated book icon for entries button.
+ * Opens on hover to reveal pages.
+ * 
+ * @class EntriesBookAnimator
+ */
 export class EntriesBookAnimator {
+  /**
+   * Creates EntriesBookAnimator and replaces icon.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLElement} Entries button element */
     this.entriesBtn = document.getElementById('load-entry-btn');
     if (!this.entriesBtn) return;
 

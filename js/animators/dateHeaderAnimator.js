@@ -1,6 +1,38 @@
 // dateHeaderAnimator.js
+// Time-of-day themed header background animation
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates dynamic backgrounds for the mood panel header
+// based on time of day. Features:
+// - Morning/afternoon/evening/night themes
+// - Animated clouds for daytime
+// - Twinkling stars for nighttime
+// - CSS class-based theming
+//
+// TIME SLOTS:
+// - morning (5-12): Light theme
+// - afternoon (12-18): Warm theme
+// - evening (18-22): Sunset theme
+// - night (22-5): Dark theme with stars
+//
+// DEPENDENCIES:
+// - Header element with .date-bg child
+
+/**
+ * Time-of-day themed header animator.
+ * Adds clouds or stars based on current hour.
+ * 
+ * @class DateHeaderAnimator
+ */
 export class DateHeaderAnimator {
+  /**
+   * Creates DateHeaderAnimator for a header element.
+   * @param {HTMLElement} headerEl - The header element to animate
+   * @constructor
+   */
   constructor(headerEl){
+    /** @type {HTMLElement} Header element */
     this.header = headerEl;
     this.bg = headerEl.querySelector('.date-bg');
     if(!this.bg) return;

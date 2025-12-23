@@ -1,9 +1,38 @@
-// BreathingOverlay.js
-// Creates a guided breathing overlay with progress ring, number countdown, radial gradient backdrop, and exit control.
-// Usage: import { BreathingOverlay } from './components/breathingOverlay.js';  BreathingOverlay.start();
+// breathingOverlay.js
+// Guided breathing exercise overlay with animated progress ring
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This component creates a full-screen breathing exercise overlay.
+// Features:
+// - SVG progress ring animation
+// - 4-2-6 breathing pattern (inhale-hold-exhale)
+// - Configurable cycle count
+// - Radial gradient backdrop with blur
+// - Close button and round indicator
+//
+// BREATHING PATTERN:
+// - Inhale: 4 seconds (ring fills, circle scales up)
+// - Hold: 2 seconds (pause)
+// - Exhale: 6 seconds (ring empties, circle scales down)
+//
+// USAGE:
+// import { BreathingOverlay } from './components/breathingOverlay.js';
+// BreathingOverlay.start({ cycles: 5 });
+//
+// DEPENDENCIES:
+// - DOM APIs for overlay creation
+// - SVG for progress ring
 
+/**
+ * Guided breathing exercise overlay component.
+ * Creates animated breathing guidance with progress ring.
+ * 
+ * @class BreathingOverlay
+ */
 export class BreathingOverlay{
-  static active = null; // singleton
+  /** @type {HTMLElement|null} Active overlay element (singleton) */
+  static active = null;
 
   static start(options={}){
     if(BreathingOverlay.active){return;}

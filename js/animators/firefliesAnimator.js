@@ -1,9 +1,37 @@
 // firefliesAnimator.js
-// Animated green-yellow "fireflies" that drift slowly and blink.
-// Uses additive blending for subtle glow.
+// Animated fireflies background with blinking glow effect
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates drifting fireflies with blink animation.
+// Features:
+// - Canvas-based particle rendering
+// - Additive blending for glow
+// - Individual blink timing per firefly
+// - Subtle trailing effect
+// - Edge wrapping
+//
+// PARTICLE PROPERTIES:
+// - hue: Yellow-green range (80-100°)
+// - baseAlpha/ampAlpha: Blink brightness variation
+// - blinkSpeed: Individual blink timing
+//
+// DEPENDENCIES:
+// - Canvas element with id 'bg-canvas'
 
+/**
+ * Fireflies background animator with blinking particles.
+ * Creates glowing, drifting firefly effect.
+ * 
+ * @class FirefliesAnimator
+ */
 export class FirefliesAnimator {
+  /**
+   * Creates FirefliesAnimator and starts animation.
+   * @constructor
+   */
   constructor() {
+    /** @type {HTMLCanvasElement} Background canvas */
     this.canvas = document.getElementById('bg-canvas');
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');

@@ -1,5 +1,28 @@
 // plainLightSweepSplashAnimator.js
-// Light grey gradient sweep splash for plain-light theme.
+// Light grey gradient sweep splash for light theme
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// Mac-style gradient sweep animation for light theme splash.
+// Features:
+// - Full-screen white overlay
+// - Light grey gradient bar sweep
+// - Fade out after sweep completes
+//
+// ANIMATION:
+// - Gradient sweeps left to right (1.4s)
+// - Overlay fades out (0.6s)
+// - Safety timeout at 3 seconds
+//
+// DEPENDENCIES:
+// - None (self-contained DOM creation)
+
+/**
+ * Light gradient sweep splash animator.
+ * Mac-style sweep for plain-light theme.
+ * 
+ * @class PlainLightSweepSplashAnimator
+ */
 export class PlainLightSweepSplashAnimator {
   constructor(onComplete = () => {}) {
     this.onComplete = onComplete;

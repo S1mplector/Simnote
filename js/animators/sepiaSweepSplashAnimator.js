@@ -1,5 +1,28 @@
 // sepiaSweepSplashAnimator.js
-// Warm sepia gradient sweep splash for sepia theme.
+// Warm sepia gradient sweep splash for sepia theme
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// Mac-style gradient sweep animation for sepia theme splash.
+// Features:
+// - Full-screen sepia overlay
+// - Warm brown gradient bar sweep
+// - Fade out after sweep completes
+//
+// ANIMATION:
+// - Gradient sweeps left to right (1.4s)
+// - Overlay fades out (0.6s)
+// - Safety timeout at 3 seconds
+//
+// DEPENDENCIES:
+// - None (self-contained DOM creation)
+
+/**
+ * Sepia gradient sweep splash animator.
+ * Warm-toned sweep for sepia theme.
+ * 
+ * @class SepiaSweepSplashAnimator
+ */
 export class SepiaSweepSplashAnimator {
   constructor(onComplete = () => {}) {
     this.onComplete = onComplete;

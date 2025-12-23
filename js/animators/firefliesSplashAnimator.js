@@ -1,6 +1,36 @@
 // firefliesSplashAnimator.js
-// Simple splash where glowing dots converge toward the centre then fade.
+// Fireflies theme splash with converging glowing dots
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This animator creates the splash screen for fireflies theme.
+// Yellow-green glowing dots converge to center.
+// Features:
+// - Additive blending for glow effect
+// - Linear convergence (no spiral)
+// - Radial gradient particles
+// - Dark radial fade transition
+//
+// ANIMATION:
+// - Duration: 3 seconds
+// - 60 particles converge to center
+// - Fade overlay in last 30%
+//
+// DEPENDENCIES:
+// - Canvas overlay created dynamically
+
+/**
+ * Fireflies splash screen animator.
+ * Glowing dots converge to center.
+ * 
+ * @class FirefliesSplashAnimator
+ */
 export class FirefliesSplashAnimator {
+  /**
+   * Creates FirefliesSplashAnimator and starts animation.
+   * @param {Function} [onComplete] - Callback when splash finishes
+   * @constructor
+   */
   constructor(onComplete = () => {}) {
     this.onComplete = onComplete;
 

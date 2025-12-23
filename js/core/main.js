@@ -1,4 +1,34 @@
 // main.js
+// Application entry point and main UI orchestration
+//
+// ARCHITECTURE OVERVIEW:
+// ----------------------
+// This is the primary entry point for Simnote's renderer process.
+// It orchestrates all UI components, panel navigation, and animations.
+//
+// RESPONSIBILITIES:
+// - Initialize all managers (Editor, Stats, Keyboard, Onboarding, DailyMood)
+// - Launch splash screen and background animators
+// - Handle panel navigation (main menu, mood, attributes, entry, journal)
+// - Manage theme changes and settings panels
+// - Coordinate entry creation flow with templates
+// - Handle export/import functionality
+//
+// PANEL FLOW:
+// Main Menu → Mood Panel → Attributes Panel → Entry Panel
+//           → Journal Panel (load entries)
+//           → Stats Panel
+//
+// INTEGRATION POINTS:
+// - All manager classes (see /js/managers/)
+// - All animator classes (see /js/animators/)
+// - PanelManager for transitions
+// - StorageManager for data persistence
+//
+// DEPENDENCIES:
+// - All manager imports
+// - All animator imports
+// - Templates for entry creation
 
 import { PanelManager } from '../managers/panelManager.js';
 import { EditorManager } from '../managers/editorManager.js';

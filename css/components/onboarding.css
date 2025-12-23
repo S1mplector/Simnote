@@ -2,14 +2,14 @@
 
 /* Onboarding Overlay */
 .onboarding-overlay {
+  --overlay-bg: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.65) 45%, rgba(0, 0, 0, 0.85) 100%);
+  --spotlight-top: 0px;
+  --spotlight-left: 0px;
+  --spotlight-width: 0px;
+  --spotlight-height: 0px;
+  --spotlight-radius: 0px;
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.65) 45%, rgba(0, 0, 0, 0.85) 100%);
-  backdrop-filter: blur(6px) saturate(1.1);
-  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  inset: 0;
   z-index: 9998;
   opacity: 0;
   transition: opacity 0.35s ease;
@@ -18,7 +18,62 @@
 
 .onboarding-overlay.visible {
   opacity: 1;
+}
+
+.onboarding-overlay__slice {
+  position: absolute;
+  background: var(--overlay-bg);
+  background-attachment: fixed;
+  backdrop-filter: blur(6px) saturate(1.1);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease;
   pointer-events: auto;
+}
+
+.onboarding-overlay__slice--top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--spotlight-top);
+}
+
+.onboarding-overlay__slice--left {
+  top: var(--spotlight-top);
+  left: 0;
+  width: var(--spotlight-left);
+  height: var(--spotlight-height);
+}
+
+.onboarding-overlay__slice--right {
+  top: var(--spotlight-top);
+  left: calc(var(--spotlight-left) + var(--spotlight-width));
+  right: 0;
+  height: var(--spotlight-height);
+}
+
+.onboarding-overlay__slice--bottom {
+  top: calc(var(--spotlight-top) + var(--spotlight-height));
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.onboarding-overlay__spotlight {
+  position: absolute;
+  top: var(--spotlight-top);
+  left: var(--spotlight-left);
+  width: var(--spotlight-width);
+  height: var(--spotlight-height);
+  border-radius: var(--spotlight-radius);
+  border: 1px solid rgba(var(--accent-rgb), 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 30px rgba(var(--accent-rgb), 0.35);
+  opacity: 0;
+  transition: opacity 0.25s ease, top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease;
+  pointer-events: none;
+}
+
+.onboarding-overlay[data-spotlight="on"] .onboarding-overlay__spotlight {
+  opacity: 1;
 }
 
 /* Onboarding Tooltip */
@@ -252,7 +307,9 @@
 @media (prefers-reduced-motion: reduce) {
   .onboarding-tooltip,
   .tooltip-progress-fill,
-  .onboarding-highlight {
+  .onboarding-highlight,
+  .onboarding-overlay__slice,
+  .onboarding-overlay__spotlight {
     animation: none;
     transition: none;
   }
