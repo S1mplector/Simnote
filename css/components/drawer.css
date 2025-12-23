@@ -388,7 +388,8 @@
   align-items: center;
   justify-content: center;
   transition: 
-    opacity 0.5s ease,
+    opacity 0.6s ease 0.3s,
+    visibility 0.6s ease 0.3s,
     box-shadow 0.3s ease;
 }
 
