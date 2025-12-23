@@ -7,10 +7,14 @@ import { dbManager } from './databaseManager.js';
 const STORAGE_VERSION = 2;
 const ENTRIES_KEY = 'entries';
 const META_KEY = 'simnote_meta';
+const DAILY_MOOD_KEY = 'simnote_daily_mood';
+const NATIVE_DB_MIGRATION_KEY = 'simnote_native_db_migrated';
+const isElectron = typeof window !== 'undefined' && window.electronAPI?.nativeDb;
 
 // Flag to track if SQLite is ready
 let sqliteReady = false;
 let sqliteInitPromise = null;
+let nativeDbInitPromise = null;
 
 // Initialize SQLite database
 async function initSQLite() {
@@ -36,17 +40,112 @@ async function initSQLite() {
   return sqliteInitPromise;
 }
 
+function buildMoodHistory(days, moodMap) {
+  const result = [];
+  const today = new Date();
+
+  for (let i = 0; i < days; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    const value = moodMap[dateStr];
+    result.push({
+      date: dateStr,
+      mood: value?.mood || value || null
+    });
+  }
+
+  return result;
+}
+
+async function migrateLocalStorageToNativeDb() {
+  if (!isElectron) return false;
+  if (localStorage.getItem(NATIVE_DB_MIGRATION_KEY) === 'true') return true;
+
+  const entriesRaw = localStorage.getItem(ENTRIES_KEY);
+  const moodsRaw = localStorage.getItem(DAILY_MOOD_KEY);
+
+  let entries = [];
+  if (entriesRaw) {
+    try {
+      entries = JSON.parse(entriesRaw);
+    } catch (err) {
+      console.warn('[Storage] Failed to parse localStorage entries for migration:', err);
+      entries = [];
+    }
+  }
+
+  try {
+    const existingCount = window.electronAPI.nativeDb.getEntryCount();
+    if (existingCount > 0) {
+      localStorage.setItem(NATIVE_DB_MIGRATION_KEY, 'true');
+      return true;
+    }
+  } catch (err) {
+    console.warn('[Storage] Failed to check native DB entry count:', err);
+  }
+
+  if (!entries.length && !moodsRaw) {
+    localStorage.setItem(NATIVE_DB_MIGRATION_KEY, 'true');
+    return true;
+  }
+
+  const exportData = {
+    version: STORAGE_VERSION,
+    exportedAt: new Date().toISOString(),
+    entries
+  };
+
+  if (moodsRaw) {
+    try {
+      exportData.dailyMoods = JSON.parse(moodsRaw);
+    } catch (err) {
+      console.warn('[Storage] Failed to parse daily moods for migration:', err);
+    }
+  }
+
+  try {
+    await window.electronAPI.nativeDb.importFromJSON(JSON.stringify(exportData));
+    localStorage.setItem(NATIVE_DB_MIGRATION_KEY, 'true');
+    return true;
+  } catch (err) {
+    console.warn('[Storage] Native DB migration failed:', err);
+    return false;
+  }
+}
+
+async function initNativeDb() {
+  if (nativeDbInitPromise) return nativeDbInitPromise;
+
+  nativeDbInitPromise = window.electronAPI.nativeDb.init()
+    .then(() => migrateLocalStorageToNativeDb())
+    .catch((error) => {
+      console.error('[Storage] Native DB initialization error:', error);
+      return false;
+    });
+
+  return nativeDbInitPromise;
+}
+
 // Auto-initialize on load
-initSQLite();
+if (isElectron) {
+  initNativeDb();
+} else {
+  initSQLite();
+}
 
 export class StorageManager {
   // Initialize storage (call this early in app startup)
   static async init() {
+    if (isElectron) {
+      return initNativeDb();
+    }
     return initSQLite();
   }
 
   // Check if SQLite is ready
   static isUsingSQL() {
+    if (isElectron) return true;
     return sqliteReady;
   }
 
@@ -57,6 +156,13 @@ export class StorageManager {
 
   // Get metadata (version, stats, etc.)
   static getMeta() {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.getMetadata('app_meta') || {
+        version: STORAGE_VERSION,
+        createdAt: new Date().toISOString()
+      };
+    }
+
     if (sqliteReady) {
       return dbManager.getMetadata('app_meta') || {
         version: STORAGE_VERSION,
@@ -76,7 +182,9 @@ export class StorageManager {
   }
 
   static saveMeta(meta) {
-    if (sqliteReady) {
+    if (isElectron) {
+      window.electronAPI.nativeDb.setMetadata('app_meta', meta);
+    } else if (sqliteReady) {
       dbManager.setMetadata('app_meta', meta);
     } else {
       localStorage.setItem(META_KEY, JSON.stringify(meta));
@@ -85,7 +193,7 @@ export class StorageManager {
 
   // Migrate old entries to new format (localStorage only)
   static migrateIfNeeded() {
-    if (sqliteReady) return; // SQLite handles its own migration
+    if (sqliteReady || isElectron) return; // SQLite handles its own migration
     
     const meta = StorageManager.getMeta();
     if (meta.version >= STORAGE_VERSION) return;
@@ -108,6 +216,10 @@ export class StorageManager {
   }
 
   static getEntries() {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.getEntries() || [];
+    }
+
     if (sqliteReady) {
       return dbManager.getEntries();
     }
@@ -117,6 +229,10 @@ export class StorageManager {
   }
 
   static getEntryById(id) {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.getEntryById(id);
+    }
+
     if (sqliteReady) {
       return dbManager.getEntryById(id);
     }
@@ -130,7 +246,26 @@ export class StorageManager {
     return entries.findIndex(e => e.id === id);
   }
 
+  static _resolveEntry(indexOrId) {
+    const entries = StorageManager.getEntries();
+    if (typeof indexOrId === 'number') {
+      return entries[indexOrId] || null;
+    }
+    return entries.find(e => e.id === indexOrId) || null;
+  }
+
   static saveEntry(name, content, mood = '', fontFamily = '', fontSize = '', tags = []) {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.saveEntry({
+        name,
+        content,
+        mood,
+        fontFamily,
+        fontSize,
+        tags
+      });
+    }
+
     if (sqliteReady) {
       const id = dbManager.saveEntry(name, content, mood, fontFamily, fontSize, tags);
       return dbManager.getEntryById(id);
@@ -165,6 +300,24 @@ export class StorageManager {
   }
 
   static updateEntry(indexOrId, name, content, mood, fontFamily = '', fontSize = '', tags = null) {
+    if (isElectron) {
+      const id = typeof indexOrId === 'number'
+        ? StorageManager.getEntries()[indexOrId]?.id
+        : indexOrId;
+      if (id) {
+        return window.electronAPI.nativeDb.updateEntry({
+          id,
+          name,
+          content,
+          mood,
+          fontFamily,
+          fontSize,
+          tags
+        });
+      }
+      return null;
+    }
+
     if (sqliteReady) {
       // For SQLite, indexOrId should be the entry ID
       const id = typeof indexOrId === 'number' 
@@ -205,6 +358,16 @@ export class StorageManager {
   }
 
   static deleteEntry(indexOrId) {
+    if (isElectron) {
+      const id = typeof indexOrId === 'number'
+        ? StorageManager.getEntries()[indexOrId]?.id
+        : indexOrId;
+      if (id) {
+        return window.electronAPI.nativeDb.deleteEntry(id);
+      }
+      return false;
+    }
+
     if (sqliteReady) {
       const id = typeof indexOrId === 'number' 
         ? StorageManager.getEntries()[indexOrId]?.id 
@@ -228,6 +391,16 @@ export class StorageManager {
 
   // Toggle favorite status
   static toggleFavorite(indexOrId) {
+    if (isElectron) {
+      const id = typeof indexOrId === 'number'
+        ? StorageManager.getEntries()[indexOrId]?.id
+        : indexOrId;
+      if (id) {
+        return window.electronAPI.nativeDb.toggleFavorite(id);
+      }
+      return false;
+    }
+
     if (sqliteReady) {
       const id = typeof indexOrId === 'number' 
         ? StorageManager.getEntries()[indexOrId]?.id 
@@ -251,6 +424,46 @@ export class StorageManager {
 
   // Tag management
   static addTag(indexOrId, tag) {
+    if (isElectron) {
+      const entry = StorageManager._resolveEntry(indexOrId);
+      if (!entry) return [];
+      const normalizedTag = tag.toLowerCase().trim();
+      const tags = Array.isArray(entry.tags) ? [...entry.tags] : [];
+      if (!tags.includes(normalizedTag)) {
+        tags.push(normalizedTag);
+        window.electronAPI.nativeDb.updateEntry({
+          id: entry.id,
+          name: entry.name,
+          content: entry.content,
+          mood: entry.mood,
+          fontFamily: entry.fontFamily || '',
+          fontSize: entry.fontSize || '',
+          tags
+        });
+      }
+      return tags;
+    }
+
+    if (sqliteReady) {
+      const entry = StorageManager._resolveEntry(indexOrId);
+      if (!entry) return [];
+      const normalizedTag = tag.toLowerCase().trim();
+      const tags = Array.isArray(entry.tags) ? [...entry.tags] : [];
+      if (!tags.includes(normalizedTag)) {
+        tags.push(normalizedTag);
+        dbManager.updateEntry(
+          entry.id,
+          entry.name,
+          entry.content,
+          entry.mood,
+          entry.fontFamily || '',
+          entry.fontSize || '',
+          tags
+        );
+      }
+      return tags;
+    }
+
     const entries = StorageManager.getEntries();
     let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
     
@@ -267,6 +480,46 @@ export class StorageManager {
   }
 
   static removeTag(indexOrId, tag) {
+    if (isElectron) {
+      const entry = StorageManager._resolveEntry(indexOrId);
+      if (!entry) return [];
+      const normalizedTag = tag.toLowerCase().trim();
+      const existingTags = Array.isArray(entry.tags) ? entry.tags : [];
+      const tags = existingTags.filter(t => t !== normalizedTag);
+      if (tags.length !== existingTags.length) {
+        window.electronAPI.nativeDb.updateEntry({
+          id: entry.id,
+          name: entry.name,
+          content: entry.content,
+          mood: entry.mood,
+          fontFamily: entry.fontFamily || '',
+          fontSize: entry.fontSize || '',
+          tags
+        });
+      }
+      return tags;
+    }
+
+    if (sqliteReady) {
+      const entry = StorageManager._resolveEntry(indexOrId);
+      if (!entry) return [];
+      const normalizedTag = tag.toLowerCase().trim();
+      const existingTags = Array.isArray(entry.tags) ? entry.tags : [];
+      const tags = existingTags.filter(t => t !== normalizedTag);
+      if (tags.length !== existingTags.length) {
+        dbManager.updateEntry(
+          entry.id,
+          entry.name,
+          entry.content,
+          entry.mood,
+          entry.fontFamily || '',
+          entry.fontSize || '',
+          tags
+        );
+      }
+      return tags;
+    }
+
     const entries = StorageManager.getEntries();
     let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
     
@@ -374,17 +627,100 @@ export class StorageManager {
     };
   }
 
+  // Daily mood helpers
+  static getTodaysMood() {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.getTodaysMood();
+    }
+
+    if (sqliteReady) {
+      return dbManager.getTodaysMood();
+    }
+
+    const data = JSON.parse(localStorage.getItem(DAILY_MOOD_KEY) || '{}');
+    const today = new Date().toISOString().split('T')[0];
+    return data[today]?.mood || null;
+  }
+
+  static setTodaysMood(mood) {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.setTodaysMood(mood);
+    }
+
+    if (sqliteReady) {
+      dbManager.setTodaysMood(mood);
+      return;
+    }
+
+    const data = JSON.parse(localStorage.getItem(DAILY_MOOD_KEY) || '{}');
+    const today = new Date().toISOString().split('T')[0];
+    data[today] = {
+      mood,
+      timestamp: new Date().toISOString()
+    };
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    Object.keys(data).forEach(date => {
+      if (date < cutoffStr) delete data[date];
+    });
+
+    localStorage.setItem(DAILY_MOOD_KEY, JSON.stringify(data));
+  }
+
+  static getMoodHistory(days = 30) {
+    if (isElectron) {
+      const rows = window.electronAPI.nativeDb.getMoodHistory(days) || [];
+      const moodMap = {};
+      rows.forEach(row => {
+        moodMap[row.date] = row;
+      });
+      return buildMoodHistory(days, moodMap);
+    }
+
+    if (sqliteReady) {
+      const rows = dbManager.getMoodHistory(days) || [];
+      const moodMap = {};
+      rows.forEach(row => {
+        moodMap[row.date] = row;
+      });
+      return buildMoodHistory(days, moodMap);
+    }
+
+    const data = JSON.parse(localStorage.getItem(DAILY_MOOD_KEY) || '{}');
+    return buildMoodHistory(days, data);
+  }
+
   // Export entries to JSON format (v2)
   static generateExportContent(selectedIndices = null) {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.exportToJSON();
+    }
+
     const entries = StorageManager.getEntries();
     const toExport = (selectedIndices === null)
       ? entries
       : selectedIndices.map(index => entries[index]);
+
+    let dailyMoods = [];
+    try {
+      const moodData = JSON.parse(localStorage.getItem(DAILY_MOOD_KEY) || '{}');
+      dailyMoods = Object.entries(moodData).map(([date, value]) => ({
+        date,
+        mood: value?.mood || value || '',
+        timestamp: value?.timestamp || null
+      })).filter(item => item.mood);
+    } catch (e) {
+      dailyMoods = [];
+    }
     
     const exportData = {
       version: STORAGE_VERSION,
       exportedAt: new Date().toISOString(),
-      entries: toExport
+      entries: toExport,
+      dailyMoods
     };
     
     return JSON.stringify(exportData, null, 2);
@@ -413,17 +749,54 @@ export class StorageManager {
   }
 
   // Import entries from JSON or legacy format
-  static importEntries(fileContent) {
+  static async importEntries(fileContent) {
     let importedCount = 0;
     
     // Try JSON format first
     try {
       const data = JSON.parse(fileContent);
       if (data.entries && Array.isArray(data.entries)) {
+        if (isElectron) {
+          const count = await window.electronAPI.nativeDb.importFromJSON(fileContent);
+          StorageManager.updateStreaks();
+          return count;
+        }
+
+        if (sqliteReady) {
+          const count = await dbManager.importFromJSON(fileContent);
+          StorageManager.updateStreaks();
+          return count;
+        }
+
         data.entries.forEach(entry => {
           StorageManager.addImportedEntry(entry);
           importedCount++;
         });
+        if (data.dailyMoods) {
+          const moodMap = {};
+          if (Array.isArray(data.dailyMoods)) {
+            data.dailyMoods.forEach(item => {
+              if (!item?.date || !item?.mood) return;
+              moodMap[item.date] = {
+                mood: item.mood,
+                timestamp: item.timestamp || new Date(`${item.date}T00:00:00Z`).toISOString()
+              };
+            });
+          } else if (typeof data.dailyMoods === 'object') {
+            Object.entries(data.dailyMoods).forEach(([date, value]) => {
+              if (!value) return;
+              moodMap[date] = {
+                mood: value.mood || value,
+                timestamp: value.timestamp || new Date(`${date}T00:00:00Z`).toISOString()
+              };
+            });
+          }
+          try {
+            localStorage.setItem(DAILY_MOOD_KEY, JSON.stringify(moodMap));
+          } catch (e) {
+            console.warn('[Storage] Failed to import daily moods:', e);
+          }
+        }
         StorageManager.updateStreaks();
         return importedCount;
       }
@@ -433,6 +806,7 @@ export class StorageManager {
     
     // Legacy text format
     const blocks = fileContent.split('---ENTRY---');
+    const legacyEntries = [];
     blocks.forEach(block => {
       if (block.includes('---END ENTRY---')) {
         const contentBlock = block.split('---END ENTRY---')[0].trim();
@@ -455,10 +829,36 @@ export class StorageManager {
             favorite: parseField('Favorite:') === 'true',
             createdAt: parseField('Date:') || new Date().toISOString()
           };
-          StorageManager.addImportedEntry(entry);
-          importedCount++;
+          legacyEntries.push(entry);
         }
       }
+    });
+
+    if (isElectron) {
+      const exportData = {
+        version: STORAGE_VERSION,
+        exportedAt: new Date().toISOString(),
+        entries: legacyEntries
+      };
+      const count = await window.electronAPI.nativeDb.importFromJSON(JSON.stringify(exportData));
+      StorageManager.updateStreaks();
+      return count;
+    }
+
+    if (sqliteReady) {
+      const exportData = {
+        version: STORAGE_VERSION,
+        exportedAt: new Date().toISOString(),
+        entries: legacyEntries
+      };
+      const count = await dbManager.importFromJSON(JSON.stringify(exportData));
+      StorageManager.updateStreaks();
+      return count;
+    }
+
+    legacyEntries.forEach(entry => {
+      StorageManager.addImportedEntry(entry);
+      importedCount++;
     });
     
     StorageManager.updateStreaks();
@@ -533,6 +933,10 @@ export class StorageManager {
 
   // Get storage info
   static async getStorageInfo() {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.getStorageInfo();
+    }
+
     if (sqliteReady) {
       return dbManager.getStorageInfo();
     }
@@ -577,16 +981,27 @@ export class StorageManager {
 
   // Clear all data
   static async clearAllData() {
-    if (sqliteReady) {
+    if (isElectron) {
+      await window.electronAPI.nativeDb.clearAllData();
+      localStorage.removeItem(ENTRIES_KEY);
+      localStorage.removeItem(META_KEY);
+      localStorage.removeItem(DAILY_MOOD_KEY);
+      localStorage.removeItem(NATIVE_DB_MIGRATION_KEY);
+    } else if (sqliteReady) {
       await dbManager.clearAllData();
     } else {
       localStorage.removeItem(ENTRIES_KEY);
       localStorage.removeItem(META_KEY);
+      localStorage.removeItem(DAILY_MOOD_KEY);
     }
   }
 
   // Export to JSON (uses SQLite if available)
   static exportToJSON() {
+    if (isElectron) {
+      return window.electronAPI.nativeDb.exportToJSON();
+    }
+
     if (sqliteReady) {
       return dbManager.exportToJSON();
     }
@@ -595,16 +1010,30 @@ export class StorageManager {
 
   // Import from JSON (uses SQLite if available)  
   static async importFromJSON(jsonString) {
-    if (sqliteReady) {
-      return dbManager.importFromJSON(jsonString);
+    if (isElectron) {
+      const count = await window.electronAPI.nativeDb.importFromJSON(jsonString);
+      StorageManager.updateStreaks();
+      return count;
     }
-    return StorageManager.importEntries(jsonString);
+
+    if (sqliteReady) {
+      const count = await dbManager.importFromJSON(jsonString);
+      StorageManager.updateStreaks();
+      return count;
+    }
+    const count = await StorageManager.importEntries(jsonString);
+    StorageManager.updateStreaks();
+    return count;
   }
 
   // ==================== File Storage (.simnote files) ====================
 
   // Check if file storage is enabled
   static isFileStorageEnabled() {
+    if (isElectron) {
+      return true;
+    }
+
     if (sqliteReady) {
       return dbManager.fileStorageEnabled;
     }
@@ -618,6 +1047,10 @@ export class StorageManager {
 
   // Enable file storage by selecting a directory (browser) or auto-enable (Electron)
   static async enableFileStorage() {
+    if (isElectron) {
+      return true;
+    }
+
     if (sqliteReady) {
       return dbManager.selectFileStorageDirectory();
     }
@@ -643,6 +1076,14 @@ export class StorageManager {
 
   // Sync all entries to file storage
   static async syncAllToFiles() {
+    if (isElectron) {
+      const entries = StorageManager.getEntries();
+      if (typeof window !== 'undefined' && window.electronAPI?.syncAllEntries) {
+        return window.electronAPI.syncAllEntries(entries);
+      }
+      return 0;
+    }
+
     if (!sqliteReady) return 0;
     
     const entries = StorageManager.getEntries();

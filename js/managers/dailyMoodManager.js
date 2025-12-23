@@ -2,10 +2,10 @@
 // Handles daily mood check-in on app launch
 
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
+import { StorageManager } from './storageManager.js';
 
 export class DailyMoodManager {
   constructor() {
-    this.storageKey = 'simnote_daily_mood';
     this.settingsKey = 'simnote_mood_checkin_enabled';
     this.moodPanel = document.getElementById('mood-panel');
     this.mainPanel = document.getElementById('main-panel');
@@ -45,48 +45,16 @@ export class DailyMoodManager {
   }
 
   getTodaysMood() {
-    const data = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
-    const today = new Date().toISOString().split('T')[0];
-    return data[today] || null;
+    return StorageManager.getTodaysMood();
   }
 
   setTodaysMood(mood) {
-    const data = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
-    const today = new Date().toISOString().split('T')[0];
-    data[today] = {
-      mood,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Keep only last 30 days of mood data
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
-    const cutoffStr = cutoff.toISOString().split('T')[0];
-    
-    Object.keys(data).forEach(date => {
-      if (date < cutoffStr) delete data[date];
-    });
-    
-    localStorage.setItem(this.storageKey, JSON.stringify(data));
+    StorageManager.setTodaysMood(mood);
     window.todaysMood = mood; // Make available globally for entries
   }
 
   getMoodHistory(days = 30) {
-    const data = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
-    const result = [];
-    const today = new Date();
-    
-    for (let i = 0; i < days; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      result.push({
-        date: dateStr,
-        mood: data[dateStr]?.mood || null
-      });
-    }
-    
-    return result;
+    return StorageManager.getMoodHistory(days);
   }
 
   setupMoodPanel() {
@@ -241,7 +209,5 @@ export function setMoodCheckinEnabled(enabled) {
 }
 
 export function getTodaysMood() {
-  const data = JSON.parse(localStorage.getItem('simnote_daily_mood') || '{}');
-  const today = new Date().toISOString().split('T')[0];
-  return data[today]?.mood || null;
+  return StorageManager.getTodaysMood();
 }

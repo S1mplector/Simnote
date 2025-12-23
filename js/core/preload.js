@@ -21,5 +21,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFileEntries: () => ipcRenderer.invoke('get-file-entries'),
   syncAllEntries: (entries) => ipcRenderer.invoke('sync-all-entries', entries),
   getStorageDir: () => ipcRenderer.invoke('get-storage-dir'),
-  openStorageFolder: () => ipcRenderer.invoke('open-storage-folder')
+  openStorageFolder: () => ipcRenderer.invoke('open-storage-folder'),
+  // Native SQLite APIs (Electron-only)
+  nativeDb: {
+    init: () => ipcRenderer.invoke('native-db-init'),
+    getEntryCount: () => ipcRenderer.sendSync('native-db-get-entry-count'),
+    getEntries: () => ipcRenderer.sendSync('native-db-get-entries'),
+    getEntryById: (id) => ipcRenderer.sendSync('native-db-get-entry', id),
+    saveEntry: (entry) => ipcRenderer.sendSync('native-db-save-entry', entry),
+    updateEntry: (entry) => ipcRenderer.sendSync('native-db-update-entry', entry),
+    deleteEntry: (id) => ipcRenderer.sendSync('native-db-delete-entry', id),
+    toggleFavorite: (id) => ipcRenderer.sendSync('native-db-toggle-favorite', id),
+    getMetadata: (key) => ipcRenderer.sendSync('native-db-get-metadata', key),
+    setMetadata: (key, value) => ipcRenderer.sendSync('native-db-set-metadata', { key, value }),
+    getTodaysMood: () => ipcRenderer.sendSync('native-db-get-todays-mood'),
+    setTodaysMood: (mood) => ipcRenderer.sendSync('native-db-set-todays-mood', mood),
+    getMoodHistory: (days) => ipcRenderer.sendSync('native-db-get-mood-history', days),
+    getStorageInfo: () => ipcRenderer.invoke('native-db-get-storage-info'),
+    exportToJSON: () => ipcRenderer.sendSync('native-db-export'),
+    importFromJSON: (jsonString) => ipcRenderer.invoke('native-db-import', jsonString),
+    clearAllData: () => ipcRenderer.invoke('native-db-clear')
+  }
 });

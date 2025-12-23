@@ -136,6 +136,23 @@ class FileStorageManager {
     return synced;
   }
 
+  // Delete all .simnote files in the storage directory
+  clearAllEntries() {
+    const files = fs.readdirSync(this.storageDir);
+    let deleted = 0;
+    for (const file of files) {
+      if (path.extname(file) === SIMNOTE_EXTENSION) {
+        const filePath = path.join(this.storageDir, file);
+        fs.unlinkSync(filePath);
+        deleted++;
+      }
+    }
+    if (deleted > 0) {
+      console.log(`[FileStorage] Cleared ${deleted} .simnote files`);
+    }
+    return deleted;
+  }
+
   // Get storage directory path
   getStorageDir() {
     return this.storageDir;

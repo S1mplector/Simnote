@@ -49,7 +49,7 @@ const editorManager = new EditorManager();
 // DOM elements used for main panel animations
 const blurOverlay = document.querySelector('.blur-overlay');
 const simnoteLogo = document.querySelector('.simnote-logo');
-const navButtons = document.querySelector('.nav-icons');
+const drawerNav = document.getElementById('drawer-nav');
 const logoTextEl = document.querySelector('.logo-text');
 
 // Buttons
@@ -74,7 +74,7 @@ function startIntroAnimation() {
     }
 
     setTimeout(() => {
-      if (navButtons) navButtons.classList.add('visible');
+      if (drawerNav) drawerNav.classList.add('visible');
       // Reveal utility buttons together with the main menu
       manualBtn.style.display = 'block';
       themeSettingsBtn.style.display = 'block';
@@ -295,28 +295,56 @@ function showMoodPanel(fromPanel) {
    });
  }
 
+// Helper to animate drawer open before action
+function animateDrawerOpen(btn, callback) {
+  const drawer = btn.closest('.chest__drawer');
+  if (drawer) {
+    drawer.classList.add('drawer-open');
+    setTimeout(() => {
+      callback();
+      // Reset drawer state after panel transition starts
+      setTimeout(() => drawer.classList.remove('drawer-open'), 400);
+    }, 250);
+  } else {
+    callback();
+  }
+}
+
 // New entry button - go directly to blank entry (skip templates)
 newEntryBtn.addEventListener('click', () => {
-  manualBtn.style.display = 'none';
-  themeSettingsBtn.style.display = 'none';
+  animateDrawerOpen(newEntryBtn, () => {
+    manualBtn.style.display = 'none';
+    themeSettingsBtn.style.display = 'none';
 
-  window.selectedTemplate = null;
-  window.selectedTemplateBackup = null;
-  showMoodPanel(mainPanel);
+    window.selectedTemplate = null;
+    window.selectedTemplateBackup = null;
+    showMoodPanel(mainPanel);
+  });
 });
 
 loadEntryBtn.addEventListener('click', () => {
-  manualBtn.style.display = 'none';
-  themeSettingsBtn.style.display = 'none';
-  document.body.classList.remove('main-menu-active');
-  document.body.classList.add('journal-open');
-  PanelManager.smoothEntrance(mainPanel, journalPanel, {
-    fadeDuration: 300
-  }).then(() => {
-    blurOverlay.style.opacity = 0;
-    const entriesPane = document.querySelector('.entries-pane');
-    if (entriesPane) entriesPane.style.display = 'block';
-    window.dispatchEvent(new Event('loadEntries'));
+  animateDrawerOpen(loadEntryBtn, () => {
+    manualBtn.style.display = 'none';
+    themeSettingsBtn.style.display = 'none';
+    document.body.classList.remove('main-menu-active');
+    document.body.classList.add('journal-open');
+    PanelManager.smoothEntrance(mainPanel, journalPanel, {
+      fadeDuration: 300
+    }).then(() => {
+      blurOverlay.style.opacity = 0;
+      const entriesPane = document.querySelector('.entries-pane');
+      if (entriesPane) entriesPane.style.display = 'block';
+      window.dispatchEvent(new Event('loadEntries'));
+    });
+  });
+});
+
+// Make drawer labels clickable - trigger same action as drawer buttons
+document.querySelectorAll('.drawer-label').forEach(label => {
+  label.addEventListener('click', () => {
+    const drawer = label.closest('.chest__drawer');
+    const trigger = drawer?.querySelector('.drawer-trigger');
+    if (trigger) trigger.click();
   });
 });
 
@@ -325,7 +353,7 @@ function animateMainPanelBack() {
   blurOverlay.style.opacity = 1;
   simnoteLogo.style.opacity = 1;
   simnoteLogo.style.transform = 'translateY(0)';
-  if (navButtons) navButtons.classList.add('visible');
+  if (drawerNav) drawerNav.classList.add('visible');
   manualBtn.style.display = 'block';
   themeSettingsBtn.style.display = 'block';
   document.body.classList.remove('journal-open');
@@ -600,9 +628,9 @@ if (importBtn) {
     fileInput.onchange = (e) => {
       const file = e.target.files[0];
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const fileContent = event.target.result;
-        const importedCount = StorageManager.importEntries(fileContent);
+        const importedCount = await StorageManager.importEntries(fileContent);
         showPopup(`${importedCount} entries imported!`);
         window.dispatchEvent(new Event('loadEntries'));
       };

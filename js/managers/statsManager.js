@@ -15,11 +15,24 @@ export class StatsManager {
 
   init() {
     if (this.statsBtn) {
-      this.statsBtn.addEventListener('click', () => this.showStats());
+      this.statsBtn.addEventListener('click', () => this.animateAndShow());
     }
     
     if (this.backBtn) {
       this.backBtn.addEventListener('click', () => this.hideStats());
+    }
+  }
+
+  animateAndShow() {
+    const drawer = this.statsBtn.closest('.chest__drawer');
+    if (drawer) {
+      drawer.classList.add('drawer-open');
+      setTimeout(() => {
+        this.showStats();
+        setTimeout(() => drawer.classList.remove('drawer-open'), 400);
+      }, 250);
+    } else {
+      this.showStats();
     }
   }
 

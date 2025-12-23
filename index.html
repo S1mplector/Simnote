@@ -73,21 +73,30 @@
     <!-- Theme Settings Popup (hidden by default) -->
     <div id="theme-settings-popup" class="theme-settings-popup">
       <div class="settings-section">
-        <h4 style="margin:0 0 6px 0;">Theme</h4>
-        <div class="theme-selector-row" id="theme-selector">
-          <button class="theme-current" id="theme-selected" data-value="dark-sakura">
-            <span class="theme-name">Dark Sakura</span>
-            <svg class="theme-chevron" viewBox="0 0 24 24" width="14" height="14">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
+        <h4 style="margin:0 0 10px 0;">Theme</h4>
+        <nav class="theme-dock" id="theme-selector">
+          <button class="theme-block" data-value="dark-sakura" title="Dark Sakura" style="--theme-color: #fcd8ff;">
+            <span class="theme-block__item"></span>
           </button>
-          <div class="theme-options" id="theme-options">
-            <button class="theme-option" data-value="dark-sakura">Dark Sakura</button>
-            <button class="theme-option" data-value="plain-dark">Plain Dark</button>
-            <button class="theme-option" data-value="monokai">Monokai</button>
-            <button class="theme-option" data-value="dracula">Dracula</button>
-          </div>
-        </div>
+          <button class="theme-block" data-value="plain-dark" title="Plain Dark" style="--theme-color: #888888;">
+            <span class="theme-block__item"></span>
+          </button>
+          <button class="theme-block" data-value="monokai" title="Monokai" style="--theme-color: #a6e22e;">
+            <span class="theme-block__item"></span>
+          </button>
+          <button class="theme-block" data-value="dracula" title="Dracula" style="--theme-color: #bd93f9;">
+            <span class="theme-block__item"></span>
+          </button>
+          <button class="theme-block" data-value="aurora" title="Aurora" style="--theme-color: #66ffcc;">
+            <span class="theme-block__item"></span>
+          </button>
+          <button class="theme-block" data-value="fireflies" title="Fireflies" style="--theme-color: #9aff3f;">
+            <span class="theme-block__item"></span>
+          </button>
+          <button class="theme-block" data-value="lavender-breeze" title="Lavender Breeze" style="--theme-color: linear-gradient(135deg, #b095ff, #6E5BAF);">
+            <span class="theme-block__item"></span>
+          </button>
+        </nav>
       </div>
 
       <!-- Data & Storage -->
@@ -197,30 +206,74 @@
             <span class="logo-version">v0.1.0</span>
           </div>
         </div>
-        <div class="nav-icons">
-          <button id="new-entry-btn" class="nav-icon-btn" title="Journal">
-            <svg class="nav-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-            <span class="icon-label">Journal</span>
-          </button>
-          <button id="load-entry-btn" class="nav-icon-btn" title="All Entries">
-            <svg class="nav-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M2 3h7a4 4 0 0 1 4 4v14a3 3 0 0 0-4-3H2z"></path>
-              <path d="M22 3h-7a4 4 0 0 0-4 4v14a3 3 0 0 1 4-3h7z"></path>
-            </svg>
-            <span class="icon-label">Entries</span>
-          </button>
-          <button id="stats-btn" class="nav-icon-btn" title="Mood Tracking">
-            <svg class="nav-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-              <line x1="9" y1="9" x2="9.01" y2="9"></line>
-              <line x1="15" y1="9" x2="15.01" y2="9"></line>
-            </svg>
-            <span class="icon-label">Moods</span>
-          </button>
+        <!-- 3D Drawer Navigation -->
+        <div class="drawer-nav" id="drawer-nav">
+          <div class="chest">
+            <div class="chest__panel chest__panel--back"></div>
+            <div class="chest__panel chest__panel--top"></div>
+            <div class="chest__panel chest__panel--bottom"></div>
+            <div class="chest__panel chest__panel--right"></div>
+            <div class="chest__panel chest__panel--front">
+              <div class="chest__panel chest__panel--front-frame"></div>
+            </div>
+            <div class="chest__panel chest__panel--left"></div>
+            
+            <!-- Drawer 1: Journal -->
+            <div class="chest__drawer drawer" data-position="1" data-action="journal">
+              <button class="drawer-trigger" id="new-entry-btn" title="Journal"></button>
+              <span class="drawer-label">Journal</span>
+              <div class="drawer__structure">
+                <div class="drawer__panel drawer__panel--back">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                </div>
+                <div class="drawer__panel drawer__panel--bottom"></div>
+                <div class="drawer__panel drawer__panel--right"></div>
+                <div class="drawer__panel drawer__panel--left"></div>
+                <div class="drawer__panel drawer__panel--front"></div>
+              </div>
+            </div>
+            
+            <!-- Drawer 2: Entries -->
+            <div class="chest__drawer drawer" data-position="2" data-action="entries">
+              <button class="drawer-trigger" id="load-entry-btn" title="Entries"></button>
+              <span class="drawer-label">Entries</span>
+              <div class="drawer__structure">
+                <div class="drawer__panel drawer__panel--back">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 3h7a4 4 0 0 1 4 4v14a3 3 0 0 0-4-3H2z"></path>
+                    <path d="M22 3h-7a4 4 0 0 0-4 4v14a3 3 0 0 1 4-3h7z"></path>
+                  </svg>
+                </div>
+                <div class="drawer__panel drawer__panel--bottom"></div>
+                <div class="drawer__panel drawer__panel--right"></div>
+                <div class="drawer__panel drawer__panel--left"></div>
+                <div class="drawer__panel drawer__panel--front"></div>
+              </div>
+            </div>
+            
+            <!-- Drawer 3: Moods -->
+            <div class="chest__drawer drawer" data-position="3" data-action="moods">
+              <button class="drawer-trigger" id="stats-btn" title="Moods"></button>
+              <span class="drawer-label">Moods</span>
+              <div class="drawer__structure">
+                <div class="drawer__panel drawer__panel--back">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                  </svg>
+                </div>
+                <div class="drawer__panel drawer__panel--bottom"></div>
+                <div class="drawer__panel drawer__panel--right"></div>
+                <div class="drawer__panel drawer__panel--left"></div>
+                <div class="drawer__panel drawer__panel--front"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

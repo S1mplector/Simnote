@@ -84,16 +84,31 @@ class DatabaseManager {
       return;
     }
     
-    if (isElectron() && window.electronAPI?.saveEntryFile) {
+    if (isElectron() && window.electronAPI?.updateEntryFile) {
+      try {
+        const filename = await window.electronAPI.updateEntryFile(entry);
+        if (filename) {
+          console.log(`[DB] Synced entry to file: ${filename}`);
+        }
+      } catch (err) {
+        console.warn('[DB] Electron file sync failed:', err);
+      }
+    } else if (isElectron() && window.electronAPI?.saveEntryFile) {
       try {
         const filename = await window.electronAPI.saveEntryFile(entry);
-        console.log(`[DB] Synced entry to file: ${filename}`);
+        if (filename) {
+          console.log(`[DB] Synced entry to file: ${filename}`);
+        }
       } catch (err) {
         console.warn('[DB] Electron file sync failed:', err);
       }
     } else if (fileStorage?.isEnabled) {
       try {
-        await fileStorage.saveEntry(entry);
+        if (typeof fileStorage.updateEntry === 'function') {
+          await fileStorage.updateEntry(entry);
+        } else {
+          await fileStorage.saveEntry(entry);
+        }
       } catch (err) {
         console.warn('[DB] Browser file sync failed:', err);
       }
@@ -589,6 +604,28 @@ class DatabaseManager {
     this._saveToIndexedDB();
   }
 
+  getMoodHistory(days = 30) {
+    if (!this.ready) return [];
+
+    const start = new Date();
+    start.setDate(start.getDate() - (days - 1));
+    const startDate = start.toISOString().split('T')[0];
+
+    const stmt = this.db.prepare(
+      'SELECT date, mood, timestamp FROM daily_moods WHERE date >= ? ORDER BY date DESC'
+    );
+    stmt.bind([startDate]);
+
+    const rows = [];
+    while (stmt.step()) {
+      const [date, mood, timestamp] = stmt.get();
+      rows.push({ date, mood, timestamp });
+    }
+    stmt.free();
+
+    return rows;
+  }
+
   // Storage Info
   async getStorageInfo() {
     const info = {
@@ -650,19 +687,71 @@ class DatabaseManager {
     try {
       const data = JSON.parse(jsonString);
       let count = 0;
+      const importedEntries = [];
       
       if (data.entries && Array.isArray(data.entries)) {
         for (const entry of data.entries) {
           // Check if entry already exists
-          const existing = this.getEntryById(entry.id);
-          if (!existing) {
-            this._insertEntry(entry);
+          const existing = entry.id ? this.getEntryById(entry.id) : null;
+          const existingUpdatedAt = existing?.updatedAt ? Date.parse(existing.updatedAt) : NaN;
+          const incomingUpdatedAt = entry?.updatedAt ? Date.parse(entry.updatedAt) : NaN;
+          const hasIncomingDate = Number.isFinite(incomingUpdatedAt);
+          const hasExistingDate = Number.isFinite(existingUpdatedAt);
+          const shouldInsert = !existing || (hasIncomingDate && (!hasExistingDate || incomingUpdatedAt > existingUpdatedAt));
+          if (shouldInsert) {
+            const id = this._insertEntry(entry);
+            const storedEntry = this.getEntryById(id);
+            if (storedEntry) importedEntries.push(storedEntry);
             count++;
           }
         }
       }
+
+      if (data.dailyMoods) {
+        let dailyMoods = [];
+        if (Array.isArray(data.dailyMoods)) {
+          dailyMoods = data.dailyMoods;
+        } else if (typeof data.dailyMoods === 'object') {
+          dailyMoods = Object.entries(data.dailyMoods).map(([date, value]) => ({
+            date,
+            mood: value?.mood || value || '',
+            timestamp: value?.timestamp || null
+          }));
+        }
+
+        dailyMoods.forEach(item => {
+          if (!item?.date || !item?.mood) return;
+          const timestamp = item.timestamp || new Date(`${item.date}T00:00:00Z`).toISOString();
+          this.db.run(
+            'INSERT OR REPLACE INTO daily_moods (date, mood, timestamp) VALUES (?, ?, ?)',
+            [item.date, item.mood, timestamp]
+          );
+        });
+
+        try {
+          const moodMap = {};
+          dailyMoods.forEach(item => {
+            if (!item?.date || !item?.mood) return;
+            moodMap[item.date] = {
+              mood: item.mood,
+              timestamp: item.timestamp || new Date(`${item.date}T00:00:00Z`).toISOString()
+            };
+          });
+          localStorage.setItem('simnote_daily_mood', JSON.stringify(moodMap));
+        } catch (err) {
+          console.warn('[DB] Failed to sync daily moods to localStorage:', err);
+        }
+      }
       
       await this._saveToIndexedDB();
+      this._syncToLocalStorage();
+      this._updateStreak();
+
+      if (this.fileStorageEnabled && importedEntries.length) {
+        importedEntries.forEach(entry => {
+          this._syncEntryToFile(entry);
+        });
+      }
       return count;
     } catch (error) {
       console.error('[DB] Import failed:', error);

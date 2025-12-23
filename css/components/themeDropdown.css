@@ -1,94 +1,123 @@
-/* Horizontal Theme Selector - expands to the right */
-.theme-selector-row {
+/* Theme Dock - Compact minimal style */
+:root {
+  --lerp-0: 1;
+  --lerp-1: 0.4;
+  --lerp-2: 0.15;
+  --lerp-3: 0;
+}
+
+.theme-dock {
   display: flex;
-  align-items: center;
-  gap: 0;
+  padding: 6px 10px;
+  border-radius: 12px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  align-items: flex-end;
+  justify-content: flex-start;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.theme-block {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  transition: flex 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex: calc(0.15 + (var(--lerp, 0) * 0.6));
   position: relative;
-}
-
-.theme-current {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: var(--accent);
+  background: none;
   border: none;
-  border-radius: 8px;
-  color: var(--accent-contrast, #fff);
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 0;
   cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 2;
+  outline: none;
 }
 
-.theme-current:hover {
-  background: var(--accent-hover);
-}
-
-.theme-current .theme-name {
+.theme-block::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
   white-space: nowrap;
-}
-
-.theme-chevron {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 0.25s ease;
-}
-
-.theme-selector-row.open .theme-chevron {
-  transform: rotate(180deg);
-}
-
-/* Options container - slides out to the right */
-.theme-options {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 0 8px 8px 0;
-  margin-left: -4px;
   opacity: 0;
-  max-width: 0;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.theme-block:hover::after,
+.theme-block:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.theme-block__item {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--theme-color);
+  display: block;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.15s ease;
+  transform-origin: 50% 100%;
+  position: relative;
+  transform: translateY(calc(var(--lerp, 0) * -50%));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.theme-block__item::after {
+  content: '';
+  position: absolute;
+  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 1;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  mask: linear-gradient(135deg, black, transparent 50%);
   pointer-events: none;
 }
 
-.theme-selector-row.open .theme-options {
-  opacity: 1;
-  max-width: 400px;
-  padding: 0 12px 0 16px;
-  pointer-events: auto;
+/* Active state ring */
+.theme-block.active .theme-block__item {
+  box-shadow: 0 0 0 2px var(--accent), 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
-.theme-option {
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.8rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
+/* Hover/focus glow */
+:is(.theme-block:hover, .theme-block:focus-visible) .theme-block__item {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-.theme-option:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #fff;
+.theme-block.active:is(:hover, :focus-visible) .theme-block__item {
+  box-shadow: 0 0 0 2px var(--accent), 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-.theme-option.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-contrast, #fff);
+/* Lerp-based scaling on hover */
+:is(.theme-block:hover, .theme-block:focus-visible) {
+  --lerp: var(--lerp-0);
+  z-index: 5;
+}
+.theme-block:has(+ :is(.theme-block:hover, .theme-block:focus-visible)),
+:is(.theme-block:hover, .theme-block:focus-visible) + .theme-block {
+  --lerp: var(--lerp-1);
+  z-index: 4;
+}
+.theme-block:has(+ .theme-block + :is(.theme-block:hover, .theme-block:focus-visible)),
+:is(.theme-block:hover, .theme-block:focus-visible) + .theme-block + .theme-block {
+  --lerp: var(--lerp-2);
+  z-index: 3;
+}
+.theme-block:has(+ .theme-block + .theme-block + :is(.theme-block:hover, .theme-block:focus-visible)),
+:is(.theme-block:hover, .theme-block:focus-visible) + .theme-block + .theme-block + .theme-block {
+  --lerp: var(--lerp-3);
+  z-index: 2;
 }
 
 /* Ensure export button uses button-33 */
