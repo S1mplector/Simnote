@@ -69,6 +69,9 @@ fi
 # Create .pkg installer
 echo "📦 Creating .pkg installer..."
 PKG_PATH="$DIST_DIR/${APP_NAME}-${VERSION}.pkg"
+PKG_COMPONENT_PATH="$DIST_DIR/${APP_NAME}-${VERSION}-component.pkg"
+INSTALLER_RESOURCES="$PROJECT_DIR/scripts/installer-resources"
+DIST_SCRIPT="$DIST_DIR/${APP_NAME}-distribution.xml"
 
 pkgbuild \
     --root "$(dirname "$APP_PATH")" \
@@ -76,7 +79,7 @@ pkgbuild \
     --identifier "com.simnote.app" \
     --version "$VERSION" \
     --install-location "/Applications" \
-    "$PKG_PATH" << EOF
+    "$PKG_COMPONENT_PATH" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -96,6 +99,34 @@ pkgbuild \
 </array>
 </plist>
 EOF
+
+cat > "$DIST_SCRIPT" << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+  <title>${APP_NAME}</title>
+  <welcome file="welcome.html"/>
+  <readme file="readme.html"/>
+  <conclusion file="conclusion.html"/>
+  <options customize="never" require-scripts="false"/>
+  <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+  <choices-outline>
+    <line choice="default">
+      <line choice="com.simnote.app"/>
+    </line>
+  </choices-outline>
+  <choice id="default"/>
+  <choice id="com.simnote.app" visible="false">
+    <pkg-ref id="com.simnote.app"/>
+  </choice>
+  <pkg-ref id="com.simnote.app" version="${VERSION}" auth="Root">${APP_NAME}-${VERSION}-component.pkg</pkg-ref>
+</installer-gui-script>
+EOF
+
+productbuild \
+  --distribution "$DIST_SCRIPT" \
+  --resources "$INSTALLER_RESOURCES" \
+  --package-path "$DIST_DIR" \
+  "$PKG_PATH"
 
 echo "✅ PKG created: $PKG_PATH"
 
