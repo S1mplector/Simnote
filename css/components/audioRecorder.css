@@ -193,29 +193,6 @@
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.reel-spoke {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 2px;
-  height: 24px;
-  background: #c1b3be;
-  transform-origin: center top;
-  transform: translateX(-50%);
-}
-
-.reel-spoke:nth-child(2) {
-  transform: translateX(-50%) rotate(60deg);
-}
-
-.reel-spoke:nth-child(3) {
-  transform: translateX(-50%) rotate(120deg);
-}
-
-.reel-spoke:nth-child(4) {
-  transform: translateX(-50%) rotate(180deg);
-}
-
 .tape-reel.spinning {
   animation: spin-reel 1s linear infinite;
 }
@@ -338,34 +315,9 @@
   gap: 12px;
 }
 
-.audio-retry-btn,
-.audio-save-btn {
-  padding: 12px 24px;
-  border-radius: 12px;
-  border: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.audio-retry-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-.audio-retry-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.audio-save-btn {
-  background: linear-gradient(145deg, #ffae75, #ff9a5c);
-  color: #2a1a10;
-}
-
-.audio-save-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(255, 174, 117, 0.4);
+/* Audio action buttons use nav-icon-btn from navIcons.css */
+.audio-actions .nav-icon-btn {
+  flex-direction: column;
 }
 
 /* Entry Audio Container (in rich editor) */

@@ -62,15 +62,9 @@ export class AudioRecorderManager {
           <div class="tape-body">
             <div class="tape-reel tape-reel-left">
               <div class="reel-center"></div>
-              <div class="reel-spoke"></div>
-              <div class="reel-spoke"></div>
-              <div class="reel-spoke"></div>
             </div>
             <div class="tape-reel tape-reel-right">
               <div class="reel-center"></div>
-              <div class="reel-spoke"></div>
-              <div class="reel-spoke"></div>
-              <div class="reel-spoke"></div>
             </div>
             <div class="tape-window">
               <canvas class="audio-visualizer" width="200" height="60"></canvas>
@@ -87,8 +81,21 @@ export class AudioRecorderManager {
         <div class="audio-playback" style="display: none;">
           <audio class="audio-preview" controls></audio>
           <div class="audio-actions">
-            <button class="audio-retry-btn">Re-record</button>
-            <button class="audio-save-btn">Save to Entry</button>
+            <button class="nav-icon-btn audio-retry-btn" title="Re-record">
+              <svg class="nav-icon-svg" viewBox="0 0 24 24">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span class="icon-label">Re-record</span>
+            </button>
+            <button class="nav-icon-btn audio-save-btn" title="Save">
+              <svg class="nav-icon-svg" viewBox="0 0 24 24">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span class="icon-label">Save</span>
+            </button>
           </div>
         </div>
       </div>
@@ -196,10 +203,12 @@ export class AudioRecorderManager {
       const recordBtn = this.overlay.querySelector('.record-btn');
       recordBtn.classList.remove('recording');
       
-      // Stop visualizer
+      // Stop visualizer and clear canvas
       if (this.animationId) {
         cancelAnimationFrame(this.animationId);
+        this.animationId = null;
       }
+      this.clearVisualizer();
       
       // Stop timer
       this.stopTimer();
@@ -208,6 +217,15 @@ export class AudioRecorderManager {
       this.overlay.querySelectorAll('.tape-reel').forEach(reel => {
         reel.classList.remove('spinning');
       });
+    }
+  }
+
+  clearVisualizer() {
+    const canvas = this.overlay?.querySelector('.audio-visualizer');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(30, 20, 15, 0.9)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
   }
 
