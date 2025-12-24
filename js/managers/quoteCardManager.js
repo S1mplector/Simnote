@@ -85,6 +85,24 @@ class QuoteCardManager {
       });
     }
 
+    // View Favorites button
+    this.viewFavoritesBtn = document.getElementById('quote-panel-view-favorites');
+    if (this.viewFavoritesBtn) {
+      this.viewFavoritesBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.openFavoritesPanel();
+      });
+    }
+
+    // Favorites panel close button
+    this.favoritesPanel = document.getElementById('favorite-quotes-panel');
+    this.favoritesList = document.getElementById('favorite-quotes-list');
+    this.favoritesEmpty = document.getElementById('favorite-quotes-empty');
+    const favoritesCloseBtn = document.getElementById('favorite-quotes-close');
+    if (favoritesCloseBtn) {
+      favoritesCloseBtn.addEventListener('click', () => this.closeFavoritesPanel());
+    }
+
     document.addEventListener('keydown', (event) => {
       if (!this.isOpen) return;
       
@@ -295,10 +313,8 @@ class QuoteCardManager {
     const idx = this.favorites.findIndex((fav) => this.quoteKey(fav) === key);
     if (idx >= 0) {
       this.favorites.splice(idx, 1);
-      this.setStatus('Removed from favorites.');
     } else {
       this.favorites.unshift(quote);
-      this.setStatus('Saved to favorites.');
     }
     this.saveFavorites();
     this.updateFavoriteState();
@@ -359,6 +375,130 @@ class QuoteCardManager {
 
   setStatus(message) {
     if (this.statusEl) this.statusEl.textContent = message;
+  }
+
+  openFavoritesPanel() {
+    if (!this.favoritesPanel) return;
+    
+    // Play swoosh sound
+    if (window.playSfx) {
+      const swoosh = new Audio('resources/swoosh.mp3');
+      window.playSfx(swoosh);
+    }
+    
+    // Close the quote panel first (this removes quote-overlay-open class)
+    this.close();
+    
+    this.renderFavoritesList();
+    this.favoritesPanel.classList.add('visible');
+    this.isFavoritesPanelOpen = true;
+  }
+
+  closeFavoritesPanel() {
+    if (!this.favoritesPanel) return;
+    
+    // Play reverse swoosh if available
+    if (window.playSfx) {
+      const swoosh = new Audio('resources/swoosh.mp3');
+      window.playSfx(swoosh);
+    }
+    
+    this.favoritesPanel.classList.remove('visible');
+    this.isFavoritesPanelOpen = false;
+    
+    // Close any expanded quote
+    this.closeExpandedQuote();
+  }
+
+  renderFavoritesList() {
+    if (!this.favoritesList || !this.favoritesEmpty) return;
+    
+    if (this.favorites.length === 0) {
+      this.favoritesList.style.display = 'none';
+      this.favoritesEmpty.style.display = 'block';
+      return;
+    }
+    
+    this.favoritesList.style.display = 'flex';
+    this.favoritesEmpty.style.display = 'none';
+    
+    this.favoritesList.innerHTML = this.favorites.map((quote, index) => `
+      <div class="favorite-quote-card" data-index="${index}">
+        <div class="favorite-quote-card__text">"${this.escapeHtml(quote.text)}"</div>
+        <div class="favorite-quote-card__author">— ${this.escapeHtml(quote.author || 'Unknown')}</div>
+        <div class="favorite-quote-card__actions">
+          <button class="favorite-quote-card__btn" data-action="remove" data-index="${index}" title="Remove from favorites">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    
+    // Add click listeners for expanding quotes
+    this.favoritesList.querySelectorAll('.favorite-quote-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action="remove"]')) {
+          e.stopPropagation();
+          const index = parseInt(e.target.getAttribute('data-index'));
+          this.removeFavoriteByIndex(index);
+          return;
+        }
+        const index = parseInt(card.getAttribute('data-index'));
+        this.showExpandedQuote(this.favorites[index]);
+      });
+    });
+  }
+
+  removeFavoriteByIndex(index) {
+    if (index >= 0 && index < this.favorites.length) {
+      this.favorites.splice(index, 1);
+      this.saveFavorites();
+      this.renderFavoritesList();
+      this.updateFavoriteState();
+    }
+  }
+
+  showExpandedQuote(quote) {
+    if (!quote) return;
+    
+    // Remove existing expanded overlay if any
+    this.closeExpandedQuote();
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'favorite-quote-expanded';
+    overlay.id = 'favorite-quote-expanded';
+    overlay.innerHTML = `
+      <button class="favorite-quote-expanded__close" title="Close">✕</button>
+      <div class="favorite-quote-expanded__content">
+        <div class="favorite-quote-expanded__text">"${this.escapeHtml(quote.text)}"</div>
+        <div class="favorite-quote-expanded__author">— ${this.escapeHtml(quote.author || 'Unknown')}</div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Add click listener to close
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.closest('.favorite-quote-expanded__close')) {
+        this.closeExpandedQuote();
+      }
+    });
+    
+    // Trigger animation
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+  }
+
+  closeExpandedQuote() {
+    const existing = document.getElementById('favorite-quote-expanded');
+    if (existing) {
+      existing.classList.remove('visible');
+      setTimeout(() => existing.remove(), 300);
+    }
+  }
+
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }
 

@@ -100,12 +100,21 @@ themeSettingsBtn.style.display = 'none';
 
 // Hold off on starting the background animation & intro until the splash finishes
 
+// Preload welcome sound for smooth playback
+const welcomeSound = new Audio('resources/welcome.mp3');
+welcomeSound.preload = 'auto';
+
 function startIntroAnimation() {
   // Kick-off the blur + logo + buttons sequence
   blurOverlay.style.opacity = 1;
   setTimeout(() => {
     simnoteLogo.style.opacity = 1;
     simnoteLogo.style.transform = 'translateY(0)';
+
+    // Play welcome sound as logo appears
+    if (window.playSfx) {
+      window.playSfx(welcomeSound);
+    }
 
     // Start handwriting animation after logo becomes visible
     if (logoTextEl) {
@@ -556,8 +565,7 @@ const fontSizeSlider = document.getElementById('font-size-slider');
 const fontSizeValue = document.getElementById('font-size-value');
 const lineHeightSlider = document.getElementById('line-height-slider');
 const lineHeightValue = document.getElementById('line-height-value');
-const dropdownSelected = document.getElementById('font-dropdown-selected');
-const dropdownList = document.getElementById('font-dropdown-list');
+const fontSelector = document.getElementById('font-selector');
 const entryWidthSelected = document.getElementById('entry-width-selected');
 const entryWidthList = document.getElementById('entry-width-list');
 const toolbarToggle = document.getElementById('toolbar-toggle');
@@ -653,9 +661,10 @@ const syncEntrySettingsUI = () => {
   if (spellcheckToggle) spellcheckToggle.checked = entrySettings.spellcheck;
   if (sfxToggle) sfxToggle.checked = entrySettings.sfxEnabled;
 
-  if (dropdownSelected && dropdownList) {
-    const match = dropdownList.querySelector(`li[data-value="${entrySettings.fontFamily}"]`);
-    if (match) dropdownSelected.textContent = match.textContent;
+  if (fontSelector) {
+    fontSelector.querySelectorAll('.font-block').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-value') === entrySettings.fontFamily);
+    });
   }
 
   if (entryWidthSelected && entryWidthList) {
@@ -685,19 +694,16 @@ if (lineHeightSlider) {
   });
 }
 
-if (dropdownSelected && dropdownList) {
-  dropdownSelected.addEventListener('click', () => {
-    dropdownList.classList.toggle('open');
-  });
-
-  dropdownList.querySelectorAll('li').forEach(item => {
-    item.addEventListener('click', () => {
-      const newFont = item.getAttribute('data-value');
+if (fontSelector) {
+  fontSelector.querySelectorAll('.font-block').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newFont = btn.getAttribute('data-value');
       entrySettings.fontFamily = newFont;
-      dropdownSelected.textContent = item.textContent;
+      // Update active state
+      fontSelector.querySelectorAll('.font-block').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
       applyEntrySettings();
       saveEntrySettings();
-      dropdownList.classList.remove('open');
     });
   });
 }
@@ -753,12 +759,92 @@ document.querySelectorAll('.rich-editor').forEach(editor => {
   editor.addEventListener('input', () => updateWordCountForEditor(editor));
 });
 
-document.addEventListener('click', (e) => {
-  if (dropdownSelected && dropdownList) {
-    if (!dropdownSelected.contains(e.target) && !dropdownList.contains(e.target)) {
-      dropdownList.classList.remove('open');
-    }
+/* -------------------------------------
+   Zen Mode
+-------------------------------------- */
+const zenModeOverlay = document.getElementById('zen-mode-overlay');
+const zenEditor = zenModeOverlay?.querySelector('.zen-editor');
+const zenExitBtn = document.getElementById('zen-exit-btn');
+let activeEditorPanel = null;
+
+const openZenMode = (panel) => {
+  if (!zenModeOverlay || !zenEditor) return;
+  
+  activeEditorPanel = panel;
+  const richEditor = panel.querySelector('.rich-editor');
+  
+  // Copy content from the active editor to zen editor
+  if (richEditor) {
+    zenEditor.innerHTML = richEditor.innerHTML;
   }
+  
+  // Apply current font settings to zen editor
+  zenEditor.style.fontFamily = entrySettings.fontFamily;
+  zenEditor.style.fontSize = `${entrySettings.fontSize}px`;
+  zenEditor.style.lineHeight = entrySettings.lineHeight;
+  
+  // Show zen mode
+  zenModeOverlay.style.display = 'flex';
+  requestAnimationFrame(() => {
+    zenModeOverlay.classList.add('visible');
+    zenEditor.focus();
+  });
+};
+
+const closeZenMode = () => {
+  if (!zenModeOverlay || !zenEditor || !activeEditorPanel) return;
+  
+  const richEditor = activeEditorPanel.querySelector('.rich-editor');
+  
+  // Sync content back to the original editor
+  if (richEditor) {
+    richEditor.innerHTML = zenEditor.innerHTML;
+    // Trigger input event for autosave
+    richEditor.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  
+  // Hide zen mode with animation
+  zenModeOverlay.classList.remove('visible');
+  setTimeout(() => {
+    zenModeOverlay.style.display = 'none';
+    zenEditor.innerHTML = '';
+    activeEditorPanel = null;
+  }, 400);
+};
+
+// Attach zen mode button listeners
+document.querySelectorAll('.zen-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = btn.closest('#new-entry-panel, #edit-entry-panel');
+    if (panel) openZenMode(panel);
+  });
+});
+
+// Exit button
+if (zenExitBtn) {
+  zenExitBtn.addEventListener('click', closeZenMode);
+}
+
+// Escape key to exit zen mode
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && zenModeOverlay?.classList.contains('visible')) {
+    closeZenMode();
+  }
+});
+
+// Sync zen editor content periodically while editing (for safety)
+if (zenEditor) {
+  zenEditor.addEventListener('input', () => {
+    if (activeEditorPanel) {
+      const richEditor = activeEditorPanel.querySelector('.rich-editor');
+      if (richEditor) {
+        richEditor.innerHTML = zenEditor.innerHTML;
+      }
+    }
+  });
+}
+
+document.addEventListener('click', (e) => {
   if (entryWidthSelected && entryWidthList) {
     if (!entryWidthSelected.contains(e.target) && !entryWidthList.contains(e.target)) {
       entryWidthList.classList.remove('open');

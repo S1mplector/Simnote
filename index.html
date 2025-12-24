@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="css/base.css" />
     <!-- Google Font for main menu logo -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Handwritten/Cursive fonts for journal entries -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Shadows+Into+Light&family=Patrick+Hand&family=Indie+Flower&display=swap" rel="stylesheet" />
     <!-- sql.js for SQLite support (local for offline support) -->
     <script src="/js/lib/sql-wasm.js"></script>
   </head>
@@ -96,6 +98,17 @@
             <span class="theme-block__item"></span>
           </button>
         </nav>
+      </div>
+
+      <!-- Sound Effects Toggle -->
+      <div class="settings-section" style="margin-top:15px;">
+        <div class="settings-option">
+          <span class="settings-option-label">Sound Effects</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="sfx-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
 
       <!-- Data & Storage -->
@@ -319,6 +332,7 @@
         </div>
         <div class="quote-panel__actions">
           <button class="quote-panel__btn quote-panel__btn--accent" id="quote-panel-journal" type="button" title="Journal about this quote" data-i18n-title="quote.journalTitle" data-i18n="quote.journal">Journal</button>
+          <button class="quote-panel__btn quote-panel__btn--favorites" id="quote-panel-view-favorites" type="button" title="View favorite quotes">View Favorites</button>
         </div>
         <button class="quote-panel__btn quote-panel__btn--close" id="quote-panel-close" type="button" title="Close" data-i18n-title="common.close" data-i18n="quote.putDown">Put down</button>
         <div class="quote-panel__status" id="quote-panel-status" aria-live="polite"></div>
@@ -331,11 +345,33 @@
       </button>
     </div>
 
+    <!-- Favorite Quotes Panel (swoosh from left) -->
+    <div class="favorite-quotes-panel" id="favorite-quotes-panel">
+      <div class="favorite-quotes-header">
+        <h3>Favorite Quotes</h3>
+        <button class="favorite-quotes-close" id="favorite-quotes-close" title="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="favorite-quotes-list" id="favorite-quotes-list">
+        <!-- Favorite quote cards will be dynamically inserted here -->
+      </div>
+      <div class="favorite-quotes-empty" id="favorite-quotes-empty" style="display: none;">
+        <p>No favorite quotes yet.</p>
+        <p>Tap the 🤍 on any quote to save it here.</p>
+      </div>
+    </div>
+
     <!-- Journal Panel -->
     <div id="journal-panel" style="display: none;">
       <div class="entries-pane">
         <div class="entries-header">
           <h2 style="margin:0" data-i18n="journal.title">Entries</h2>
+          <!-- Favorites filter -->
+          <button id="favorites-filter-btn" class="favorites-filter-btn" title="Show favorites only" data-i18n-title="favorites.filterTitle">☆</button>
           <!-- Search (magnifying glass) toggle & input -->
           <button id="search-toggle-btn" class="search-toggle-btn" title="Search" data-i18n-title="common.search">🔍</button>
           <input id="entry-search" class="entry-search collapsed" type="text" placeholder="Search..." data-i18n-placeholder="journal.searchPlaceholder" />
@@ -690,6 +726,12 @@
                 </div>
               </div>
             </button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn zen-mode-btn" title="Zen Mode" data-i18n-title="editor.zenMode">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
+            </button>
           </div>
           <!-- Rich Text Editor -->
           <div class="entry-content rich-editor" contenteditable="true" data-placeholder="Start writing..." data-i18n-placeholder="entry.contentPlaceholder"></div>
@@ -811,7 +853,7 @@
             <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)" data-i18n-title="editor.underline"><u>U</u></button>
             <span class="toolbar-divider"></span>
             <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="h2" title="Heading" data-i18n-title="editor.heading">H</button>
-            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote" data-i18n-title="editor.quote">“</button>
+            <button type="button" class="toolbar-btn" data-command="formatBlock" data-value="blockquote" title="Quote" data-i18n-title="editor.quote">"</button>
             <span class="toolbar-divider"></span>
             <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List" data-i18n-title="editor.bullets">•</button>
             <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List" data-i18n-title="editor.numbered">1.</button>
@@ -827,6 +869,12 @@
                   <div class="tape-mini-window"></div>
                 </div>
               </div>
+            </button>
+            <span class="toolbar-divider"></span>
+            <button type="button" class="toolbar-btn zen-mode-btn" title="Zen Mode" data-i18n-title="editor.zenMode">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
             </button>
           </div>
           <!-- Rich Text Editor -->
@@ -881,16 +929,40 @@
 
       <div class="settings-group">
         <label data-i18n="settings.fontFamily">Font Family</label>
-        <div class="custom-dropdown" id="font-dropdown">
-          <div class="custom-dropdown-selected" id="font-dropdown-selected">Arial</div>
-          <ul class="custom-dropdown-list" id="font-dropdown-list">
-            <li data-value="Arial, sans-serif">Arial</li>
-            <li data-value="'Times New Roman', serif">Times New Roman</li>
-            <li data-value="'Courier New', monospace">Courier New</li>
-            <li data-value="'Georgia', serif">Georgia</li>
-            <li data-value="'Verdana', sans-serif">Verdana</li>
-          </ul>
-        </div>
+        <nav class="font-dock" id="font-selector">
+          <span class="font-dock-label">Standard</span>
+          <button class="font-block" data-value="Arial, sans-serif" title="Arial">
+            <span class="font-block__preview" style="font-family: Arial, sans-serif;">a</span>
+          </button>
+          <button class="font-block" data-value="'Times New Roman', serif" title="Times New Roman">
+            <span class="font-block__preview" style="font-family: 'Times New Roman', serif;">a</span>
+          </button>
+          <button class="font-block" data-value="'Courier New', monospace" title="Courier New">
+            <span class="font-block__preview" style="font-family: 'Courier New', monospace;">a</span>
+          </button>
+          <button class="font-block" data-value="'Georgia', serif" title="Georgia">
+            <span class="font-block__preview" style="font-family: 'Georgia', serif;">a</span>
+          </button>
+          <button class="font-block" data-value="'Verdana', sans-serif" title="Verdana">
+            <span class="font-block__preview" style="font-family: 'Verdana', sans-serif;">a</span>
+          </button>
+          <span class="font-dock-label">Handwritten</span>
+          <button class="font-block" data-value="'Caveat', cursive" title="Caveat">
+            <span class="font-block__preview" style="font-family: 'Caveat', cursive;">a</span>
+          </button>
+          <button class="font-block" data-value="'Kalam', cursive" title="Kalam">
+            <span class="font-block__preview" style="font-family: 'Kalam', cursive;">a</span>
+          </button>
+          <button class="font-block" data-value="'Shadows Into Light', cursive" title="Shadows Into Light">
+            <span class="font-block__preview" style="font-family: 'Shadows Into Light', cursive;">a</span>
+          </button>
+          <button class="font-block" data-value="'Patrick Hand', cursive" title="Patrick Hand">
+            <span class="font-block__preview" style="font-family: 'Patrick Hand', cursive;">a</span>
+          </button>
+          <button class="font-block" data-value="'Indie Flower', cursive" title="Indie Flower">
+            <span class="font-block__preview" style="font-family: 'Indie Flower', cursive;">a</span>
+          </button>
+        </nav>
       </div>
 
       <div class="settings-group">
@@ -929,14 +1001,6 @@
         </label>
       </div>
 
-      <div class="settings-option">
-        <span class="settings-option-label" data-i18n="settings.sfx">Sound Effects</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="sfx-toggle" checked />
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
     </div>
 
     <!-- NEW: Export/Import Popup Panel (hidden by default) -->
@@ -963,6 +1027,18 @@
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
         <span class="icon-label" data-i18n="common.close">Close</span>
+      </button>
+    </div>
+
+    <!-- Zen Mode Overlay -->
+    <div id="zen-mode-overlay" class="zen-mode-overlay" style="display: none;">
+      <div class="zen-mode-content">
+        <div class="zen-editor" contenteditable="true" data-placeholder="Just write..."></div>
+      </div>
+      <button id="zen-exit-btn" class="zen-exit-btn" title="Exit Zen Mode" data-i18n-title="settings.exitZen">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
       </button>
     </div>
 

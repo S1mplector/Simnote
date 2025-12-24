@@ -107,8 +107,9 @@ export class RichEditorManager {
    */
   setupToolbar() {
     this.toolbar.querySelectorAll('.toolbar-btn').forEach(btn => {
-      // Skip audio recorder button - it has its own handler in AudioRecorderManager
+      // Skip buttons with their own handlers
       if (btn.classList.contains('audio-recorder-btn')) return;
+      if (btn.classList.contains('zen-mode-btn')) return;
       
       // Prevent mousedown from stealing focus from editor
       btn.addEventListener('mousedown', (e) => {

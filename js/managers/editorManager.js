@@ -852,13 +852,8 @@ export class EditorManager {
    * @private
    */
   setupFavoritesFilter() {
-    const header = document.querySelector('.entries-header');
-    if (!header || header.querySelector('.favorites-filter-btn')) return;
-    
-    const btn = document.createElement('button');
-    btn.className = 'favorites-filter-btn';
-    btn.innerHTML = '☆';
-    btn.title = 'Show favorites only';
+    const btn = document.getElementById('favorites-filter-btn');
+    if (!btn) return;
     
     btn.addEventListener('click', () => {
       this.showFavoritesOnly = !this.showFavoritesOnly;
@@ -866,14 +861,6 @@ export class EditorManager {
       btn.innerHTML = this.showFavoritesOnly ? '⭐' : '☆';
       this.displayEntries();
     });
-    
-    // Insert before search toggle
-    const searchBtn = header.querySelector('#search-toggle-btn');
-    if (searchBtn) {
-      header.insertBefore(btn, searchBtn);
-    } else {
-      header.appendChild(btn);
-    }
   }
 
   /**
@@ -891,7 +878,7 @@ export class EditorManager {
     const searchInput = document.getElementById('entry-search');
     if (searchInput) searchInput.value = '';
     
-    const favBtn = document.querySelector('.favorites-filter-btn');
+    const favBtn = document.getElementById('favorites-filter-btn');
     if (favBtn) {
       favBtn.classList.remove('active');
       favBtn.innerHTML = '☆';
@@ -1047,6 +1034,12 @@ export class EditorManager {
     document.body.appendChild(overlay);
     this.exitOverlayShownAt = Date.now();
     requestAnimationFrame(() => overlay.classList.add('visible'));
+    
+    // Play saved sound effect
+    if (window.playSfx) {
+      const savedSound = new Audio('resources/saved.mp3');
+      window.playSfx(savedSound);
+    }
   }
 
   /**
