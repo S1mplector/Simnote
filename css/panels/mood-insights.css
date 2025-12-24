@@ -823,3 +823,133 @@
     gap: 12px;
   }
 }
+
+/* Stability Causes Section */
+.stability-causes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.stability-cause {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border-left: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.stability-cause.high {
+  border-left-color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.stability-cause.moderate {
+  border-left-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.stability-cause.low {
+  border-left-color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.stability-cause .cause-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.stability-cause .cause-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stability-cause .cause-name {
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+
+.stability-cause .cause-description {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+}
+
+/* Stress Trigger Items */
+.driver-item.stress-trigger {
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  padding-left: 10px;
+}
+
+.driver-item.stress-trigger.high {
+  border-left-color: #f87171;
+}
+
+.driver-item.stress-trigger.moderate {
+  border-left-color: #fbbf24;
+}
+
+.driver-item.stress-trigger.low {
+  border-left-color: #86efac;
+}
+
+.driver-item-count {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: auto;
+}
+
+/* Error State Styles */
+.stats-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.stats-error-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.stats-error-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.stats-error-message {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+  max-width: 300px;
+}
+
+.stats-retry-btn {
+  padding: 10px 24px;
+  background: var(--accent, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.stats-retry-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.stats-retry-btn:active {
+  transform: translateY(0);
+}

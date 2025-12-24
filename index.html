@@ -574,12 +574,6 @@
           </div>
         </div>
 
-        <!-- Mood Distribution -->
-        <div class="stats-section">
-          <h3 data-i18n="stats.moodDistribution">Mood Distribution</h3>
-          <div class="mood-chart" id="mood-chart"></div>
-        </div>
-
         <!-- Writing Stats -->
         <div class="stats-section">
           <h3 data-i18n="stats.writingStatistics">Writing Statistics</h3>
@@ -599,7 +593,7 @@
           </div>
         </div>
 
-        <!-- Volatility Meter -->
+        <!-- Mood Stability Section -->
         <div class="stats-section volatility-section">
           <h3>Mood Stability</h3>
           <div class="volatility-meter">
@@ -617,6 +611,9 @@
               <span class="volatility-score" id="volatility-score">--</span>
               <span class="volatility-label" id="volatility-label">Calculating...</span>
             </div>
+          </div>
+          <div class="stability-causes" id="stability-causes">
+            <!-- Dynamically populated by MoodStabilityEngine -->
           </div>
         </div>
       </div>

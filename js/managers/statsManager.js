@@ -126,7 +126,6 @@ export class StatsManager {
     
     // Render components
     this.renderHeatmap(entries);
-    this.renderMoodChart(stats.moodCounts);
     this.renderTopTags(entries);
     
     // Render mood insights (new comprehensive analytics)
@@ -296,56 +295,6 @@ export class StatsManager {
     if (count === 2) return 2;
     if (count <= 4) return 3;
     return 4;
-  }
-
-  /**
-   * Renders the mood distribution bar chart.
-   * 
-   * @param {Object} moodCounts - Map of mood to count
-   */
-  renderMoodChart(moodCounts) {
-    const chart = document.getElementById('mood-chart');
-    if (!chart) return;
-    
-    chart.innerHTML = '';
-    
-    const moods = Object.entries(moodCounts);
-    if (moods.length === 0) {
-      chart.innerHTML = '<p class="no-data">No mood data yet. Start journaling to see your mood trends!</p>';
-      return;
-    }
-    
-    // Sort by count descending
-    moods.sort((a, b) => b[1] - a[1]);
-    
-    const total = moods.reduce((sum, [_, count]) => sum + count, 0);
-    const maxCount = Math.max(...moods.map(([_, count]) => count));
-    
-    moods.forEach(([mood, count]) => {
-      const percentage = Math.round((count / total) * 100);
-      const barWidth = (count / maxCount) * 100;
-      const emoji = MoodEmojiMapper.getEmoji(mood) || '😐';
-      
-      const row = document.createElement('div');
-      row.className = 'mood-row';
-      row.innerHTML = `
-        <div class="mood-label">
-          <span class="mood-emoji">${emoji}</span>
-          <span class="mood-name">${mood}</span>
-        </div>
-        <div class="mood-bar-container">
-          <div class="mood-bar" style="width: 0%"></div>
-        </div>
-        <div class="mood-count">${count} (${percentage}%)</div>
-      `;
-      chart.appendChild(row);
-      
-      // Animate bar
-      requestAnimationFrame(() => {
-        const bar = row.querySelector('.mood-bar');
-        bar.style.width = `${barWidth}%`;
-      });
-    });
   }
 
   /**

@@ -18,6 +18,8 @@
 // - MoodEmojiMapper for emoji display
 
 import { MoodAnalyticsEngine } from '../analytics/moodAnalyticsEngine.js';
+import { StressTriggerEngine } from '../analytics/stressTriggerEngine.js';
+import { MoodStabilityEngine } from '../analytics/moodStabilityEngine.js';
 import { StorageManager } from './storageManager.js';
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 
@@ -34,10 +36,18 @@ export class MoodInsightsManager {
   constructor() {
     /** @type {MoodAnalyticsEngine} Analytics engine */
     this.analytics = new MoodAnalyticsEngine();
+    /** @type {StressTriggerEngine} Stress trigger analysis engine */
+    this.stressEngine = new StressTriggerEngine();
+    /** @type {MoodStabilityEngine} Mood stability analysis engine */
+    this.stabilityEngine = new MoodStabilityEngine();
     /** @type {string} Current selected time period */
     this.currentPeriod = 'week';
     /** @type {Object|null} Cached analytics data */
     this.cachedData = null;
+    /** @type {Object|null} Cached stress analysis */
+    this.stressAnalysis = null;
+    /** @type {Object|null} Cached stability analysis */
+    this.stabilityAnalysis = null;
     /** @type {boolean} Rendering in progress */
     this.isRendering = false;
     /** @type {Object} Render verification status */
@@ -149,14 +159,25 @@ export class MoodInsightsManager {
       const days = this.currentPeriod === 'week' ? 7 : 
                    this.currentPeriod === 'month' ? 30 : 90;
       
+      const moodHistory = StorageManager.getMoodHistory(days);
+      const entries = StorageManager.getEntries();
+      
       this.analytics.loadData(
         (d) => StorageManager.getMoodHistory(d),
-        () => StorageManager.getEntries(),
+        () => entries,
         days
       );
 
       const data = this.analytics.computeAnalytics();
       this.cachedData = data;
+
+      // Load data into specialized engines
+      this.stressEngine.loadData(moodHistory, entries);
+      this.stabilityEngine.loadData(moodHistory, entries);
+      
+      // Run specialized analyses
+      this.stressAnalysis = this.stressEngine.analyze();
+      this.stabilityAnalysis = this.stabilityEngine.analyze();
 
       // Log analytics for debugging
       console.log('[MoodInsights] Analytics computed:', {
@@ -165,8 +186,8 @@ export class MoodInsightsManager {
         insights: data.insights?.length || 0,
         timeOfDay: !!data.timeOfDay,
         dayOfWeek: !!data.dayOfWeek,
-        predictions: !!data.predictions,
-        contentAnalysis: !!data.contentAnalysis
+        stressTriggers: this.stressAnalysis?.triggers?.length || 0,
+        stabilityScore: this.stabilityAnalysis?.overall?.score
       });
 
       // Render all components with verification
@@ -176,7 +197,7 @@ export class MoodInsightsManager {
       this.safeRender('timeOfDay', () => this.renderTimeOfDay(data.timeOfDay));
       this.safeRender('dayOfWeek', () => this.renderDayOfWeek(data.dayOfWeek));
       this.safeRender('drivers', () => this.renderDrivers(data.attributeCorrelations));
-      this.safeRender('volatility', () => this.renderVolatility(data.volatility));
+      this.safeRender('volatility', () => this.renderStability(this.stabilityAnalysis));
 
       // Verify all rendered
       this.verifyRender();
@@ -586,13 +607,14 @@ export class MoodInsightsManager {
   }
 
   /**
-   * Renders mood drivers section.
+   * Renders mood drivers section using StressTriggerEngine for stress triggers.
    * @param {Object} correlations - Attribute correlation data
    */
   renderDrivers(correlations) {
     const positiveList = document.getElementById('positive-drivers-list');
     const negativeList = document.getElementById('negative-drivers-list');
 
+    // Render positive drivers (mood boosters)
     if (positiveList) {
       if (correlations.positiveDrivers.length > 0) {
         positiveList.innerHTML = correlations.positiveDrivers.map(driver => {
@@ -611,8 +633,24 @@ export class MoodInsightsManager {
       }
     }
 
+    // Render stress triggers using StressTriggerEngine
     if (negativeList) {
-      if (correlations.negativeDrivers.length > 0) {
+      const stressData = this.stressAnalysis;
+      const topCategories = stressData?.categories?.ranked?.slice(0, 3) || [];
+      
+      if (topCategories.length > 0) {
+        negativeList.innerHTML = topCategories.map(cat => {
+          const severity = cat.avgSeverity > 2 ? 'high' : cat.avgSeverity > 1.5 ? 'moderate' : 'low';
+          return `
+            <div class="driver-item stress-trigger ${severity}">
+              <span class="driver-item-emoji">${cat.icon}</span>
+              <span class="driver-item-name">${cat.name}</span>
+              <span class="driver-item-count">${cat.count}×</span>
+            </div>
+          `;
+        }).join('');
+      } else if (correlations.negativeDrivers.length > 0) {
+        // Fallback to attribute correlations
         negativeList.innerHTML = correlations.negativeDrivers.map(driver => {
           const emoji = this.getAttributeEmoji(driver.attribute);
           const impact = Math.round(Math.abs(driver.averageScore) * 100);
@@ -657,29 +695,81 @@ export class MoodInsightsManager {
   }
 
   /**
-   * Renders volatility meter.
-   * @param {Object} volatility - Volatility data
+   * Renders mood stability section using MoodStabilityEngine analysis.
+   * @param {Object} stability - Stability analysis from MoodStabilityEngine
    */
-  renderVolatility(volatility) {
+  renderStability(stability) {
     const fill = document.getElementById('volatility-fill');
     const scoreEl = document.getElementById('volatility-score');
     const labelEl = document.getElementById('volatility-label');
 
     if (!fill) return;
 
-    const score = volatility.score || 0;
+    const overall = stability?.overall || {};
+    const score = overall.score || 50;
     
-    // Position the marker (0-100%)
-    const position = Math.min(100, Math.max(0, score));
+    // Position the marker (0-100%, inverted: higher stability = left side)
+    const position = Math.min(100, Math.max(0, 100 - score));
     fill.style.left = `calc(${position}% - 10px)`;
 
     if (scoreEl) {
-      scoreEl.textContent = score;
+      scoreEl.textContent = `${score}%`;
     }
 
     if (labelEl) {
-      labelEl.textContent = volatility.label || 'Calculating...';
+      const labels = {
+        very_stable: 'Very Stable',
+        stable: 'Stable',
+        moderate: 'Variable',
+        unstable: 'Unstable',
+        very_unstable: 'Very Unstable',
+        insufficient_data: 'Gathering Data'
+      };
+      labelEl.textContent = labels[overall.level] || 'Calculating...';
     }
+
+    // Render stability causes if any
+    this.renderStabilityCauses(stability?.causes || []);
+  }
+
+  /**
+   * Renders stability cause cards.
+   * @param {Array} causes - Identified instability causes
+   */
+  renderStabilityCauses(causes) {
+    const container = document.getElementById('stability-causes');
+    if (!container) return;
+
+    if (causes.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = causes.slice(0, 2).map(cause => `
+      <div class="stability-cause ${cause.severity}">
+        <span class="cause-icon">${cause.icon}</span>
+        <div class="cause-content">
+          <div class="cause-name">${cause.name}</div>
+          <div class="cause-description">${cause.description}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /**
+   * Get stress analysis for external use.
+   * @returns {Object} Stress trigger analysis
+   */
+  getStressAnalysis() {
+    return this.stressAnalysis || this.stressEngine.analyze();
+  }
+
+  /**
+   * Get stability analysis for external use.
+   * @returns {Object} Mood stability analysis
+   */
+  getStabilityAnalysis() {
+    return this.stabilityAnalysis || this.stabilityEngine.analyze();
   }
 }
 
