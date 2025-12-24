@@ -391,6 +391,7 @@ function showMoodPanel(fromPanel) {
 
 // Preload drawer opening sound effect
 const drawerOpenSound = new Audio('resources/drawer_opening.mp3');
+window.drawerOpenSound = drawerOpenSound;
 
 // Helper to animate drawer open before action
 function animateDrawerOpen(btn, callback) {

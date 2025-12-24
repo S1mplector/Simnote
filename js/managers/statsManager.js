@@ -73,6 +73,10 @@ export class StatsManager {
     const drawer = this.statsBtn.closest('.chest__drawer');
     if (drawer) {
       drawer.classList.add('drawer-open');
+      // Play drawer opening sound
+      if (window.playSfx && window.drawerOpenSound) {
+        window.playSfx(window.drawerOpenSound);
+      }
       setTimeout(() => {
         this.showStats();
         setTimeout(() => drawer.classList.remove('drawer-open'), 400);
@@ -92,6 +96,14 @@ export class StatsManager {
     if (manualBtn) manualBtn.style.display = 'none';
     if (themeSettingsBtn) themeSettingsBtn.style.display = 'none';
     document.body.classList.remove('main-menu-active');
+
+    // Hide drawer navigation and other main menu elements
+    const drawerNav = document.getElementById('drawer-nav');
+    const simnoteLogo = document.querySelector('.simnote-logo');
+    const plantScene = document.querySelector('.plant-scene');
+    if (drawerNav) drawerNav.classList.remove('visible');
+    if (simnoteLogo) simnoteLogo.style.opacity = '0';
+    if (plantScene) plantScene.classList.remove('visible');
 
     PanelManager.transitionPanels(this.mainPanel, this.statsPanel).then(() => {
       this.renderStats();
