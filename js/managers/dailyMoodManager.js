@@ -96,10 +96,13 @@ export class DailyMoodManager {
 
   /**
    * Determines if mood check-in should be shown.
-   * @returns {boolean} True if enabled and no mood logged today
+   * @returns {boolean} True if enabled, not first time, and no mood logged today
    */
   shouldShowMoodCheckin() {
     if (!this.isEnabled()) return false;
+    // Skip mood check-in on first time setup (onboarding not yet completed)
+    const onboardingComplete = localStorage.getItem('simnote_onboarding_complete');
+    if (!onboardingComplete) return false;
     const todaysMood = this.getTodaysMood();
     return !todaysMood;
   }

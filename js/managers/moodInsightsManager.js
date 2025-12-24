@@ -356,16 +356,16 @@ export class MoodInsightsManager {
     const height = 60;
     const padding = 5;
 
-    // Calculate min/max for scaling
-    const scores = validData.map(d => d.score);
-    const minScore = Math.min(...scores);
-    const maxScore = Math.max(...scores);
-    const range = maxScore - minScore || 0.5;
+    // Fixed scale for consistent labels and color semantics
+    const minScore = -1;
+    const maxScore = 1;
+    const range = maxScore - minScore;
 
     // Generate path points
     const points = validData.map((d, i) => {
       const x = padding + (i / (validData.length - 1)) * (width - padding * 2);
-      const y = height - padding - ((d.score - minScore) / range) * (height - padding * 2);
+      const clampedScore = Math.max(minScore, Math.min(maxScore, d.score));
+      const y = height - padding - ((clampedScore - minScore) / range) * (height - padding * 2);
       return { x, y };
     });
 

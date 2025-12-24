@@ -100,13 +100,74 @@ export class OnboardingManager {
 
   /**
    * Starts the onboarding flow after splash animation.
+   * Shows confirmation prompt before beginning tour.
    */
   start() {
     if (!this.shouldShowOnboarding()) return;
     
     setTimeout(() => {
-      this.showStep(0);
+      this.showWelcomePrompt();
     }, 4000);
+  }
+
+  /**
+   * Shows subtle first-time hint at top left.
+   * @private
+   */
+  showWelcomePrompt() {
+    const hint = document.createElement('div');
+    hint.className = 'onboarding-first-time-hint';
+    hint.innerHTML = `
+      <span class="first-time-hint-text">First time at Simnote? Hover here to start the tutorial!</span>
+      <div class="first-time-hint-actions">
+        <button class="first-time-hint-btn first-time-hint-btn--start">Start Tour</button>
+        <button class="first-time-hint-btn first-time-hint-btn--dismiss">✕</button>
+      </div>
+    `;
+    
+    document.body.appendChild(hint);
+    
+    // Animate in
+    requestAnimationFrame(() => hint.classList.add('visible'));
+    
+    // Show actions on hover
+    hint.addEventListener('mouseenter', () => hint.classList.add('expanded'));
+    hint.addEventListener('mouseleave', () => hint.classList.remove('expanded'));
+    
+    // Bind events
+    hint.querySelector('.first-time-hint-btn--dismiss').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.dismissHint(hint);
+      this.complete();
+    });
+    
+    hint.querySelector('.first-time-hint-btn--start').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.dismissHint(hint);
+      this.showStep(0);
+    });
+    
+    // Auto-dismiss after 15 seconds if not interacted
+    this.hintTimer = setTimeout(() => {
+      if (hint.parentNode) {
+        this.dismissHint(hint);
+        this.complete();
+      }
+    }, 15000);
+  }
+
+  /**
+   * Dismisses the first-time hint.
+   * @param {HTMLElement} hint - Hint element to remove
+   * @private
+   */
+  dismissHint(hint) {
+    if (this.hintTimer) {
+      clearTimeout(this.hintTimer);
+      this.hintTimer = null;
+    }
+    hint.classList.remove('visible');
+    setTimeout(() => hint.remove(), 300);
   }
 
   /**
