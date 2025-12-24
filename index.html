@@ -363,6 +363,12 @@
       </div>
     </div>
 
+    <!-- Stats Preloader -->
+    <div id="stats-preloader" class="stats-preloader">
+      <div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div class="stats-preloader-text">Analyzing your moods...</div>
+    </div>
+
     <!-- Mood Tracking Panel -->
     <div id="stats-panel" class="custom-panel stats-panel" style="display:none;">
       <div class="stats-header">
@@ -395,6 +401,22 @@
                 <span class="mood-score-label" id="mood-overview-label">Good</span>
               </div>
             </div>
+            <div class="mood-mini-graph" id="mood-mini-graph">
+              <svg class="mini-graph-svg" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="miniGraphGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0" />
+                  </linearGradient>
+                </defs>
+                <path class="mini-graph-area" id="mini-graph-area" fill="url(#miniGraphGradient)" />
+                <path class="mini-graph-line" id="mini-graph-line" />
+              </svg>
+              <div class="mini-graph-labels">
+                <span class="mini-graph-high" id="mini-graph-high">--</span>
+                <span class="mini-graph-low" id="mini-graph-low">--</span>
+              </div>
+            </div>
             <div class="mood-overview-stats">
               <div class="mood-overview-stat">
                 <span class="stat-emoji">😊</span>
@@ -412,36 +434,6 @@
                 <span class="stat-sublabel">Negative</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Mood Trend Graph -->
-        <div class="stats-section mood-trend-section">
-          <div class="section-header">
-            <h3>Mood Trend</h3>
-            <span class="trend-indicator" id="trend-indicator">
-              <span class="trend-arrow">↑</span>
-              <span class="trend-text">Improving</span>
-            </span>
-          </div>
-          <div class="mood-trend-graph" id="mood-trend-graph">
-            <svg class="trend-svg" viewBox="0 0 400 160" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.4" />
-                  <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0" />
-                </linearGradient>
-              </defs>
-              <path class="trend-area" id="trend-area" fill="url(#trendGradient)" />
-              <path class="trend-line" id="trend-line" />
-              <g class="trend-dots" id="trend-dots"></g>
-            </svg>
-            <div class="trend-labels" id="trend-labels"></div>
-          </div>
-          <div class="trend-summary" id="trend-summary">
-            <span class="trend-avg">Avg: <strong id="trend-avg-value">--</strong></span>
-            <span class="trend-high">High: <strong id="trend-high-value">--</strong></span>
-            <span class="trend-low">Low: <strong id="trend-low-value">--</strong></span>
           </div>
         </div>
 

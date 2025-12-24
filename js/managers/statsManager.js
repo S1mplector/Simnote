@@ -71,6 +71,11 @@ export class StatsManager {
    */
   animateAndShow() {
     const drawer = this.statsBtn.closest('.chest__drawer');
+    const preloader = document.getElementById('stats-preloader');
+    
+    // Show preloader immediately
+    if (preloader) preloader.classList.add('visible');
+    
     if (drawer) {
       drawer.classList.add('drawer-open');
       // Play drawer opening sound
@@ -84,6 +89,14 @@ export class StatsManager {
     } else {
       this.showStats();
     }
+  }
+
+  /**
+   * Hides the stats preloader.
+   */
+  hidePreloader() {
+    const preloader = document.getElementById('stats-preloader');
+    if (preloader) preloader.classList.remove('visible');
   }
 
   /**

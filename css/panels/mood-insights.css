@@ -220,6 +220,74 @@
   letter-spacing: 0.5px;
 }
 
+/* Mini Mood Graph in Overview */
+.mood-mini-graph {
+  flex: 1;
+  max-width: 200px;
+  height: 60px;
+  position: relative;
+}
+
+.mini-graph-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mini-graph-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mini-graph-area {
+  opacity: 0.6;
+}
+
+.mini-graph-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: absolute;
+  right: -35px;
+  top: 0;
+  height: 100%;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.mini-graph-high {
+  color: #4ade80;
+}
+
+.mini-graph-low {
+  color: #f87171;
+}
+
+@media (max-width: 600px) {
+  .mood-overview-card {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .mood-mini-graph {
+    max-width: 100%;
+    width: 100%;
+    margin: 16px 0;
+  }
+  
+  .mini-graph-labels {
+    right: 0;
+    flex-direction: row;
+    justify-content: space-between;
+    top: auto;
+    bottom: -18px;
+    width: 100%;
+    height: auto;
+  }
+}
+
 /* Mood Trend Section */
 .mood-trend-section .section-header {
   display: flex;
@@ -952,4 +1020,140 @@
 
 .stats-retry-btn:active {
   transform: translateY(0);
+}
+
+/* Stats Panel Pre-loader */
+.stats-preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.stats-preloader.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.stats-preloader-text {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+/* LDS Roller Spinner */
+.lds-roller,
+.lds-roller div,
+.lds-roller div:after {
+  box-sizing: border-box;
+}
+
+.lds-roller {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+  color: #fff;
+}
+
+.lds-roller div {
+  animation: lds-roller 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  transform-origin: 40px 40px;
+}
+
+.lds-roller div:after {
+  content: " ";
+  display: block;
+  position: absolute;
+  width: 7.2px;
+  height: 7.2px;
+  border-radius: 50%;
+  background: currentColor;
+  margin: -3.6px 0 0 -3.6px;
+}
+
+.lds-roller div:nth-child(1) {
+  animation-delay: -0.036s;
+}
+.lds-roller div:nth-child(1):after {
+  top: 62.62742px;
+  left: 62.62742px;
+}
+
+.lds-roller div:nth-child(2) {
+  animation-delay: -0.072s;
+}
+.lds-roller div:nth-child(2):after {
+  top: 67.71281px;
+  left: 56px;
+}
+
+.lds-roller div:nth-child(3) {
+  animation-delay: -0.108s;
+}
+.lds-roller div:nth-child(3):after {
+  top: 70.90963px;
+  left: 48.28221px;
+}
+
+.lds-roller div:nth-child(4) {
+  animation-delay: -0.144s;
+}
+.lds-roller div:nth-child(4):after {
+  top: 72px;
+  left: 40px;
+}
+
+.lds-roller div:nth-child(5) {
+  animation-delay: -0.18s;
+}
+.lds-roller div:nth-child(5):after {
+  top: 70.90963px;
+  left: 31.71779px;
+}
+
+.lds-roller div:nth-child(6) {
+  animation-delay: -0.216s;
+}
+.lds-roller div:nth-child(6):after {
+  top: 67.71281px;
+  left: 24px;
+}
+
+.lds-roller div:nth-child(7) {
+  animation-delay: -0.252s;
+}
+.lds-roller div:nth-child(7):after {
+  top: 62.62742px;
+  left: 17.37258px;
+}
+
+.lds-roller div:nth-child(8) {
+  animation-delay: -0.288s;
+}
+.lds-roller div:nth-child(8):after {
+  top: 56px;
+  left: 12.28719px;
+}
+
+@keyframes lds-roller {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

@@ -244,6 +244,10 @@ export class MoodInsightsManager {
 
     this.isRendering = false;
     this.hideLoader();
+    
+    // Hide the stats preloader
+    const preloader = document.getElementById('stats-preloader');
+    if (preloader) preloader.classList.remove('visible');
   }
 
   /**
@@ -253,6 +257,10 @@ export class MoodInsightsManager {
     console.error('[MoodInsights] Watchdog timeout - render took too long');
     this.isRendering = false;
     this.showErrorOverlay('Processing took too long. This can happen with very large journals. Please try again.');
+    
+    // Hide the stats preloader
+    const preloader = document.getElementById('stats-preloader');
+    if (preloader) preloader.classList.remove('visible');
   }
 
   /**
@@ -267,6 +275,10 @@ export class MoodInsightsManager {
     this.isRendering = false;
     console.error('[MoodInsights] Error:', message);
     this.showErrorOverlay(message);
+    
+    // Hide the stats preloader
+    const preloader = document.getElementById('stats-preloader');
+    if (preloader) preloader.classList.remove('visible');
   }
 
   /**
@@ -316,115 +328,67 @@ export class MoodInsightsManager {
   }
 
   /**
-   * Renders the mood trend line graph.
+   * Renders the mini mood trend graph in the overview section.
    * @param {Object} trends - Trend data
    */
   renderTrendGraph(trends) {
-    const trendLine = document.getElementById('trend-line');
-    const trendArea = document.getElementById('trend-area');
-    const trendDots = document.getElementById('trend-dots');
-    const trendLabels = document.getElementById('trend-labels');
-    const indicator = document.getElementById('trend-indicator');
-    const avgEl = document.getElementById('trend-avg-value');
-    const highEl = document.getElementById('trend-high-value');
-    const lowEl = document.getElementById('trend-low-value');
+    const miniLine = document.getElementById('mini-graph-line');
+    const miniArea = document.getElementById('mini-graph-area');
+    const highLabel = document.getElementById('mini-graph-high');
+    const lowLabel = document.getElementById('mini-graph-low');
 
-    if (!trendLine) return;
+    if (!miniLine) return;
 
     const periodData = trends[this.currentPeriod];
     const smoothedData = periodData.smoothed || [];
     const validData = smoothedData.filter(d => d.score !== null);
 
     if (validData.length < 2) {
-      trendLine.setAttribute('d', '');
-      trendArea.setAttribute('d', '');
-      trendDots.innerHTML = '';
-      if (trendLabels) trendLabels.innerHTML = '<span>Not enough data</span>';
+      miniLine.setAttribute('d', '');
+      miniArea.setAttribute('d', '');
+      if (highLabel) highLabel.textContent = '--';
+      if (lowLabel) lowLabel.textContent = '--';
       return;
     }
 
-    // SVG dimensions
-    const width = 400;
-    const height = 140;
-    const padding = 20;
+    // SVG dimensions for mini graph
+    const width = 200;
+    const height = 60;
+    const padding = 5;
 
-    // Generate smooth path
-    const linePath = this.analytics.generateSmoothPath(validData, width, height, padding);
-    const areaPath = this.analytics.generateAreaPath(validData, width, height, padding);
+    // Calculate min/max for scaling
+    const scores = validData.map(d => d.score);
+    const minScore = Math.min(...scores);
+    const maxScore = Math.max(...scores);
+    const range = maxScore - minScore || 0.5;
 
-    trendLine.setAttribute('d', linePath);
-    trendArea.setAttribute('d', areaPath);
-
-    // Render dots
-    trendDots.innerHTML = '';
-    const xScale = (width - padding * 2) / (validData.length - 1);
-    const yScale = (height - padding * 2) / 2;
-
-    validData.forEach((d, i) => {
-      const x = padding + i * xScale;
-      const y = height / 2 - d.score * yScale;
-      
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('class', 'trend-dot');
-      circle.setAttribute('cx', x);
-      circle.setAttribute('cy', y);
-      circle.setAttribute('r', '4');
-      circle.setAttribute('data-date', d.date);
-      circle.setAttribute('data-score', d.score.toFixed(2));
-      
-      trendDots.appendChild(circle);
+    // Generate path points
+    const points = validData.map((d, i) => {
+      const x = padding + (i / (validData.length - 1)) * (width - padding * 2);
+      const y = height - padding - ((d.score - minScore) / range) * (height - padding * 2);
+      return { x, y };
     });
 
-    // Render labels
-    if (trendLabels) {
-      const numLabels = this.currentPeriod === 'week' ? 7 : 
-                        this.currentPeriod === 'month' ? 5 : 6;
-      const step = Math.floor(validData.length / (numLabels - 1));
-      
-      trendLabels.innerHTML = '';
-      for (let i = 0; i < numLabels; i++) {
-        const idx = Math.min(i * step, validData.length - 1);
-        const date = new Date(validData[idx]?.date);
-        const label = document.createElement('span');
-        label.textContent = date.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        });
-        trendLabels.appendChild(label);
-      }
+    // Create smooth line path using quadratic curves
+    let linePath = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const cpX = (prev.x + curr.x) / 2;
+      linePath += ` Q ${prev.x + (curr.x - prev.x) * 0.5} ${prev.y}, ${cpX} ${(prev.y + curr.y) / 2}`;
     }
+    linePath += ` L ${points[points.length - 1].x} ${points[points.length - 1].y}`;
 
-    // Update indicator
-    if (indicator) {
-      const arrow = indicator.querySelector('.trend-arrow');
-      const text = indicator.querySelector('.trend-text');
-      
-      indicator.classList.remove('positive', 'negative', 'neutral');
-      
-      if (periodData.change > 0.1) {
-        indicator.classList.add('positive');
-        arrow.textContent = '↑';
-        text.textContent = 'Improving';
-      } else if (periodData.change < -0.1) {
-        indicator.classList.add('negative');
-        arrow.textContent = '↓';
-        text.textContent = 'Declining';
-      } else {
-        indicator.classList.add('neutral');
-        arrow.textContent = '→';
-        text.textContent = 'Stable';
-      }
-    }
+    // Create area path
+    const areaPath = linePath + 
+      ` L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
 
-    // Update summary stats
-    const scores = validData.map(d => d.score);
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const high = Math.max(...scores);
-    const low = Math.min(...scores);
+    miniLine.setAttribute('d', linePath);
+    miniArea.setAttribute('d', areaPath);
 
-    if (avgEl) avgEl.textContent = this.formatScore(avg);
-    if (highEl) highEl.textContent = this.formatScore(high);
-    if (lowEl) lowEl.textContent = this.formatScore(low);
+    // Update high/low labels
+    if (highLabel) highLabel.textContent = this.formatScore(maxScore);
+    if (lowLabel) lowLabel.textContent = this.formatScore(minScore);
   }
 
   /**
