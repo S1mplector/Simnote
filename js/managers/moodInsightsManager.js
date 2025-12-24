@@ -44,6 +44,8 @@ export class MoodInsightsManager {
     this.renderStatus = {};
     /** @type {number} Watchdog timeout ID */
     this.watchdogTimer = null;
+    /** @type {string|null} Loader template HTML */
+    this.loaderTemplate = null;
     
     this.init();
   }
@@ -64,7 +66,11 @@ export class MoodInsightsManager {
       });
     });
     
-    // Expose for retry button
+    const loader = document.getElementById('stats-loader');
+    if (loader) {
+      this.loaderTemplate = loader.innerHTML;
+    }
+
     window.moodInsightsManager = this;
   }
 
@@ -73,7 +79,11 @@ export class MoodInsightsManager {
    */
   showLoader() {
     const loader = document.getElementById('stats-loader');
-    if (loader) loader.classList.remove('hidden');
+    if (!loader) return;
+    if (this.loaderTemplate) {
+      loader.innerHTML = this.loaderTemplate;
+    }
+    loader.classList.remove('hidden');
   }
 
   /**
@@ -82,6 +92,26 @@ export class MoodInsightsManager {
   hideLoader() {
     const loader = document.getElementById('stats-loader');
     if (loader) loader.classList.add('hidden');
+  }
+
+  showErrorOverlay(message) {
+    const loader = document.getElementById('stats-loader');
+    if (!loader) return;
+
+    loader.innerHTML = `
+      <div class="stats-error">
+        <div class="stats-error-icon">😕</div>
+        <div class="stats-error-title">Mood insights failed to load</div>
+        <div class="stats-error-message">${message || 'Unknown error'}</div>
+        <button class="stats-retry-btn" type="button">Try Again</button>
+      </div>
+    `;
+    loader.classList.remove('hidden');
+
+    const btn = loader.querySelector('.stats-retry-btn');
+    if (btn) {
+      btn.addEventListener('click', () => this.retry());
+    }
   }
 
   /**
@@ -201,7 +231,7 @@ export class MoodInsightsManager {
   onWatchdogTimeout() {
     console.error('[MoodInsights] Watchdog timeout - render took too long');
     this.isRendering = false;
-    this.hideLoader();
+    this.showErrorOverlay('Processing took too long. This can happen with very large journals. Please try again.');
   }
 
   /**
@@ -214,8 +244,8 @@ export class MoodInsightsManager {
       this.watchdogTimer = null;
     }
     this.isRendering = false;
-    this.hideLoader();
     console.error('[MoodInsights] Error:', message);
+    this.showErrorOverlay(message);
   }
 
   /**

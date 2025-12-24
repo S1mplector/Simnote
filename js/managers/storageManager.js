@@ -109,7 +109,8 @@ function buildMoodHistory(days, moodMap) {
     const value = moodMap[dateStr];
     result.push({
       date: dateStr,
-      mood: value?.mood || value || null
+      mood: value?.mood || value || null,
+      timestamp: value?.timestamp || null
     });
   }
 

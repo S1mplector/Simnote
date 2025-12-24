@@ -423,8 +423,8 @@ export class MoodAnalyticsEngine {
       const mood = d.mood.toLowerCase();
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
       
-      const categories = this.categorizeMood(d.mood);
-      categories.forEach(cat => {
+      const categorized = this.categorizeMood(d.mood);
+      (categorized.categories || []).forEach(cat => {
         if (categoryCounts[cat] !== undefined) {
           categoryCounts[cat]++;
         }
@@ -576,7 +576,8 @@ export class MoodAnalyticsEngine {
       const timestamp = entry.createdAt || entry.date;
       const date = new Date(timestamp);
       const hour = date.getHours();
-      const period = this.getTimePeriod(hour);
+      const period = this.getSimpleTimePeriod(hour);
+      if (!analysis[period]) return;
       const score = this.getMoodScore(entry.mood);
       
       analysis[period].count++;
@@ -589,7 +590,8 @@ export class MoodAnalyticsEngine {
       
       const date = new Date(d.timestamp);
       const hour = date.getHours();
-      const period = this.getTimePeriod(hour);
+      const period = this.getSimpleTimePeriod(hour);
+      if (!analysis[period]) return;
       const score = this.getMoodScore(d.mood);
       
       // Avoid double counting if already in entries
