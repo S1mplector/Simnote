@@ -1452,7 +1452,7 @@ body[data-theme="light"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 300;
+  z-index: 9600;
   padding: 40px;
   box-sizing: border-box;
   opacity: 0;

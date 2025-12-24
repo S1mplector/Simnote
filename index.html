@@ -1053,7 +1053,9 @@
     
     <!-- Service Worker Registration -->
     <script>
-      if ('serviceWorker' in navigator) {
+      const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+      const canUseServiceWorker = location.protocol === 'https:' || location.protocol === 'http:';
+      if (!isElectron && canUseServiceWorker && 'serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then(registration => {
