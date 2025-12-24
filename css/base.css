@@ -41,6 +41,15 @@ html, body {
   font-family: var(--ui-font);
 }
 
+/* Hide scrollbars globally while keeping scroll functionality */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 /* Theme accent defaults */
 :root{
   --ui-font:'Space Grotesk', sans-serif;

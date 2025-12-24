@@ -78,6 +78,9 @@ export class AudioRecorderManager {
     /** @type {MediaStream|null} The microphone media stream */
     this.stream = null;
     
+    /** @type {HTMLAudioElement} Preloaded record button press sound */
+    this.recordButtonSound = new Audio('resources/record_button_press.mp3');
+    
     if (this.audioButton) {
       this.init();
     }
@@ -222,6 +225,8 @@ export class AudioRecorderManager {
       if (this.isRecording) {
         this.stopRecording();
       } else {
+        // Play record button press sound
+        if (window.playSfx) window.playSfx(this.recordButtonSound);
         this.startRecording();
       }
     });

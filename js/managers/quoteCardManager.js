@@ -8,6 +8,7 @@ const LAST_QUOTE_KEY = 'simnote_quote_last';
 class QuoteCardManager {
   constructor() {
     this.card = document.getElementById('quote-card');
+    this.clickSound = new Audio('resources/quote_card_click.mp3');
     this.overlay = document.getElementById('quote-overlay');
     this.panel = document.getElementById('quote-panel');
     this.textEl = document.getElementById('quote-panel-text');
@@ -101,6 +102,7 @@ class QuoteCardManager {
 
   open() {
     this.isOpen = true;
+    if (window.playSfx) window.playSfx(this.clickSound);
     document.body.classList.add('quote-overlay-open');
     this.card.setAttribute('aria-expanded', 'true');
     if (this.overlay) this.overlay.setAttribute('aria-hidden', 'false');

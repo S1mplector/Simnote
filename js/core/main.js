@@ -389,11 +389,16 @@ function showMoodPanel(fromPanel) {
    });
  }
 
+// Preload drawer opening sound effect
+const drawerOpenSound = new Audio('resources/drawer_opening.mp3');
+
 // Helper to animate drawer open before action
 function animateDrawerOpen(btn, callback) {
   const drawer = btn.closest('.chest__drawer');
   if (drawer) {
     drawer.classList.add('drawer-open');
+    // Play drawer opening sound
+    window.playSfx(drawerOpenSound);
     setTimeout(() => {
       callback();
       // Reset drawer state after panel transition starts
@@ -468,15 +473,57 @@ window.animateMainPanelBack = animateMainPanelBack;
 const settingsPanel = document.getElementById('settings-panel');
 const settingsCloseBtn = document.getElementById('settings-close-btn');
 
+// Preload entry settings swoosh sound (reuses same file as theme settings)
+const entrySettingsSwoosh = new Audio('resources/swoosh.mp3');
+let entrySettingsSwooshCtx = null;
+let entrySettingsSwooshReversed = null;
+
+// Prepare reversed buffer for entry settings close
+fetch('resources/swoosh.mp3')
+  .then(res => res.arrayBuffer())
+  .then(buf => {
+    entrySettingsSwooshCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return entrySettingsSwooshCtx.decodeAudioData(buf);
+  })
+  .then(decoded => {
+    entrySettingsSwooshReversed = entrySettingsSwooshCtx.createBuffer(
+      decoded.numberOfChannels, decoded.length, decoded.sampleRate
+    );
+    for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
+      const orig = decoded.getChannelData(ch);
+      const rev = entrySettingsSwooshReversed.getChannelData(ch);
+      for (let i = 0; i < orig.length; i++) {
+        rev[i] = orig[orig.length - 1 - i];
+      }
+    }
+  })
+  .catch(() => {});
+
+function playEntrySettingsReverseSwoosh() {
+  if (!entrySettingsSwooshCtx || !entrySettingsSwooshReversed || !window.isSfxEnabled()) return;
+  if (entrySettingsSwooshCtx.state === 'suspended') entrySettingsSwooshCtx.resume();
+  const src = entrySettingsSwooshCtx.createBufferSource();
+  src.buffer = entrySettingsSwooshReversed;
+  src.connect(entrySettingsSwooshCtx.destination);
+  src.start(0);
+}
+
 // Attach toggle behaviour to every settings button in the editor panels
 document.querySelectorAll('.settings-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    const isOpening = !settingsPanel.classList.contains('visible');
+    if (isOpening) {
+      window.playSfx(entrySettingsSwoosh);
+    } else {
+      playEntrySettingsReverseSwoosh();
+    }
     settingsPanel.classList.toggle('visible');
   });
 });
 
 if (settingsCloseBtn) {
   settingsCloseBtn.addEventListener('click', () => {
+    playEntrySettingsReverseSwoosh();
     settingsPanel.classList.remove('visible');
   });
 }
@@ -489,7 +536,8 @@ const defaultEntrySettings = {
   contentWidth: '1000px',
   showToolbar: true,
   showWordCount: false,
-  spellcheck: true
+  spellcheck: true,
+  sfxEnabled: true
 };
 
 const loadEntrySettings = () => {
@@ -514,6 +562,15 @@ const entryWidthList = document.getElementById('entry-width-list');
 const toolbarToggle = document.getElementById('toolbar-toggle');
 const wordCountToggle = document.getElementById('word-count-toggle');
 const spellcheckToggle = document.getElementById('spellcheck-toggle');
+const sfxToggle = document.getElementById('sfx-toggle');
+
+// Global SFX helper - all sounds should use this
+window.isSfxEnabled = () => entrySettings.sfxEnabled;
+window.playSfx = (audio) => {
+  if (!entrySettings.sfxEnabled) return;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+};
 
 const saveEntrySettings = () => {
   localStorage.setItem(ENTRY_SETTINGS_KEY, JSON.stringify(entrySettings));
@@ -593,6 +650,7 @@ const syncEntrySettingsUI = () => {
   if (toolbarToggle) toolbarToggle.checked = entrySettings.showToolbar;
   if (wordCountToggle) wordCountToggle.checked = entrySettings.showWordCount;
   if (spellcheckToggle) spellcheckToggle.checked = entrySettings.spellcheck;
+  if (sfxToggle) sfxToggle.checked = entrySettings.sfxEnabled;
 
   if (dropdownSelected && dropdownList) {
     const match = dropdownList.querySelector(`li[data-value="${entrySettings.fontFamily}"]`);
@@ -683,6 +741,13 @@ if (spellcheckToggle) {
   });
 }
 
+if (sfxToggle) {
+  sfxToggle.addEventListener('change', (e) => {
+    entrySettings.sfxEnabled = e.target.checked;
+    saveEntrySettings();
+  });
+}
+
 document.querySelectorAll('.rich-editor').forEach(editor => {
   editor.addEventListener('input', () => updateWordCountForEditor(editor));
 });
@@ -706,11 +771,53 @@ document.addEventListener('click', (e) => {
 const themeSettingsPopup = document.getElementById('theme-settings-popup');
 const themeSettingsCloseBtn = document.getElementById('theme-settings-close-btn');
 
+// Swoosh sound for settings panel open/close
+const settingsSwooshSound = new Audio('resources/swoosh.mp3');
+let swooshAudioContext = null;
+let swooshReversedBuffer = null;
+
+// Preload and prepare reversed audio buffer for close animation
+fetch('resources/swoosh.mp3')
+  .then(response => response.arrayBuffer())
+  .then(arrayBuffer => {
+    swooshAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    return swooshAudioContext.decodeAudioData(arrayBuffer);
+  })
+  .then(audioBuffer => {
+    // Create reversed buffer
+    swooshReversedBuffer = swooshAudioContext.createBuffer(
+      audioBuffer.numberOfChannels,
+      audioBuffer.length,
+      audioBuffer.sampleRate
+    );
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+      const originalData = audioBuffer.getChannelData(channel);
+      const reversedData = swooshReversedBuffer.getChannelData(channel);
+      for (let i = 0; i < originalData.length; i++) {
+        reversedData[i] = originalData[originalData.length - 1 - i];
+      }
+    }
+  })
+  .catch(() => {});
+
+function playReversedSwoosh() {
+  if (!swooshAudioContext || !swooshReversedBuffer || !window.isSfxEnabled()) return;
+  if (swooshAudioContext.state === 'suspended') {
+    swooshAudioContext.resume();
+  }
+  const source = swooshAudioContext.createBufferSource();
+  source.buffer = swooshReversedBuffer;
+  source.connect(swooshAudioContext.destination);
+  source.start(0);
+}
+
 themeSettingsBtn.addEventListener('click', () => {
+  window.playSfx(settingsSwooshSound);
   themeSettingsPopup.classList.add('visible');
 });
 
 themeSettingsCloseBtn.addEventListener('click', () => {
+  playReversedSwoosh();
   themeSettingsPopup.classList.remove('visible');
 });
 

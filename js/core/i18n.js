@@ -48,7 +48,9 @@ const translations = {
     },
     theme: {
       title: 'Theme',
-      dark: 'Dark'
+      dark: 'Dark',
+      sakura: 'Sakura',
+      lavender: 'Lavender'
     },
     storage: {
       title: 'Data & Storage',
@@ -345,7 +347,9 @@ const translations = {
     },
     theme: {
       title: 'Tema',
-      dark: 'Koyu'
+      dark: 'Koyu',
+      sakura: 'Sakura',
+      lavender: 'Lavanta'
     },
     storage: {
       title: 'Veri ve Depolama',
