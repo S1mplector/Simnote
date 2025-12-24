@@ -386,9 +386,6 @@ class QuoteCardManager {
       window.playSfx(swoosh);
     }
     
-    // Close the quote panel first (this removes quote-overlay-open class)
-    this.close();
-    
     this.renderFavoritesList();
     this.favoritesPanel.classList.add('visible');
     this.isFavoritesPanelOpen = true;
