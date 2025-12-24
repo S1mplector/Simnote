@@ -52,6 +52,12 @@ export class OnboardingManager {
         position: 'center'
       },
       {
+        title: 'Daily Inspiration 💭',
+        content: 'Tap the quote card for a daily dose of inspiration. Favorite quotes you love with ❤️ and view them anytime.',
+        target: '#quote-card',
+        position: 'left'
+      },
+      {
         title: 'Start Journaling 🖋️',
         content: 'Open the top drawer to start a new journal entry and capture your thoughts.',
         target: '.chest__drawer[data-action="journal"] .drawer__panel--front',
