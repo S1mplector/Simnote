@@ -366,9 +366,172 @@
     <!-- Mood Tracking Panel -->
     <div id="stats-panel" class="custom-panel stats-panel" style="display:none;">
       <div class="stats-header">
-        <h2 data-i18n="stats.title">Mood Tracking</h2>
+        <h2 data-i18n="stats.title">Mood Insights</h2>
+        <div class="stats-period-selector">
+          <button class="period-btn active" data-period="week">7D</button>
+          <button class="period-btn" data-period="month">30D</button>
+          <button class="period-btn" data-period="quarter">90D</button>
+        </div>
       </div>
+      <!-- Loading Overlay -->
+      <div class="stats-loader" id="stats-loader">
+        <div class="loader-content">
+          <div class="loader-spinner"></div>
+          <div class="loader-text">Analyzing your moods...</div>
+        </div>
+      </div>
+      
       <div class="stats-content">
+        <!-- Mood Overview Card -->
+        <div class="stats-section mood-overview-section">
+          <div class="mood-overview-card">
+            <div class="mood-score-ring" id="mood-score-ring">
+              <svg viewBox="0 0 120 120">
+                <circle class="ring-bg" cx="60" cy="60" r="52" />
+                <circle class="ring-progress" cx="60" cy="60" r="52" id="mood-ring-progress" />
+              </svg>
+              <div class="mood-score-content">
+                <span class="mood-score-emoji" id="mood-overview-emoji">😊</span>
+                <span class="mood-score-label" id="mood-overview-label">Good</span>
+              </div>
+            </div>
+            <div class="mood-overview-stats">
+              <div class="mood-overview-stat">
+                <span class="stat-emoji">😊</span>
+                <span class="stat-percent" id="positive-percent">0%</span>
+                <span class="stat-sublabel">Positive</span>
+              </div>
+              <div class="mood-overview-stat">
+                <span class="stat-emoji">😐</span>
+                <span class="stat-percent" id="neutral-percent">0%</span>
+                <span class="stat-sublabel">Neutral</span>
+              </div>
+              <div class="mood-overview-stat">
+                <span class="stat-emoji">😔</span>
+                <span class="stat-percent" id="negative-percent">0%</span>
+                <span class="stat-sublabel">Negative</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mood Trend Graph -->
+        <div class="stats-section mood-trend-section">
+          <div class="section-header">
+            <h3>Mood Trend</h3>
+            <span class="trend-indicator" id="trend-indicator">
+              <span class="trend-arrow">↑</span>
+              <span class="trend-text">Improving</span>
+            </span>
+          </div>
+          <div class="mood-trend-graph" id="mood-trend-graph">
+            <svg class="trend-svg" viewBox="0 0 400 160" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.4" />
+                  <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0" />
+                </linearGradient>
+              </defs>
+              <path class="trend-area" id="trend-area" fill="url(#trendGradient)" />
+              <path class="trend-line" id="trend-line" />
+              <g class="trend-dots" id="trend-dots"></g>
+            </svg>
+            <div class="trend-labels" id="trend-labels"></div>
+          </div>
+          <div class="trend-summary" id="trend-summary">
+            <span class="trend-avg">Avg: <strong id="trend-avg-value">--</strong></span>
+            <span class="trend-high">High: <strong id="trend-high-value">--</strong></span>
+            <span class="trend-low">Low: <strong id="trend-low-value">--</strong></span>
+          </div>
+        </div>
+
+        <!-- Insights Cards -->
+        <div class="stats-section insights-section">
+          <h3>Insights</h3>
+          <div class="insights-grid" id="insights-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Time of Day Analysis -->
+        <div class="stats-section time-analysis-section">
+          <h3>When You Feel Best</h3>
+          <div class="time-bars" id="time-bars">
+            <div class="time-bar" data-period="morning">
+              <span class="time-emoji">🌅</span>
+              <div class="time-bar-track">
+                <div class="time-bar-fill" id="morning-bar"></div>
+              </div>
+              <span class="time-label">Morning</span>
+              <span class="time-score" id="morning-score">--</span>
+            </div>
+            <div class="time-bar" data-period="afternoon">
+              <span class="time-emoji">☀️</span>
+              <div class="time-bar-track">
+                <div class="time-bar-fill" id="afternoon-bar"></div>
+              </div>
+              <span class="time-label">Afternoon</span>
+              <span class="time-score" id="afternoon-score">--</span>
+            </div>
+            <div class="time-bar" data-period="evening">
+              <span class="time-emoji">🌆</span>
+              <div class="time-bar-track">
+                <div class="time-bar-fill" id="evening-bar"></div>
+              </div>
+              <span class="time-label">Evening</span>
+              <span class="time-score" id="evening-score">--</span>
+            </div>
+            <div class="time-bar" data-period="night">
+              <span class="time-emoji">🌙</span>
+              <div class="time-bar-track">
+                <div class="time-bar-fill" id="night-bar"></div>
+              </div>
+              <span class="time-label">Night</span>
+              <span class="time-score" id="night-score">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Day of Week Pattern -->
+        <div class="stats-section dow-section">
+          <h3>Weekly Pattern</h3>
+          <div class="dow-chart" id="dow-chart">
+            <div class="dow-bar" data-day="0"><span class="dow-label">Sun</span><div class="dow-fill"></div><span class="dow-score"></span></div>
+            <div class="dow-bar" data-day="1"><span class="dow-label">Mon</span><div class="dow-fill"></div><span class="dow-score"></span></div>
+            <div class="dow-bar" data-day="2"><span class="dow-label">Tue</span><div class="dow-fill"></div><span class="dow-score"></span></div>
+            <div class="dow-bar" data-day="3"><span class="dow-label">Wed</span><div class="dow-fill"></div><span class="dow-score"></span></div>
+            <div class="dow-bar" data-day="4"><span class="dow-label">Thu</span><div class="dow-fill"></div><span class="dow-score"></span></div>
+            <div class="dow-bar" data-day="5"><span class="dow-label">Fri</span><div class="dow-fill"></div><span class="dow-score"></span></div>
+            <div class="dow-bar" data-day="6"><span class="dow-label">Sat</span><div class="dow-fill"></div><span class="dow-score"></span></div>
+          </div>
+          <div class="dow-summary" id="dow-summary"></div>
+        </div>
+
+        <!-- Mood Drivers (Correlations) -->
+        <div class="stats-section drivers-section">
+          <h3>What Affects Your Mood</h3>
+          <div class="drivers-grid">
+            <div class="driver-column positive-drivers">
+              <div class="driver-header">
+                <span class="driver-icon">💪</span>
+                <span class="driver-title">Mood Boosters</span>
+              </div>
+              <div class="driver-list" id="positive-drivers-list">
+                <p class="no-data">Keep journaling to discover patterns</p>
+              </div>
+            </div>
+            <div class="driver-column negative-drivers">
+              <div class="driver-header">
+                <span class="driver-icon">⚠️</span>
+                <span class="driver-title">Stress Triggers</span>
+              </div>
+              <div class="driver-list" id="negative-drivers-list">
+                <p class="no-data">Keep journaling to discover patterns</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Streak Section -->
         <div class="stats-section streak-section">
           <div class="stat-card streak-card">
@@ -432,6 +595,27 @@
             <div class="writing-stat">
               <span class="stat-name" data-i18n="stats.topTags">Most used tags</span>
               <span class="stat-val" id="top-tags">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Volatility Meter -->
+        <div class="stats-section volatility-section">
+          <h3>Mood Stability</h3>
+          <div class="volatility-meter">
+            <div class="volatility-gauge">
+              <div class="volatility-track">
+                <div class="volatility-fill" id="volatility-fill"></div>
+              </div>
+              <div class="volatility-markers">
+                <span>Stable</span>
+                <span>Variable</span>
+                <span>Volatile</span>
+              </div>
+            </div>
+            <div class="volatility-info">
+              <span class="volatility-score" id="volatility-score">--</span>
+              <span class="volatility-label" id="volatility-label">Calculating...</span>
             </div>
           </div>
         </div>

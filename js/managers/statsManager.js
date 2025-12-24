@@ -26,6 +26,7 @@
 import { StorageManager } from './storageManager.js';
 import { PanelManager } from './panelManager.js';
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
+import { moodInsightsManager } from './moodInsightsManager.js';
 
 /**
  * Manages the statistics panel with journal analytics.
@@ -127,6 +128,9 @@ export class StatsManager {
     this.renderHeatmap(entries);
     this.renderMoodChart(stats.moodCounts);
     this.renderTopTags(entries);
+    
+    // Render mood insights (new comprehensive analytics)
+    moodInsightsManager.render();
   }
 
   /**

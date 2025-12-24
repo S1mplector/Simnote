@@ -1,0 +1,825 @@
+/* Mood Insights Panel Styles */
+/* Visualizations for mood tracking and pattern analysis */
+
+/* Loading Overlay */
+.stats-loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(46, 46, 46, 0.98);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  border-radius: 20px;
+}
+
+.stats-loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loader-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Error State */
+.stats-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.stats-error-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.stats-error-title {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.stats-error-message {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+}
+
+.stats-retry-btn {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.stats-retry-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Period Selector */
+.stats-period-selector {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.period-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.period-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.period-btn.active {
+  background: var(--accent);
+  color: #000;
+}
+
+/* Mood Overview Card */
+.mood-overview-section {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.mood-overview-card {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15), rgba(var(--accent-rgb), 0.05));
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.mood-score-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.mood-score-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.mood-score-ring .ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 8;
+}
+
+.mood-score-ring .ring-progress {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 327;
+  stroke-dashoffset: 327;
+  transition: stroke-dashoffset 1s ease-out;
+}
+
+.mood-score-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.mood-score-emoji {
+  font-size: 2rem;
+  display: block;
+}
+
+.mood-score-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+}
+
+.mood-overview-stats {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  justify-content: center;
+}
+
+.mood-overview-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mood-overview-stat .stat-emoji {
+  font-size: 1.4rem;
+}
+
+.mood-overview-stat .stat-percent {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mood-overview-stat .stat-sublabel {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Mood Trend Section */
+.mood-trend-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.mood-trend-section .section-header h3 {
+  margin: 0;
+}
+
+.trend-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.trend-indicator.positive {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+}
+
+.trend-indicator.negative {
+  background: rgba(244, 67, 54, 0.2);
+  color: #e57373;
+}
+
+.trend-indicator.neutral {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.trend-arrow {
+  font-size: 1rem;
+}
+
+.mood-trend-graph {
+  position: relative;
+  height: 160px;
+  margin-bottom: 12px;
+}
+
+.trend-svg {
+  width: 100%;
+  height: 140px;
+}
+
+.trend-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trend-area {
+  opacity: 0.6;
+}
+
+.trend-dot {
+  fill: var(--accent);
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r 0.2s;
+}
+
+.trend-dot:hover {
+  r: 6;
+}
+
+.trend-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.trend-summary {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.trend-summary strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Insights Section */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.insight-card {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.insight-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.insight-card.warning {
+  border-left: 3px solid #ff7043;
+  background: rgba(255, 112, 67, 0.08);
+}
+
+.insight-card.positive {
+  border-left: 3px solid #81c784;
+  background: rgba(129, 199, 132, 0.08);
+}
+
+.insight-card.prediction {
+  border-left: 3px solid #7c4dff;
+  background: rgba(124, 77, 255, 0.08);
+}
+
+.insight-card.info {
+  border-left: 3px solid var(--accent);
+}
+
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.insight-confidence {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background: rgba(124, 77, 255, 0.2);
+  color: #b388ff;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.insight-action {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+  border-left: 2px solid var(--accent);
+}
+
+.insight-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.insight-content {
+  flex: 1;
+}
+
+.insight-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.insight-description {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+}
+
+/* Time of Day Analysis */
+.time-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.time-bar {
+  display: grid;
+  grid-template-columns: 40px 1fr 80px 50px;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-emoji {
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.time-bar-track {
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.time-bar-fill {
+  height: 100%;
+  border-radius: 14px;
+  transition: width 0.8s ease-out;
+  min-width: 0;
+}
+
+.time-bar-fill.positive {
+  background: linear-gradient(90deg, #66bb6a, #81c784);
+}
+
+.time-bar-fill.neutral {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.4));
+}
+
+.time-bar-fill.negative {
+  background: linear-gradient(90deg, #ef5350, #e57373);
+}
+
+.time-bar-fill.accent {
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary, var(--accent)));
+}
+
+.time-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.time-score {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: right;
+}
+
+.time-bar.best-time .time-label {
+  color: #81c784;
+}
+
+.time-bar.worst-time .time-label {
+  color: #e57373;
+}
+
+/* Day of Week Chart */
+.dow-chart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 150px;
+  padding: 10px 0;
+  gap: 8px;
+}
+
+.dow-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 8px;
+}
+
+.dow-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.dow-fill {
+  width: 100%;
+  max-width: 40px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, var(--accent), rgba(var(--accent-rgb), 0.6));
+  transition: height 0.8s ease-out;
+  flex: 1;
+  min-height: 4px;
+}
+
+.dow-bar.best-day .dow-fill {
+  background: linear-gradient(180deg, #66bb6a, #4caf50);
+}
+
+.dow-bar.worst-day .dow-fill {
+  background: linear-gradient(180deg, #ef5350, #f44336);
+}
+
+.dow-score {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  min-height: 16px;
+}
+
+.dow-summary {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.dow-summary strong {
+  color: var(--accent);
+}
+
+/* Mood Drivers Section */
+.drivers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.driver-column {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.driver-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.driver-icon {
+  font-size: 1.3rem;
+}
+
+.driver-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.driver-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.driver-list .no-data {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  padding: 20px 10px;
+}
+
+.driver-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.driver-item-emoji {
+  font-size: 1.1rem;
+}
+
+.driver-item-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: capitalize;
+}
+
+.driver-item-impact {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.driver-item-impact.positive {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+}
+
+.driver-item-impact.negative {
+  background: rgba(244, 67, 54, 0.2);
+  color: #e57373;
+}
+
+/* Volatility Section */
+.volatility-meter {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.volatility-gauge {
+  flex: 1;
+}
+
+.volatility-track {
+  height: 12px;
+  background: linear-gradient(90deg, #66bb6a, #ffb74d, #ef5350);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.volatility-fill {
+  position: absolute;
+  top: -4px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: left 0.8s ease-out;
+  left: 0;
+}
+
+.volatility-markers {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.volatility-info {
+  text-align: center;
+  min-width: 100px;
+}
+
+.volatility-score {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.volatility-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.empty-state-description {
+  font-size: 0.9rem;
+  max-width: 300px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Tooltip */
+.mood-tooltip {
+  position: absolute;
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  color: #fff;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.mood-tooltip.visible {
+  opacity: 1;
+}
+
+.mood-tooltip-date {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.mood-tooltip-mood {
+  font-weight: 600;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-section {
+  animation: fadeInUp 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+.stats-section:nth-child(1) { animation-delay: 0s; }
+.stats-section:nth-child(2) { animation-delay: 0.05s; }
+.stats-section:nth-child(3) { animation-delay: 0.1s; }
+.stats-section:nth-child(4) { animation-delay: 0.15s; }
+.stats-section:nth-child(5) { animation-delay: 0.2s; }
+.stats-section:nth-child(6) { animation-delay: 0.25s; }
+.stats-section:nth-child(7) { animation-delay: 0.3s; }
+.stats-section:nth-child(8) { animation-delay: 0.35s; }
+.stats-section:nth-child(9) { animation-delay: 0.4s; }
+.stats-section:nth-child(10) { animation-delay: 0.45s; }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .mood-overview-card {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .mood-overview-stats {
+    width: 100%;
+    justify-content: space-around;
+  }
+  
+  .drivers-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .time-bar {
+    grid-template-columns: 30px 1fr 60px 40px;
+    gap: 8px;
+  }
+  
+  .time-emoji {
+    font-size: 1.2rem;
+  }
+  
+  .volatility-meter {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .volatility-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 500px) {
+  .dow-chart {
+    height: 120px;
+  }
+  
+  .dow-label {
+    font-size: 0.65rem;
+  }
+  
+  .period-btn {
+    padding: 5px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .trend-summary {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
