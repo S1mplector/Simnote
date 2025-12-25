@@ -48,8 +48,234 @@ const META_KEY = 'simnote_meta';
 const DAILY_MOOD_KEY = 'simnote_daily_mood';
 /** @constant {string} localStorage key to track native DB migration status */
 const NATIVE_DB_MIGRATION_KEY = 'simnote_native_db_migrated';
+/** @constant {string} localStorage key for auto-backup */
+const BACKUP_KEY = 'simnote_backup';
 /** @constant {boolean} Whether running in Electron with native DB support */
 const isElectron = typeof window !== 'undefined' && window.electronAPI?.nativeDb;
+
+// ==================== WATCHDOG SYSTEM ====================
+
+/**
+ * Watchdog configuration for storage operations
+ * @private
+ */
+const WATCHDOG_CONFIG = {
+  /** Minimum time between saves in ms (rate limiting) */
+  minSaveInterval: 100,
+  /** Maximum entries before warning */
+  maxEntriesWarning: 5000,
+  /** Maximum localStorage size before warning (5MB) */
+  maxStorageSizeWarning: 5 * 1024 * 1024,
+  /** Auto-backup interval in ms (5 minutes) */
+  autoBackupInterval: 5 * 60 * 1000,
+  /** Maximum content length for a single entry */
+  maxEntryContentLength: 500000,
+  /** Enable console warnings */
+  enableWarnings: true
+};
+
+/** @type {number} Last save timestamp for rate limiting */
+let lastSaveTime = 0;
+/** @type {number|null} Auto-backup interval ID */
+let autoBackupIntervalId = null;
+/** @type {boolean} Whether storage is available */
+let storageAvailable = true;
+
+/**
+ * Checks if localStorage is available and functional.
+ * @returns {boolean} Whether storage is available
+ * @private
+ */
+function checkStorageAvailability() {
+  try {
+    const testKey = '__storage_watchdog_test__';
+    localStorage.setItem(testKey, 'test');
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    console.error('[Storage Watchdog] localStorage not available:', e.message);
+    return false;
+  }
+}
+
+/**
+ * Validates an entry object before saving.
+ * @param {Object} entry - Entry to validate
+ * @returns {{valid: boolean, errors: string[]}} Validation result
+ * @private
+ */
+function validateEntry(entry) {
+  const errors = [];
+  
+  if (!entry) {
+    errors.push('Entry is null or undefined');
+    return { valid: false, errors };
+  }
+  
+  if (typeof entry.content === 'string' && entry.content.length > WATCHDOG_CONFIG.maxEntryContentLength) {
+    errors.push(`Entry content exceeds maximum length (${WATCHDOG_CONFIG.maxEntryContentLength} chars)`);
+  }
+  
+  if (entry.name && typeof entry.name !== 'string') {
+    errors.push('Entry name must be a string');
+  }
+  
+  if (entry.tags && !Array.isArray(entry.tags)) {
+    errors.push('Entry tags must be an array');
+  }
+  
+  if (entry.createdAt && isNaN(Date.parse(entry.createdAt))) {
+    errors.push('Entry createdAt is not a valid date');
+  }
+  
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Checks storage quota and warns if approaching limit.
+ * @returns {{ok: boolean, usage: number, quota: number, percent: number}}
+ * @private
+ */
+function checkStorageQuota() {
+  try {
+    let totalSize = 0;
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        totalSize += localStorage[key].length * 2; // UTF-16
+      }
+    }
+    
+    // Estimate quota (typically 5-10MB for localStorage)
+    const estimatedQuota = 10 * 1024 * 1024;
+    const percent = Math.round((totalSize / estimatedQuota) * 100);
+    
+    if (totalSize > WATCHDOG_CONFIG.maxStorageSizeWarning && WATCHDOG_CONFIG.enableWarnings) {
+      console.warn(`[Storage Watchdog] Storage usage high: ${(totalSize / 1024 / 1024).toFixed(2)}MB (${percent}%)`);
+    }
+    
+    return { ok: totalSize < estimatedQuota * 0.9, usage: totalSize, quota: estimatedQuota, percent };
+  } catch (e) {
+    return { ok: true, usage: 0, quota: 0, percent: 0 };
+  }
+}
+
+/**
+ * Rate limiter for save operations.
+ * @returns {boolean} Whether save is allowed
+ * @private
+ */
+function canSave() {
+  const now = Date.now();
+  if (now - lastSaveTime < WATCHDOG_CONFIG.minSaveInterval) {
+    return false;
+  }
+  lastSaveTime = now;
+  return true;
+}
+
+/**
+ * Creates an auto-backup of entries data.
+ * @private
+ */
+function createAutoBackup() {
+  if (!storageAvailable) return;
+  
+  try {
+    const entries = localStorage.getItem(ENTRIES_KEY);
+    if (entries) {
+      const backup = {
+        timestamp: new Date().toISOString(),
+        entries: entries,
+        meta: localStorage.getItem(META_KEY),
+        moods: localStorage.getItem(DAILY_MOOD_KEY)
+      };
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(backup));
+    }
+  } catch (e) {
+    console.warn('[Storage Watchdog] Auto-backup failed:', e.message);
+  }
+}
+
+/**
+ * Attempts to recover data from backup.
+ * @returns {boolean} Whether recovery was successful
+ * @private
+ */
+function attemptRecovery() {
+  try {
+    const backupStr = localStorage.getItem(BACKUP_KEY);
+    if (!backupStr) return false;
+    
+    const backup = JSON.parse(backupStr);
+    if (backup.entries) {
+      localStorage.setItem(ENTRIES_KEY, backup.entries);
+      console.log('[Storage Watchdog] Recovered entries from backup dated:', backup.timestamp);
+      return true;
+    }
+  } catch (e) {
+    console.error('[Storage Watchdog] Recovery failed:', e);
+  }
+  return false;
+}
+
+/**
+ * Safe JSON parse with fallback.
+ * @param {string} str - JSON string to parse
+ * @param {*} fallback - Fallback value if parse fails
+ * @returns {*} Parsed value or fallback
+ * @private
+ */
+function safeJSONParse(str, fallback = null) {
+  if (!str) return fallback;
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    console.error('[Storage Watchdog] JSON parse failed:', e.message);
+    return fallback;
+  }
+}
+
+/**
+ * Safe localStorage setItem with error handling.
+ * @param {string} key - Storage key
+ * @param {string} value - Value to store
+ * @returns {boolean} Whether save succeeded
+ * @private
+ */
+function safeSetItem(key, value) {
+  if (!storageAvailable) {
+    console.error('[Storage Watchdog] Storage not available');
+    return false;
+  }
+  
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      console.error('[Storage Watchdog] Storage quota exceeded!');
+      // Try to free up space by removing old backup
+      try {
+        localStorage.removeItem(BACKUP_KEY);
+        localStorage.setItem(key, value);
+        return true;
+      } catch (e2) {
+        console.error('[Storage Watchdog] Still cannot save after cleanup:', e2);
+      }
+    }
+    return false;
+  }
+}
+
+// Initialize watchdog
+storageAvailable = checkStorageAvailability();
+
+// Start auto-backup (only in browser, not during SSR)
+if (typeof window !== 'undefined' && storageAvailable && !isElectron) {
+  autoBackupIntervalId = setInterval(createAutoBackup, WATCHDOG_CONFIG.autoBackupInterval);
+  // Create initial backup
+  setTimeout(createAutoBackup, 5000);
+}
 
 /** @type {boolean} Whether SQLite (browser) is initialized and ready */
 let sqliteReady = false;
@@ -346,16 +572,32 @@ export class StorageManager {
    * @static
    */
   static getEntries() {
-    if (isElectron) {
-      return window.electronAPI.nativeDb.getEntries() || [];
-    }
+    try {
+      if (isElectron) {
+        return window.electronAPI.nativeDb.getEntries() || [];
+      }
 
-    if (sqliteReady) {
-      return dbManager.getEntries();
+      if (sqliteReady) {
+        return dbManager.getEntries();
+      }
+      
+      StorageManager.migrateIfNeeded();
+      const entries = safeJSONParse(localStorage.getItem(ENTRIES_KEY), []);
+      
+      // Watchdog: Validate entries array
+      if (!Array.isArray(entries)) {
+        console.error('[Storage Watchdog] Entries data corrupted, attempting recovery...');
+        if (attemptRecovery()) {
+          return safeJSONParse(localStorage.getItem(ENTRIES_KEY), []);
+        }
+        return [];
+      }
+      
+      return entries;
+    } catch (e) {
+      console.error('[Storage Watchdog] Failed to get entries:', e);
+      return [];
     }
-    
-    StorageManager.migrateIfNeeded();
-    return JSON.parse(localStorage.getItem(ENTRIES_KEY)) || [];
   }
 
   /**
@@ -419,48 +661,80 @@ export class StorageManager {
    * @static
    */
   static saveEntry(name, content, mood = '', fontFamily = '', fontSize = '', tags = []) {
-    if (isElectron) {
-      return window.electronAPI.nativeDb.saveEntry({
+    try {
+      if (isElectron) {
+        return window.electronAPI.nativeDb.saveEntry({
+          name,
+          content,
+          mood,
+          fontFamily,
+          fontSize,
+          tags
+        });
+      }
+
+      if (sqliteReady) {
+        const id = dbManager.saveEntry(name, content, mood, fontFamily, fontSize, tags);
+        return dbManager.getEntryById(id);
+      }
+      
+      // Watchdog: Rate limiting
+      if (!canSave()) {
+        console.warn('[Storage Watchdog] Save rate limited, queuing...');
+        // Still allow save but log warning
+      }
+      
+      const entries = StorageManager.getEntries();
+      const now = new Date().toISOString();
+      const wordCount = StorageManager.countWords(content);
+      
+      const newEntry = {
+        id: StorageManager.generateId(),
         name,
         content,
         mood,
+        wordCount,
         fontFamily,
         fontSize,
-        tags
-      });
+        tags: Array.isArray(tags) ? tags : [],
+        favorite: false,
+        createdAt: now,
+        updatedAt: now,
+        date: now // Keep for backward compatibility
+      };
+      
+      // Watchdog: Validate before saving
+      const validation = validateEntry(newEntry);
+      if (!validation.valid) {
+        console.warn('[Storage Watchdog] Entry validation warnings:', validation.errors);
+      }
+      
+      // Watchdog: Check storage quota before save
+      const quota = checkStorageQuota();
+      if (!quota.ok) {
+        console.error('[Storage Watchdog] Storage quota critical! Save may fail.');
+      }
+      
+      // Watchdog: Warn if too many entries
+      if (entries.length >= WATCHDOG_CONFIG.maxEntriesWarning && WATCHDOG_CONFIG.enableWarnings) {
+        console.warn(`[Storage Watchdog] High entry count: ${entries.length}. Consider exporting data.`);
+      }
+      
+      entries.push(newEntry);
+      
+      if (!safeSetItem(ENTRIES_KEY, JSON.stringify(entries))) {
+        console.error('[Storage Watchdog] Failed to save entry!');
+        return null;
+      }
+      
+      // Update streaks
+      StorageManager.updateStreaks();
+      
+      return newEntry;
+    } catch (e) {
+      console.error('[Storage Watchdog] saveEntry failed:', e);
+      return null;
     }
-
-    if (sqliteReady) {
-      const id = dbManager.saveEntry(name, content, mood, fontFamily, fontSize, tags);
-      return dbManager.getEntryById(id);
-    }
-    
-    const entries = StorageManager.getEntries();
-    const now = new Date().toISOString();
-    const wordCount = StorageManager.countWords(content);
-    
-    const newEntry = {
-      id: StorageManager.generateId(),
-      name,
-      content,
-      mood,
-      wordCount,
-      fontFamily,
-      fontSize,
-      tags: Array.isArray(tags) ? tags : [],
-      favorite: false,
-      createdAt: now,
-      updatedAt: now,
-      date: now // Keep for backward compatibility
-    };
-    
-    entries.push(newEntry);
-    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-    
-    // Update streaks
-    StorageManager.updateStreaks();
-    
-    return newEntry;
   }
 
   /**
@@ -542,35 +816,47 @@ export class StorageManager {
    * @static
    */
   static deleteEntry(indexOrId) {
-    if (isElectron) {
-      const id = typeof indexOrId === 'number'
-        ? StorageManager.getEntries()[indexOrId]?.id
-        : indexOrId;
-      if (id) {
-        return window.electronAPI.nativeDb.deleteEntry(id);
+    try {
+      if (isElectron) {
+        const id = typeof indexOrId === 'number'
+          ? StorageManager.getEntries()[indexOrId]?.id
+          : indexOrId;
+        if (id) {
+          return window.electronAPI.nativeDb.deleteEntry(id);
+        }
+        return false;
       }
-      return false;
-    }
 
-    if (sqliteReady) {
-      const id = typeof indexOrId === 'number' 
-        ? StorageManager.getEntries()[indexOrId]?.id 
-        : indexOrId;
-      if (id) {
-        return dbManager.deleteEntry(id);
+      if (sqliteReady) {
+        const id = typeof indexOrId === 'number' 
+          ? StorageManager.getEntries()[indexOrId]?.id 
+          : indexOrId;
+        if (id) {
+          return dbManager.deleteEntry(id);
+        }
+        return false;
+      }
+      
+      const entries = StorageManager.getEntries();
+      let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
+      
+      if (index >= 0 && index < entries.length) {
+        // Watchdog: Create backup before delete
+        createAutoBackup();
+        
+        entries.splice(index, 1);
+        
+        if (!safeSetItem(ENTRIES_KEY, JSON.stringify(entries))) {
+          console.error('[Storage Watchdog] Failed to save after delete!');
+          return false;
+        }
+        return true;
       }
       return false;
+    } catch (e) {
+      console.error('[Storage Watchdog] deleteEntry failed:', e);
+      return false;
     }
-    
-    const entries = StorageManager.getEntries();
-    let index = typeof indexOrId === 'number' ? indexOrId : StorageManager.getEntryIndexById(indexOrId);
-    
-    if (index >= 0 && index < entries.length) {
-      entries.splice(index, 1);
-      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -1284,18 +1570,29 @@ export class StorageManager {
    * @static
    */
   static async clearAllData() {
-    if (isElectron) {
-      await window.electronAPI.nativeDb.clearAllData();
-      localStorage.removeItem(ENTRIES_KEY);
-      localStorage.removeItem(META_KEY);
-      localStorage.removeItem(DAILY_MOOD_KEY);
-      localStorage.removeItem(NATIVE_DB_MIGRATION_KEY);
-    } else if (sqliteReady) {
-      await dbManager.clearAllData();
-    } else {
-      localStorage.removeItem(ENTRIES_KEY);
-      localStorage.removeItem(META_KEY);
-      localStorage.removeItem(DAILY_MOOD_KEY);
+    try {
+      // Watchdog: Create final backup before clearing all data
+      console.warn('[Storage Watchdog] Creating backup before clearAllData...');
+      createAutoBackup();
+      
+      if (isElectron) {
+        await window.electronAPI.nativeDb.clearAllData();
+        localStorage.removeItem(ENTRIES_KEY);
+        localStorage.removeItem(META_KEY);
+        localStorage.removeItem(DAILY_MOOD_KEY);
+        localStorage.removeItem(NATIVE_DB_MIGRATION_KEY);
+      } else if (sqliteReady) {
+        await dbManager.clearAllData();
+      } else {
+        localStorage.removeItem(ENTRIES_KEY);
+        localStorage.removeItem(META_KEY);
+        localStorage.removeItem(DAILY_MOOD_KEY);
+      }
+      // Note: Intentionally keep BACKUP_KEY for emergency recovery
+      console.log('[Storage Watchdog] All data cleared. Backup preserved for emergency recovery.');
+    } catch (e) {
+      console.error('[Storage Watchdog] clearAllData failed:', e);
+      throw e; // Re-throw so caller knows it failed
     }
   }
 

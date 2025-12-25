@@ -42,6 +42,74 @@ import { typeText } from '../utils/typingEffect.js';
 import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 import { RichEditorManager } from './richEditorManager.js';
 
+// ==================== EDITOR WATCHDOG SYSTEM ====================
+
+/**
+ * Editor watchdog configuration for data loss prevention
+ * @private
+ */
+const EDITOR_WATCHDOG_CONFIG = {
+  /** localStorage key for draft backup */
+  draftBackupKey: 'simnote_draft_backup',
+  /** Draft backup interval in ms (10 seconds) */
+  draftBackupInterval: 10000,
+  /** Maximum autosave retries on failure */
+  maxAutosaveRetries: 3,
+  /** Delay between autosave retries in ms */
+  autosaveRetryDelay: 500,
+  /** Enable beforeunload warning for unsaved changes */
+  warnOnUnsavedChanges: true
+};
+
+/**
+ * Saves draft content to localStorage as emergency backup.
+ * @param {string} panelId - The panel ID
+ * @param {Object} draft - Draft content object
+ * @private
+ */
+function saveDraftBackup(panelId, draft) {
+  try {
+    const backups = JSON.parse(localStorage.getItem(EDITOR_WATCHDOG_CONFIG.draftBackupKey) || '{}');
+    backups[panelId] = {
+      ...draft,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem(EDITOR_WATCHDOG_CONFIG.draftBackupKey, JSON.stringify(backups));
+  } catch (e) {
+    console.warn('[Editor Watchdog] Failed to save draft backup:', e.message);
+  }
+}
+
+/**
+ * Retrieves draft backup from localStorage.
+ * @param {string} panelId - The panel ID
+ * @returns {Object|null} Draft backup or null
+ * @private
+ */
+function getDraftBackup(panelId) {
+  try {
+    const backups = JSON.parse(localStorage.getItem(EDITOR_WATCHDOG_CONFIG.draftBackupKey) || '{}');
+    return backups[panelId] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Clears draft backup for a panel.
+ * @param {string} panelId - The panel ID
+ * @private
+ */
+function clearDraftBackup(panelId) {
+  try {
+    const backups = JSON.parse(localStorage.getItem(EDITOR_WATCHDOG_CONFIG.draftBackupKey) || '{}');
+    delete backups[panelId];
+    localStorage.setItem(EDITOR_WATCHDOG_CONFIG.draftBackupKey, JSON.stringify(backups));
+  } catch (e) {
+    // Ignore
+  }
+}
+
 /**
  * Central manager for journal entry operations and UI coordination.
  * Handles entry CRUD, filtering, sorting, autosave, and panel navigation.
@@ -109,7 +177,89 @@ export class EditorManager {
     /** @type {Map<string, RichEditorManager>} Panel ID to editor instance */
     this.richEditors = new Map();
 
+    // Watchdog state
+    /** @type {boolean} Whether there are unsaved changes */
+    this.hasUnsavedChanges = false;
+    /** @type {number} Autosave retry counter */
+    this.autosaveRetryCount = 0;
+    /** @type {number|null} Draft backup interval ID */
+    this.draftBackupInterval = null;
+
     this.initializeUI();
+    this._setupWatchdog();
+  }
+
+  /**
+   * Watchdog: Sets up data loss prevention mechanisms.
+   * @private
+   */
+  _setupWatchdog() {
+    // Setup beforeunload warning
+    if (EDITOR_WATCHDOG_CONFIG.warnOnUnsavedChanges) {
+      window.addEventListener('beforeunload', (e) => {
+        if (this.hasUnsavedChanges) {
+          e.preventDefault();
+          e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+          return e.returnValue;
+        }
+      });
+    }
+
+    // Setup periodic draft backup
+    this.draftBackupInterval = setInterval(() => {
+      this._backupCurrentDrafts();
+    }, EDITOR_WATCHDOG_CONFIG.draftBackupInterval);
+
+    // Check for recovered drafts on startup
+    setTimeout(() => this._checkForRecoveredDrafts(), 1000);
+  }
+
+  /**
+   * Watchdog: Backs up current draft content to localStorage.
+   * @private
+   */
+  _backupCurrentDrafts() {
+    [this.newEntryPanel, this.editEntryPanel].forEach(panel => {
+      if (!panel || panel.style.display === 'none') return;
+      
+      const nameInput = panel.querySelector('input.entry-name');
+      const name = nameInput ? nameInput.value.trim() : '';
+      const richEditor = this.richEditors.get(panel.id);
+      const content = richEditor ? richEditor.getContent() : '';
+      const plainText = richEditor ? richEditor.getPlainText().trim() : '';
+      
+      // Only backup if there's actual content
+      if (name || plainText) {
+        saveDraftBackup(panel.id, {
+          name,
+          content,
+          mood: panel.dataset.mood || '',
+          tags: this.currentTags,
+          entryId: panel.id === 'edit-entry-panel' ? this.currentEntryId : this.newEntryDraftId
+        });
+      }
+    });
+  }
+
+  /**
+   * Watchdog: Checks for and offers to recover unsaved drafts.
+   * @private
+   */
+  _checkForRecoveredDrafts() {
+    const newDraft = getDraftBackup('new-entry-panel');
+    const editDraft = getDraftBackup('edit-entry-panel');
+    
+    if (newDraft && newDraft.content && !newDraft.entryId) {
+      // There's an unsaved new entry draft
+      const age = Date.now() - new Date(newDraft.timestamp).getTime();
+      const ageMinutes = Math.round(age / 60000);
+      
+      // Only offer recovery for drafts less than 24 hours old
+      if (age < 24 * 60 * 60 * 1000) {
+        console.log(`[Editor Watchdog] Found unsaved draft from ${ageMinutes} minutes ago`);
+        // Could show a notification here offering to recover
+      }
+    }
   }
 
   /**
@@ -977,21 +1127,84 @@ export class EditorManager {
     const fontFamily = fontStyle ? fontStyle.fontFamily : '';
     const fontSize = fontStyle ? fontStyle.fontSize : '';
 
-    if (panelId === 'edit-entry-panel') {
-      const entryId = this.currentEntryId ?? this.currentEntryIndex;
-      if (entryId !== null && entryId !== undefined) {
-        StorageManager.updateEntry(entryId, name || 'Untitled', content, mood, fontFamily, fontSize, tags);
-      }
-    } else {
-      if (!this.newEntryDraftId) {
-        const saved = StorageManager.saveEntry(name || 'Untitled', content, mood, fontFamily, fontSize, tags);
-        this.newEntryDraftId = saved?.id || null;
+    // Watchdog: Mark as having unsaved changes
+    this.hasUnsavedChanges = true;
+
+    try {
+      if (panelId === 'edit-entry-panel') {
+        const entryId = this.currentEntryId ?? this.currentEntryIndex;
+        if (entryId !== null && entryId !== undefined) {
+          const result = StorageManager.updateEntry(entryId, name || 'Untitled', content, mood, fontFamily, fontSize, tags);
+          
+          // Watchdog: Check if save succeeded
+          if (result === null) {
+            this._handleAutosaveFailure(panel, { name, content, mood, fontFamily, fontSize, tags });
+            return;
+          }
+        }
       } else {
-        StorageManager.updateEntry(this.newEntryDraftId, name || 'Untitled', content, mood, fontFamily, fontSize, tags);
+        if (!this.newEntryDraftId) {
+          const saved = StorageManager.saveEntry(name || 'Untitled', content, mood, fontFamily, fontSize, tags);
+          
+          // Watchdog: Check if save succeeded
+          if (!saved) {
+            this._handleAutosaveFailure(panel, { name, content, mood, fontFamily, fontSize, tags });
+            return;
+          }
+          this.newEntryDraftId = saved.id || null;
+        } else {
+          const result = StorageManager.updateEntry(this.newEntryDraftId, name || 'Untitled', content, mood, fontFamily, fontSize, tags);
+          
+          if (result === null) {
+            this._handleAutosaveFailure(panel, { name, content, mood, fontFamily, fontSize, tags });
+            return;
+          }
+        }
       }
+
+      // Watchdog: Save succeeded, reset retry counter and clear unsaved flag
+      this.autosaveRetryCount = 0;
+      this.hasUnsavedChanges = false;
+      clearDraftBackup(panelId);
+      
+    } catch (e) {
+      console.error('[Editor Watchdog] Autosave exception:', e);
+      this._handleAutosaveFailure(panel, { name, content, mood, fontFamily, fontSize, tags });
+      return;
     }
 
     this.lastAutosaveState.set(panelId, snapshot);
+  }
+
+  /**
+   * Watchdog: Handles autosave failures with retry logic.
+   * @private
+   * @param {HTMLElement} panel - The panel that failed to save
+   * @param {Object} data - The data that failed to save
+   */
+  _handleAutosaveFailure(panel, data) {
+    this.autosaveRetryCount++;
+    
+    // Save to backup storage immediately
+    saveDraftBackup(panel.id, {
+      ...data,
+      tags: this.currentTags,
+      entryId: panel.id === 'edit-entry-panel' ? this.currentEntryId : this.newEntryDraftId
+    });
+    
+    if (this.autosaveRetryCount < EDITOR_WATCHDOG_CONFIG.maxAutosaveRetries) {
+      console.warn(`[Editor Watchdog] Autosave failed, retrying (${this.autosaveRetryCount}/${EDITOR_WATCHDOG_CONFIG.maxAutosaveRetries})...`);
+      
+      // Schedule retry
+      setTimeout(() => {
+        this.performLiveAutosave(panel);
+      }, EDITOR_WATCHDOG_CONFIG.autosaveRetryDelay);
+    } else {
+      console.error('[Editor Watchdog] Autosave failed after max retries. Draft backed up to localStorage.');
+      // Could show a user notification here
+      this.showPopup('⚠️ Autosave failed. Your work is backed up.');
+      this.autosaveRetryCount = 0;
+    }
   }
 
   /**
@@ -1007,6 +1220,12 @@ export class EditorManager {
     if (timer) clearTimeout(timer);
     this.liveAutosaveTimers.delete(panelId);
     this.lastAutosaveState.delete(panelId);
+    
+    // Watchdog: Clear draft backup and unsaved flag
+    clearDraftBackup(panelId);
+    this.hasUnsavedChanges = false;
+    this.autosaveRetryCount = 0;
+    
     if (panelId === 'new-entry-panel') {
       this.newEntryDraftId = null;
     }

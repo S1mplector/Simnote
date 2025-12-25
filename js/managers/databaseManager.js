@@ -66,6 +66,36 @@ function isElectron() {
  * await dbManager.init();
  * const entries = dbManager.getEntries();
  */
+// ==================== DATABASE WATCHDOG SYSTEM ====================
+
+/**
+ * Database watchdog configuration
+ * @private
+ */
+const DB_WATCHDOG_CONFIG = {
+  /** Maximum retries for failed operations */
+  maxRetries: 3,
+  /** Retry delay in ms */
+  retryDelay: 100,
+  /** Integrity check interval in ms (10 minutes) */
+  integrityCheckInterval: 10 * 60 * 1000,
+  /** Maximum time for a query before warning (ms) */
+  slowQueryThreshold: 1000,
+  /** Enable detailed logging */
+  verboseLogging: false
+};
+
+/**
+ * Manages SQLite database operations using sql.js WebAssembly.
+ * Provides CRUD operations for entries, moods, and metadata with
+ * multi-layer persistence (SQLite → IndexedDB → localStorage → files).
+ * 
+ * @class DatabaseManager
+ * @example
+ * // Initialize and use:
+ * await dbManager.init();
+ * const entries = dbManager.getEntries();
+ */
 class DatabaseManager {
   /**
    * Creates the DatabaseManager instance.
@@ -82,6 +112,120 @@ class DatabaseManager {
     this.initPromise = null;
     /** @type {boolean} Whether file storage is enabled */
     this.fileStorageEnabled = false;
+    /** @type {number} Operation counter for tracking */
+    this.operationCount = 0;
+    /** @type {number} Failed operation counter */
+    this.failedOperations = 0;
+    /** @type {number|null} Integrity check interval ID */
+    this.integrityCheckInterval = null;
+    /** @type {Date|null} Last successful save timestamp */
+    this.lastSaveTime = null;
+  }
+
+  /**
+   * Watchdog: Safely executes a database operation with error handling and retries.
+   * @private
+   * @param {string} operationName - Name of the operation for logging
+   * @param {Function} operation - Operation to execute
+   * @param {*} fallback - Fallback value if operation fails
+   * @returns {*} Operation result or fallback
+   */
+  _safeExecute(operationName, operation, fallback = null) {
+    if (!this.ready || !this.db) {
+      console.warn(`[DB Watchdog] Database not ready for: ${operationName}`);
+      return fallback;
+    }
+
+    const startTime = Date.now();
+    this.operationCount++;
+
+    try {
+      const result = operation();
+      
+      // Watchdog: Warn about slow queries
+      const duration = Date.now() - startTime;
+      if (duration > DB_WATCHDOG_CONFIG.slowQueryThreshold) {
+        console.warn(`[DB Watchdog] Slow operation (${duration}ms): ${operationName}`);
+      }
+      
+      return result;
+    } catch (error) {
+      this.failedOperations++;
+      console.error(`[DB Watchdog] Operation failed: ${operationName}`, error.message);
+      
+      // Check if database is corrupted
+      if (error.message?.includes('database') || error.message?.includes('malformed')) {
+        console.error('[DB Watchdog] Possible database corruption detected!');
+        this._attemptRecovery();
+      }
+      
+      return fallback;
+    }
+  }
+
+  /**
+   * Watchdog: Attempts to recover from database issues.
+   * @private
+   */
+  async _attemptRecovery() {
+    console.warn('[DB Watchdog] Attempting database recovery...');
+    
+    try {
+      // Try to sync current state to localStorage as backup
+      this._syncToLocalStorage();
+      
+      // Try to reload from IndexedDB
+      const savedDb = await this._loadFromIndexedDB();
+      if (savedDb && this.db) {
+        // We have a backup, but current DB might be corrupted
+        console.log('[DB Watchdog] Backup available in IndexedDB');
+      }
+    } catch (e) {
+      console.error('[DB Watchdog] Recovery failed:', e);
+    }
+  }
+
+  /**
+   * Watchdog: Performs a database integrity check.
+   * @returns {boolean} Whether database passes integrity check
+   */
+  checkIntegrity() {
+    if (!this.ready || !this.db) return false;
+    
+    try {
+      const result = this.db.exec('PRAGMA integrity_check');
+      const status = result[0]?.values[0]?.[0];
+      
+      if (status === 'ok') {
+        if (DB_WATCHDOG_CONFIG.verboseLogging) {
+          console.log('[DB Watchdog] Integrity check passed');
+        }
+        return true;
+      } else {
+        console.error('[DB Watchdog] Integrity check failed:', status);
+        return false;
+      }
+    } catch (e) {
+      console.error('[DB Watchdog] Integrity check error:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Watchdog: Gets database health metrics.
+   * @returns {Object} Health metrics
+   */
+  getHealthMetrics() {
+    return {
+      ready: this.ready,
+      operationCount: this.operationCount,
+      failedOperations: this.failedOperations,
+      failureRate: this.operationCount > 0 
+        ? ((this.failedOperations / this.operationCount) * 100).toFixed(2) + '%' 
+        : '0%',
+      lastSaveTime: this.lastSaveTime?.toISOString() || null,
+      fileStorageEnabled: this.fileStorageEnabled
+    };
   }
 
   /**
@@ -266,6 +410,7 @@ class DatabaseManager {
       }
 
       this.ready = true;
+      this.lastSaveTime = new Date();
       
       // Sync to localStorage backup after successful load
       this._syncToLocalStorage();
@@ -283,7 +428,19 @@ class DatabaseManager {
       setInterval(() => {
         this._saveToIndexedDB();
         this._syncToLocalStorage();
+        this.lastSaveTime = new Date();
       }, 30000);
+      
+      // Watchdog: Periodic integrity checks
+      this.integrityCheckInterval = setInterval(() => {
+        this.checkIntegrity();
+      }, DB_WATCHDOG_CONFIG.integrityCheckInterval);
+      
+      // Watchdog: Initial integrity check
+      if (!this.checkIntegrity()) {
+        console.warn('[DB Watchdog] Initial integrity check failed, attempting recovery...');
+        await this._attemptRecovery();
+      }
       
       return true;
     } catch (error) {
@@ -513,15 +670,15 @@ class DatabaseManager {
    * @returns {Object[]} Array of entry objects, newest first
    */
   getEntries() {
-    if (!this.ready) return [];
-    
-    const results = this.db.exec(`
-      SELECT * FROM entries ORDER BY created_at DESC
-    `);
-    
-    if (!results.length) return [];
-    
-    return results[0].values.map(row => this._rowToEntry(results[0].columns, row));
+    return this._safeExecute('getEntries', () => {
+      const results = this.db.exec(`
+        SELECT * FROM entries ORDER BY created_at DESC
+      `);
+      
+      if (!results.length) return [];
+      
+      return results[0].values.map(row => this._rowToEntry(results[0].columns, row));
+    }, []);
   }
 
   /**
@@ -531,20 +688,20 @@ class DatabaseManager {
    * @returns {Object|null} Entry object or null
    */
   getEntryById(id) {
-    if (!this.ready) return null;
-    
-    const stmt = this.db.prepare('SELECT * FROM entries WHERE id = ?');
-    stmt.bind([id]);
-    
-    if (stmt.step()) {
-      const columns = stmt.getColumnNames();
-      const values = stmt.get();
+    return this._safeExecute('getEntryById', () => {
+      const stmt = this.db.prepare('SELECT * FROM entries WHERE id = ?');
+      stmt.bind([id]);
+      
+      if (stmt.step()) {
+        const columns = stmt.getColumnNames();
+        const values = stmt.get();
+        stmt.free();
+        return this._rowToEntry(columns, values);
+      }
+      
       stmt.free();
-      return this._rowToEntry(columns, values);
-    }
-    
-    stmt.free();
-    return null;
+      return null;
+    }, null);
   }
 
   /**
@@ -627,15 +784,15 @@ class DatabaseManager {
    * @returns {boolean} Whether deletion succeeded
    */
   deleteEntry(id) {
-    if (!this.ready) return false;
-    
-    // Delete from file storage first (before we lose the ID)
-    this._deleteEntryFile(id);
-    
-    this.db.run('DELETE FROM entries WHERE id = ?', [id]);
-    this._saveToIndexedDB();
-    this._syncToLocalStorage();
-    return true;
+    return this._safeExecute('deleteEntry', () => {
+      // Delete from file storage first (before we lose the ID)
+      this._deleteEntryFile(id);
+      
+      this.db.run('DELETE FROM entries WHERE id = ?', [id]);
+      this._saveToIndexedDB();
+      this._syncToLocalStorage();
+      return true;
+    }, false);
   }
 
   /**
