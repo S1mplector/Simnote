@@ -17,6 +17,23 @@
 
 export class StressTriggerEngine {
   /**
+   * Minimum thresholds for reliable analysis
+   * @private
+   */
+  static #MIN_THRESHOLDS = {
+    /** Minimum entries required for any trigger analysis */
+    minEntries: 3,
+    /** Minimum entries with actual content for text analysis */
+    minContentEntries: 2,
+    /** Minimum keyword occurrences to consider a trigger valid */
+    minKeywordOccurrences: 2,
+    /** Minimum confidence score (0-1) to report a trigger */
+    minConfidence: 0.3,
+    /** Minimum entries in a category to report it */
+    minCategoryEntries: 2
+  };
+
+  /**
    * Stress trigger category definitions with keywords and weight
    * @private
    */
@@ -169,6 +186,8 @@ export class StressTriggerEngine {
     this.entries = [];
     /** @type {Object|null} Cached analysis results */
     this.cachedAnalysis = null;
+    /** @type {Object} Data quality metrics */
+    this.dataQuality = null;
   }
 
   /**
@@ -180,6 +199,52 @@ export class StressTriggerEngine {
     this.moodData = moodData.filter(d => d && d.mood);
     this.entries = entries.filter(e => e && (e.content || e.mood));
     this.cachedAnalysis = null;
+    this.dataQuality = this.#assessDataQuality();
+  }
+
+  /**
+   * Assess the quality and quantity of available data
+   * @private
+   * @returns {Object} Data quality metrics
+   */
+  #assessDataQuality() {
+    const entriesWithContent = this.entries.filter(e => e.content && e.content.trim().length > 10);
+    const entriesWithMood = this.entries.filter(e => e.mood);
+    const stressMoodEntries = this.moodData.filter(d => this.#isStressMood(d.mood));
+    
+    const totalDataPoints = this.entries.length + this.moodData.length;
+    const contentRichness = entriesWithContent.length > 0 
+      ? entriesWithContent.reduce((sum, e) => sum + (e.content?.length || 0), 0) / entriesWithContent.length 
+      : 0;
+    
+    return {
+      totalEntries: this.entries.length,
+      totalMoodRecords: this.moodData.length,
+      entriesWithContent: entriesWithContent.length,
+      entriesWithMood: entriesWithMood.length,
+      stressMoodCount: stressMoodEntries.length,
+      avgContentLength: Math.round(contentRichness),
+      hasSufficientData: totalDataPoints >= StressTriggerEngine.#MIN_THRESHOLDS.minEntries,
+      hasSufficientContent: entriesWithContent.length >= StressTriggerEngine.#MIN_THRESHOLDS.minContentEntries,
+      confidence: this.#calculateDataConfidence(totalDataPoints, entriesWithContent.length, stressMoodEntries.length)
+    };
+  }
+
+  /**
+   * Calculate confidence score based on data availability
+   * @private
+   */
+  #calculateDataConfidence(totalPoints, contentEntries, stressMoods) {
+    // Base confidence from data quantity (0-0.5)
+    const quantityScore = Math.min(0.5, totalPoints / 20);
+    
+    // Content quality score (0-0.3)
+    const contentScore = Math.min(0.3, contentEntries / 10);
+    
+    // Stress context score (0-0.2) - having some stress moods means analysis is more relevant
+    const contextScore = stressMoods > 0 ? Math.min(0.2, stressMoods / 5) : 0;
+    
+    return Math.round((quantityScore + contentScore + contextScore) * 100) / 100;
   }
 
   /**
@@ -189,16 +254,31 @@ export class StressTriggerEngine {
   analyze() {
     if (this.cachedAnalysis) return this.cachedAnalysis;
 
+    // Watchdog: Check if we have sufficient data for meaningful analysis
+    if (!this.dataQuality) {
+      this.dataQuality = this.#assessDataQuality();
+    }
+
+    // If insufficient data, return safe empty result
+    if (!this.dataQuality.hasSufficientData) {
+      this.cachedAnalysis = this.#createInsufficientDataResult();
+      return this.cachedAnalysis;
+    }
+
     const triggers = this.#extractTriggers();
-    const temporal = this.#analyzeTemporalPatterns(triggers);
-    const categories = this.#categorizeTriggers(triggers);
-    const severity = this.#assessSeverity(triggers);
-    const trends = this.#analyzeTrends(triggers);
+    
+    // Watchdog: Validate triggers have sufficient evidence
+    const validatedTriggers = this.#validateTriggers(triggers);
+    
+    const temporal = this.#analyzeTemporalPatterns(validatedTriggers);
+    const categories = this.#categorizeTriggers(validatedTriggers);
+    const severity = this.#assessSeverity(validatedTriggers);
+    const trends = this.#analyzeTrends(validatedTriggers);
     const recommendations = this.#generateRecommendations(categories, severity, temporal);
-    const summary = this.#generateSummary(triggers, categories, severity);
+    const summary = this.#generateSummary(validatedTriggers, categories, severity);
 
     this.cachedAnalysis = {
-      triggers,
+      triggers: validatedTriggers,
       categories,
       temporal,
       severity,
@@ -208,11 +288,139 @@ export class StressTriggerEngine {
       metadata: {
         analyzedEntries: this.entries.length,
         analyzedMoods: this.moodData.length,
-        analysisDate: new Date().toISOString()
+        analysisDate: new Date().toISOString(),
+        dataQuality: this.dataQuality
       }
     };
 
     return this.cachedAnalysis;
+  }
+
+  /**
+   * Create a safe result when data is insufficient
+   * @private
+   */
+  #createInsufficientDataResult() {
+    return {
+      triggers: [],
+      categories: {
+        all: {},
+        ranked: [],
+        primary: null,
+        secondary: null
+      },
+      temporal: {
+        byDayOfWeek: {},
+        byTimeOfDay: {},
+        byMonth: {},
+        worstDay: null,
+        worstTime: null,
+        patterns: []
+      },
+      severity: {
+        level: 'insufficient_data',
+        score: 0,
+        description: 'Not enough data to analyze stress triggers. Keep journaling!',
+        highCount: 0,
+        moderateCount: 0,
+        lowCount: 0
+      },
+      trends: {
+        direction: 'insufficient_data',
+        description: 'Need more entries to identify trends'
+      },
+      recommendations: [{
+        type: 'data_collection',
+        title: 'Keep Journaling',
+        description: 'Write a few more entries to help identify your stress patterns.',
+        priority: 'medium'
+      }],
+      summary: {
+        headline: 'Building Your Profile',
+        description: 'Add more journal entries to discover your stress triggers and patterns.',
+        topTriggers: [],
+        actionableInsight: 'Journal consistently to unlock personalized insights.'
+      },
+      metadata: {
+        analyzedEntries: this.entries.length,
+        analyzedMoods: this.moodData.length,
+        analysisDate: new Date().toISOString(),
+        dataQuality: this.dataQuality,
+        insufficientData: true
+      }
+    };
+  }
+
+  /**
+   * Validate triggers to filter out false positives
+   * @private
+   * @param {Array} triggers - Raw extracted triggers
+   * @returns {Array} Validated triggers with confidence scores
+   */
+  #validateTriggers(triggers) {
+    // Group triggers by category to assess pattern strength
+    const categoryGroups = {};
+    triggers.forEach(t => {
+      const cat = t.category || 'general';
+      if (!categoryGroups[cat]) categoryGroups[cat] = [];
+      categoryGroups[cat].push(t);
+    });
+
+    // Calculate keyword frequency across all triggers
+    const keywordFrequency = {};
+    triggers.forEach(t => {
+      (t.keywords || []).forEach(kw => {
+        keywordFrequency[kw] = (keywordFrequency[kw] || 0) + 1;
+      });
+    });
+
+    return triggers.map(trigger => {
+      // Calculate confidence score for this trigger
+      const confidence = this.#calculateTriggerConfidence(trigger, categoryGroups, keywordFrequency);
+      
+      return {
+        ...trigger,
+        confidence,
+        validated: confidence >= StressTriggerEngine.#MIN_THRESHOLDS.minConfidence
+      };
+    }).filter(t => t.validated);
+  }
+
+  /**
+   * Calculate confidence score for a single trigger
+   * @private
+   */
+  #calculateTriggerConfidence(trigger, categoryGroups, keywordFrequency) {
+    let confidence = 0;
+    
+    // Factor 1: Is this in a stress context? (0.3)
+    if (trigger.isStressContext) {
+      confidence += 0.3;
+    }
+    
+    // Factor 2: Keyword frequency - repeated mentions are more reliable (0.25)
+    const maxKeywordFreq = Math.max(...(trigger.keywords || []).map(kw => keywordFrequency[kw] || 0), 0);
+    if (maxKeywordFreq >= 3) confidence += 0.25;
+    else if (maxKeywordFreq >= 2) confidence += 0.15;
+    else if (maxKeywordFreq >= 1) confidence += 0.05;
+    
+    // Factor 3: Category pattern strength - multiple entries in same category (0.25)
+    const categoryCount = categoryGroups[trigger.category]?.length || 0;
+    if (categoryCount >= 3) confidence += 0.25;
+    else if (categoryCount >= 2) confidence += 0.15;
+    else confidence += 0.05;
+    
+    // Factor 4: Phrase matches are stronger than single keywords (0.1)
+    if (trigger.phrases && trigger.phrases.length > 0) {
+      confidence += 0.1;
+    }
+    
+    // Factor 5: Intensity - high intensity with context is more reliable (0.1)
+    if (trigger.intensity === 'high' && trigger.isStressContext) {
+      confidence += 0.1;
+    }
+    
+    return Math.min(1, confidence);
   }
 
   /**

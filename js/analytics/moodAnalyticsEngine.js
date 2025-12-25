@@ -192,6 +192,23 @@ const TIME_PERIODS = {
  */
 export class MoodAnalyticsEngine {
   /**
+   * Minimum thresholds for reliable mood booster analysis
+   * @private
+   */
+  static #BOOSTER_THRESHOLDS = {
+    /** Minimum entries with attributes to analyze boosters */
+    minEntriesWithAttributes: 3,
+    /** Minimum occurrences of an attribute to consider it a valid booster */
+    minAttributeOccurrences: 2,
+    /** Minimum confidence score (0-1) to report a booster */
+    minConfidence: 0.25,
+    /** Minimum absolute mood score impact to consider significant */
+    minImpactScore: 0.1,
+    /** Minimum content entries for content-based analysis */
+    minContentEntries: 3
+  };
+
+  /**
    * Creates MoodAnalyticsEngine instance.
    * @constructor
    */
@@ -210,6 +227,8 @@ export class MoodAnalyticsEngine {
     this.wordFrequencyCache = null;
     /** @type {Map} Correlation cache */
     this.correlationCache = new Map();
+    /** @type {Object} Data quality metrics for boosters */
+    this.boosterDataQuality = null;
   }
 
   /**
@@ -224,6 +243,58 @@ export class MoodAnalyticsEngine {
     this.cachedAnalytics = null;
     this.wordFrequencyCache = null;
     this.correlationCache.clear();
+    this.boosterDataQuality = this.#assessBoosterDataQuality();
+  }
+
+  /**
+   * Assess the quality and quantity of data for mood booster analysis
+   * @private
+   * @returns {Object} Data quality metrics
+   */
+  #assessBoosterDataQuality() {
+    const entriesWithAttributes = this.entries.filter(e => e.moodAttributes?.length > 0);
+    const entriesWithMoodAndAttributes = entriesWithAttributes.filter(e => e.mood);
+    const entriesWithContent = this.entries.filter(e => e.content && e.content.trim().length > 10);
+    
+    // Count unique attributes
+    const uniqueAttributes = new Set();
+    entriesWithAttributes.forEach(e => {
+      (e.moodAttributes || []).forEach(attr => {
+        uniqueAttributes.add(attr.id || attr);
+      });
+    });
+
+    const totalDataPoints = this.entries.length + this.moodData.length;
+    
+    return {
+      totalEntries: this.entries.length,
+      totalMoodRecords: this.moodData.length,
+      entriesWithAttributes: entriesWithAttributes.length,
+      entriesWithMoodAndAttributes: entriesWithMoodAndAttributes.length,
+      entriesWithContent: entriesWithContent.length,
+      uniqueAttributeCount: uniqueAttributes.size,
+      hasSufficientData: totalDataPoints >= MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minEntriesWithAttributes,
+      hasSufficientAttributeData: entriesWithMoodAndAttributes.length >= MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minEntriesWithAttributes,
+      hasSufficientContent: entriesWithContent.length >= MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minContentEntries,
+      confidence: this.#calculateBoosterConfidence(entriesWithMoodAndAttributes.length, uniqueAttributes.size, entriesWithContent.length)
+    };
+  }
+
+  /**
+   * Calculate confidence score for booster analysis
+   * @private
+   */
+  #calculateBoosterConfidence(attributeEntries, uniqueAttrs, contentEntries) {
+    // Base confidence from attribute data quantity (0-0.5)
+    const quantityScore = Math.min(0.5, attributeEntries / 15);
+    
+    // Attribute diversity score (0-0.3) - more attributes means better analysis
+    const diversityScore = Math.min(0.3, uniqueAttrs / 8);
+    
+    // Content support score (0-0.2) - content helps validate patterns
+    const contentScore = Math.min(0.2, contentEntries / 10);
+    
+    return Math.round((quantityScore + diversityScore + contentScore) * 100) / 100;
   }
 
   /**
@@ -1205,45 +1276,72 @@ export class MoodAnalyticsEngine {
 
   /**
    * Analyzes correlations between mood attributes and mood scores.
+   * Uses watchdog validation to prevent false positives.
    * @returns {Object} Attribute correlation data
    */
   computeAttributeCorrelations() {
+    // Watchdog: Check data quality
+    if (!this.boosterDataQuality) {
+      this.boosterDataQuality = this.#assessBoosterDataQuality();
+    }
+
+    // If insufficient data, return safe empty result
+    if (!this.boosterDataQuality.hasSufficientAttributeData) {
+      return this.#createInsufficientBoosterDataResult();
+    }
+
     const attributeScores = {};
     const attributeCounts = {};
+    const attributeEntryDates = {}; // Track unique days for each attribute
 
     // Analyze entries with both mood and attributes
     this.entries.forEach(entry => {
       if (!entry.mood || !entry.moodAttributes?.length) return;
       
       const score = this.getMoodScore(entry.mood);
+      const entryDate = entry.date || entry.createdAt?.split('T')[0];
       
       entry.moodAttributes.forEach(attr => {
         const attrId = attr.id || attr;
         if (!attributeScores[attrId]) {
           attributeScores[attrId] = [];
           attributeCounts[attrId] = 0;
+          attributeEntryDates[attrId] = new Set();
         }
         attributeScores[attrId].push(score);
         attributeCounts[attrId]++;
+        if (entryDate) attributeEntryDates[attrId].add(entryDate);
       });
     });
 
-    // Calculate average score per attribute
-    const correlations = Object.entries(attributeScores).map(([attr, scores]) => ({
-      attribute: attr,
-      count: attributeCounts[attr],
-      averageScore: scores.reduce((a, b) => a + b, 0) / scores.length,
-      impact: scores.reduce((a, b) => a + b, 0) / scores.length
-    }));
+    // Calculate average score per attribute with confidence scoring
+    const correlations = Object.entries(attributeScores).map(([attr, scores]) => {
+      const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const uniqueDays = attributeEntryDates[attr]?.size || 0;
+      const confidence = this.#calculateAttributeConfidence(attributeCounts[attr], uniqueDays, Math.abs(avgScore));
+      
+      return {
+        attribute: attr,
+        count: attributeCounts[attr],
+        uniqueDays,
+        averageScore: avgScore,
+        impact: avgScore,
+        confidence,
+        validated: confidence >= MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minConfidence
+      };
+    });
 
-    // Sort by impact
-    const positiveDrivers = correlations
-      .filter(c => c.averageScore > 0.1 && c.count >= 2)
+    // Validate and filter correlations
+    const validatedCorrelations = this.#validateBoosterCorrelations(correlations);
+
+    // Sort by impact, only include validated items
+    const positiveDrivers = validatedCorrelations
+      .filter(c => c.averageScore > MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minImpactScore && c.validated)
       .sort((a, b) => b.averageScore - a.averageScore)
       .slice(0, 5);
 
-    const negativeDrivers = correlations
-      .filter(c => c.averageScore < -0.1 && c.count >= 2)
+    const negativeDrivers = validatedCorrelations
+      .filter(c => c.averageScore < -MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minImpactScore && c.validated)
       .sort((a, b) => a.averageScore - b.averageScore)
       .slice(0, 5);
 
@@ -1251,8 +1349,85 @@ export class MoodAnalyticsEngine {
       all: correlations,
       positiveDrivers,
       negativeDrivers,
-      anxietyDrivers: negativeDrivers.filter(d => d.averageScore < -0.3)
+      anxietyDrivers: negativeDrivers.filter(d => d.averageScore < -0.3),
+      dataQuality: this.boosterDataQuality
     };
+  }
+
+  /**
+   * Create safe result when booster data is insufficient
+   * @private
+   */
+  #createInsufficientBoosterDataResult() {
+    return {
+      all: [],
+      positiveDrivers: [],
+      negativeDrivers: [],
+      anxietyDrivers: [],
+      dataQuality: this.boosterDataQuality,
+      insufficientData: true,
+      message: 'Add mood attributes to your entries to discover what boosts your mood.'
+    };
+  }
+
+  /**
+   * Calculate confidence score for a single attribute correlation
+   * @private
+   */
+  #calculateAttributeConfidence(count, uniqueDays, impactMagnitude) {
+    let confidence = 0;
+    
+    // Factor 1: Frequency of occurrence (0-0.35)
+    if (count >= 5) confidence += 0.35;
+    else if (count >= 3) confidence += 0.25;
+    else if (count >= 2) confidence += 0.15;
+    else confidence += 0.05;
+    
+    // Factor 2: Spread across different days (0-0.35) - not just same-day entries
+    if (uniqueDays >= 4) confidence += 0.35;
+    else if (uniqueDays >= 3) confidence += 0.25;
+    else if (uniqueDays >= 2) confidence += 0.15;
+    else confidence += 0.05;
+    
+    // Factor 3: Impact magnitude - stronger correlations are more meaningful (0-0.3)
+    if (impactMagnitude >= 0.4) confidence += 0.3;
+    else if (impactMagnitude >= 0.25) confidence += 0.2;
+    else if (impactMagnitude >= 0.15) confidence += 0.1;
+    
+    return Math.min(1, confidence);
+  }
+
+  /**
+   * Validate booster correlations to filter out false positives
+   * @private
+   */
+  #validateBoosterCorrelations(correlations) {
+    // Calculate baseline statistics
+    const validCorrelations = correlations.filter(c => c.count >= MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minAttributeOccurrences);
+    
+    if (validCorrelations.length === 0) return [];
+
+    // Calculate mean and std dev for impact scores
+    const impacts = validCorrelations.map(c => Math.abs(c.averageScore));
+    const meanImpact = impacts.reduce((a, b) => a + b, 0) / impacts.length;
+    
+    return correlations.map(c => {
+      // Boost confidence for attributes that are significantly above/below mean
+      const impactDeviation = Math.abs(c.averageScore) - meanImpact;
+      let adjustedConfidence = c.confidence;
+      
+      // If this attribute's impact is notably higher than average, boost confidence
+      if (impactDeviation > 0.1) {
+        adjustedConfidence = Math.min(1, c.confidence + 0.1);
+      }
+      
+      return {
+        ...c,
+        confidence: adjustedConfidence,
+        validated: adjustedConfidence >= MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minConfidence &&
+                   c.count >= MoodAnalyticsEngine.#BOOSTER_THRESHOLDS.minAttributeOccurrences
+      };
+    });
   }
 
   /**

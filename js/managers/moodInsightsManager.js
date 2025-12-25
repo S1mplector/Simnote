@@ -572,20 +572,25 @@ export class MoodInsightsManager {
 
   /**
    * Renders mood drivers section using StressTriggerEngine for stress triggers.
+   * Includes watchdog-aware handling for insufficient data scenarios.
    * @param {Object} correlations - Attribute correlation data
    */
   renderDrivers(correlations) {
     const positiveList = document.getElementById('positive-drivers-list');
     const negativeList = document.getElementById('negative-drivers-list');
 
-    // Render positive drivers (mood boosters)
+    // Render positive drivers (mood boosters) with watchdog awareness
     if (positiveList) {
-      if (correlations.positiveDrivers.length > 0) {
+      // Check if insufficient data (watchdog triggered)
+      if (correlations.insufficientData) {
+        positiveList.innerHTML = `<p class="no-data">${correlations.message || 'Add mood attributes to your entries to discover what boosts your mood.'}</p>`;
+      } else if (correlations.positiveDrivers.length > 0) {
         positiveList.innerHTML = correlations.positiveDrivers.map(driver => {
           const emoji = this.getAttributeEmoji(driver.attribute);
           const impact = Math.round(driver.averageScore * 100);
+          const confidenceClass = driver.confidence >= 0.6 ? 'high-confidence' : driver.confidence >= 0.4 ? 'medium-confidence' : '';
           return `
-            <div class="driver-item">
+            <div class="driver-item ${confidenceClass}">
               <span class="driver-item-emoji">${emoji}</span>
               <span class="driver-item-name">${driver.attribute}</span>
               <span class="driver-item-impact positive">+${impact}%</span>
@@ -597,37 +602,48 @@ export class MoodInsightsManager {
       }
     }
 
-    // Render stress triggers using StressTriggerEngine
+    // Render stress triggers using StressTriggerEngine with watchdog awareness
     if (negativeList) {
       const stressData = this.stressAnalysis;
-      const topCategories = stressData?.categories?.ranked?.slice(0, 3) || [];
       
-      if (topCategories.length > 0) {
-        negativeList.innerHTML = topCategories.map(cat => {
-          const severity = cat.avgSeverity > 2 ? 'high' : cat.avgSeverity > 1.5 ? 'moderate' : 'low';
-          return `
-            <div class="driver-item stress-trigger ${severity}">
-              <span class="driver-item-emoji">${cat.icon}</span>
-              <span class="driver-item-name">${cat.name}</span>
-              <span class="driver-item-count">${cat.count}×</span>
-            </div>
-          `;
-        }).join('');
-      } else if (correlations.negativeDrivers.length > 0) {
-        // Fallback to attribute correlations
-        negativeList.innerHTML = correlations.negativeDrivers.map(driver => {
-          const emoji = this.getAttributeEmoji(driver.attribute);
-          const impact = Math.round(Math.abs(driver.averageScore) * 100);
-          return `
-            <div class="driver-item">
-              <span class="driver-item-emoji">${emoji}</span>
-              <span class="driver-item-name">${driver.attribute}</span>
-              <span class="driver-item-impact negative">-${impact}%</span>
-            </div>
-          `;
-        }).join('');
+      // Check if insufficient data (watchdog triggered)
+      if (stressData?.metadata?.insufficientData) {
+        negativeList.innerHTML = '<p class="no-data">Add more journal entries to identify stress patterns</p>';
       } else {
-        negativeList.innerHTML = '<p class="no-data">No stress triggers identified yet</p>';
+        const topCategories = stressData?.categories?.ranked?.slice(0, 3) || [];
+        
+        if (topCategories.length > 0) {
+          negativeList.innerHTML = topCategories.map(cat => {
+            const severity = cat.avgSeverity > 2 ? 'high' : cat.avgSeverity > 1.5 ? 'moderate' : 'low';
+            return `
+              <div class="driver-item stress-trigger ${severity}">
+                <span class="driver-item-emoji">${cat.icon}</span>
+                <span class="driver-item-name">${cat.name}</span>
+                <span class="driver-item-count">${cat.count}×</span>
+              </div>
+            `;
+          }).join('');
+        } else if (correlations.negativeDrivers?.length > 0) {
+          // Fallback to attribute correlations (only validated ones)
+          const validatedNegative = correlations.negativeDrivers.filter(d => d.validated !== false);
+          if (validatedNegative.length > 0) {
+            negativeList.innerHTML = validatedNegative.map(driver => {
+              const emoji = this.getAttributeEmoji(driver.attribute);
+              const impact = Math.round(Math.abs(driver.averageScore) * 100);
+              return `
+                <div class="driver-item">
+                  <span class="driver-item-emoji">${emoji}</span>
+                  <span class="driver-item-name">${driver.attribute}</span>
+                  <span class="driver-item-impact negative">-${impact}%</span>
+                </div>
+              `;
+            }).join('');
+          } else {
+            negativeList.innerHTML = '<p class="no-data">No stress triggers identified yet</p>';
+          }
+        } else {
+          negativeList.innerHTML = '<p class="no-data">No stress triggers identified yet</p>';
+        }
       }
     }
   }
