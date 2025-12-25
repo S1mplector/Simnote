@@ -34,10 +34,15 @@ export class OnboardingManager {
    * Creates OnboardingManager with step definitions.
    * @constructor
    */
+  /** @type {string} Current onboarding version - increment to re-show after major updates */
+  static ONBOARDING_VERSION = '1.0';
+
   constructor() {
     /** @type {string} localStorage key for completion status */
     this.storageKey = 'simnote_onboarding_complete';
-    /** @type {string} localStorage key for hint shown status (session guard) */
+    /** @type {string} localStorage key for onboarding version */
+    this.versionKey = 'simnote_onboarding_version';
+    /** @type {string} sessionStorage key for hint shown status (session guard) */
     this.hintShownKey = 'simnote_onboarding_hint_shown';
     /** @type {number} Current step index */
     this.currentStep = 0;
@@ -45,8 +50,18 @@ export class OnboardingManager {
     this.keyHandler = null;
     /** @type {Function|null} Window resize handler reference */
     this.resizeHandler = null;
+    /** @type {Function|null} Visibility change handler reference */
+    this.visibilityHandler = null;
     /** @type {boolean} Watchdog flag to prevent multiple hint displays */
     this.hintDisplayed = false;
+    /** @type {number|null} Hint auto-dismiss timer */
+    this.hintTimer = null;
+    /** @type {number|null} Start delay timer */
+    this.startTimer = null;
+    /** @type {boolean} Whether onboarding is currently active */
+    this.isActive = false;
+    /** @type {boolean} Whether storage is available */
+    this.storageAvailable = this.#checkStorageAvailability();
     /** @type {Array<{title: string, content: string, target: string|null, position: string}>} */
     this.steps = [
       {
@@ -95,11 +110,111 @@ export class OnboardingManager {
   }
 
   /**
+   * Checks if storage (localStorage/sessionStorage) is available.
+   * Can fail in private browsing or when storage is full.
+   * @private
+   * @returns {boolean} True if storage is accessible
+   */
+  #checkStorageAvailability() {
+    try {
+      const testKey = '__storage_test__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+      sessionStorage.setItem(testKey, testKey);
+      sessionStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      console.warn('[Onboarding] Storage not available:', e.message);
+      return false;
+    }
+  }
+
+  /**
+   * Safe localStorage getter with error handling.
+   * @private
+   * @param {string} key - Storage key
+   * @returns {string|null} Stored value or null
+   */
+  #safeGetItem(key) {
+    if (!this.storageAvailable) return null;
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn('[Onboarding] Failed to read storage:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * Safe localStorage setter with error handling.
+   * @private
+   * @param {string} key - Storage key
+   * @param {string} value - Value to store
+   * @returns {boolean} True if successful
+   */
+  #safeSetItem(key, value) {
+    if (!this.storageAvailable) return false;
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.warn('[Onboarding] Failed to write storage:', e.message);
+      return false;
+    }
+  }
+
+  /**
+   * Safe sessionStorage setter with error handling.
+   * @private
+   * @param {string} key - Storage key
+   * @param {string} value - Value to store
+   * @returns {boolean} True if successful
+   */
+  #safeSessionSetItem(key, value) {
+    if (!this.storageAvailable) return false;
+    try {
+      sessionStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.warn('[Onboarding] Failed to write session storage:', e.message);
+      return false;
+    }
+  }
+
+  /**
+   * Safe sessionStorage getter with error handling.
+   * @private
+   * @param {string} key - Storage key
+   * @returns {string|null} Stored value or null
+   */
+  #safeSessionGetItem(key) {
+    if (!this.storageAvailable) return null;
+    try {
+      return sessionStorage.getItem(key);
+    } catch (e) {
+      console.warn('[Onboarding] Failed to read session storage:', e.message);
+      return null;
+    }
+  }
+
+  /**
    * Checks if onboarding should be shown.
-   * @returns {boolean} True if not yet completed
+   * Considers completion status and version updates.
+   * @returns {boolean} True if not yet completed or version changed
    */
   shouldShowOnboarding() {
-    return !localStorage.getItem(this.storageKey);
+    const completed = this.#safeGetItem(this.storageKey);
+    const savedVersion = this.#safeGetItem(this.versionKey);
+    
+    // Show if never completed
+    if (!completed) return true;
+    
+    // Show if version changed (major update)
+    if (savedVersion !== OnboardingManager.ONBOARDING_VERSION) {
+      return true;
+    }
+    
+    return false;
   }
 
   /**
@@ -107,23 +222,36 @@ export class OnboardingManager {
    * Shows confirmation prompt before beginning tour.
    */
   start() {
-    // Watchdog: Multiple checks to ensure hint only shows once
-    if (!this.shouldShowOnboarding()) return;
-    if (this.hintDisplayed) return;
-    if (sessionStorage.getItem(this.hintShownKey)) return;
-    
-    // Set watchdog flags immediately to prevent race conditions
-    this.hintDisplayed = true;
-    sessionStorage.setItem(this.hintShownKey, 'true');
-    
-    setTimeout(() => {
-      // Double-check before showing (in case complete() was called during timeout)
-      if (localStorage.getItem(this.storageKey)) {
-        this.hintDisplayed = false;
-        return;
+    try {
+      // Watchdog: Multiple checks to ensure hint only shows once
+      if (!this.shouldShowOnboarding()) return;
+      if (this.hintDisplayed) return;
+      if (this.isActive) return;
+      if (this.#safeSessionGetItem(this.hintShownKey)) return;
+      
+      // Set watchdog flags immediately to prevent race conditions
+      this.hintDisplayed = true;
+      this.#safeSessionSetItem(this.hintShownKey, 'true');
+      
+      // Clear any existing timer
+      if (this.startTimer) {
+        clearTimeout(this.startTimer);
       }
-      this.showWelcomePrompt();
-    }, 4000);
+      
+      this.startTimer = setTimeout(() => {
+        this.startTimer = null;
+        // Double-check before showing (in case complete() was called during timeout)
+        if (this.#safeGetItem(this.storageKey) && 
+            this.#safeGetItem(this.versionKey) === OnboardingManager.ONBOARDING_VERSION) {
+          this.hintDisplayed = false;
+          return;
+        }
+        this.showWelcomePrompt();
+      }, 4000);
+    } catch (e) {
+      console.error('[Onboarding] Failed to start:', e);
+      this.hintDisplayed = false;
+    }
   }
 
   /**
@@ -131,50 +259,112 @@ export class OnboardingManager {
    * @private
    */
   showWelcomePrompt() {
-    // Watchdog: Prevent duplicate hints in DOM
-    if (document.querySelector('.onboarding-first-time-hint')) {
-      return;
+    try {
+      // Watchdog: Prevent duplicate hints in DOM
+      if (document.querySelector('.onboarding-first-time-hint')) {
+        return;
+      }
+      
+      const hint = document.createElement('div');
+      hint.className = 'onboarding-first-time-hint';
+      hint.innerHTML = `
+        <span class="first-time-hint-text">First time at Simnote? Hover here to start the tutorial!</span>
+        <div class="first-time-hint-actions">
+          <button class="first-time-hint-btn first-time-hint-btn--start">Start Tour</button>
+          <button class="first-time-hint-btn first-time-hint-btn--dismiss">✕</button>
+        </div>
+      `;
+      
+      document.body.appendChild(hint);
+      
+      // Animate in
+      requestAnimationFrame(() => hint.classList.add('visible'));
+      
+      // Show actions on hover
+      hint.addEventListener('mouseenter', () => hint.classList.add('expanded'));
+      hint.addEventListener('mouseleave', () => hint.classList.remove('expanded'));
+      
+      // Bind events with null checks
+      const dismissBtn = hint.querySelector('.first-time-hint-btn--dismiss');
+      const startBtn = hint.querySelector('.first-time-hint-btn--start');
+      
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.dismissHint(hint);
+          this.complete();
+        });
+      }
+      
+      if (startBtn) {
+        startBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.dismissHint(hint);
+          this.showStep(0);
+        });
+      }
+      
+      // Setup visibility change handler to pause auto-dismiss when tab hidden
+      this.#setupVisibilityHandler(hint);
+      
+      // Auto-dismiss after 15 seconds if not interacted
+      this.#startHintTimer(hint, 15000);
+    } catch (e) {
+      console.error('[Onboarding] Failed to show welcome prompt:', e);
+      this.hintDisplayed = false;
+    }
+  }
+
+  /**
+   * Sets up visibility change handler to pause/resume auto-dismiss.
+   * @private
+   * @param {HTMLElement} hint - Hint element
+   */
+  #setupVisibilityHandler(hint) {
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
     }
     
-    const hint = document.createElement('div');
-    hint.className = 'onboarding-first-time-hint';
-    hint.innerHTML = `
-      <span class="first-time-hint-text">First time at Simnote? Hover here to start the tutorial!</span>
-      <div class="first-time-hint-actions">
-        <button class="first-time-hint-btn first-time-hint-btn--start">Start Tour</button>
-        <button class="first-time-hint-btn first-time-hint-btn--dismiss">✕</button>
-      </div>
-    `;
+    let remainingTime = 15000;
+    let timerStart = Date.now();
     
-    document.body.appendChild(hint);
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        // Tab hidden - pause timer
+        if (this.hintTimer) {
+          remainingTime -= (Date.now() - timerStart);
+          clearTimeout(this.hintTimer);
+          this.hintTimer = null;
+        }
+      } else {
+        // Tab visible - resume timer
+        timerStart = Date.now();
+        if (remainingTime > 0 && hint.parentNode) {
+          this.#startHintTimer(hint, remainingTime);
+        }
+      }
+    };
     
-    // Animate in
-    requestAnimationFrame(() => hint.classList.add('visible'));
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  /**
+   * Starts the hint auto-dismiss timer.
+   * @private
+   * @param {HTMLElement} hint - Hint element
+   * @param {number} duration - Timer duration in ms
+   */
+  #startHintTimer(hint, duration) {
+    if (this.hintTimer) {
+      clearTimeout(this.hintTimer);
+    }
     
-    // Show actions on hover
-    hint.addEventListener('mouseenter', () => hint.classList.add('expanded'));
-    hint.addEventListener('mouseleave', () => hint.classList.remove('expanded'));
-    
-    // Bind events
-    hint.querySelector('.first-time-hint-btn--dismiss').addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.dismissHint(hint);
-      this.complete();
-    });
-    
-    hint.querySelector('.first-time-hint-btn--start').addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.dismissHint(hint);
-      this.showStep(0);
-    });
-    
-    // Auto-dismiss after 15 seconds if not interacted
     this.hintTimer = setTimeout(() => {
-      if (hint.parentNode) {
+      if (hint && hint.parentNode) {
         this.dismissHint(hint);
         this.complete();
       }
-    }, 15000);
+    }, duration);
   }
 
   /**
@@ -465,15 +655,30 @@ export class OnboardingManager {
    * Completes onboarding, saving flag to localStorage.
    */
   complete() {
-    localStorage.setItem(this.storageKey, 'true');
-    this.removeTooltip();
-    
-    const overlay = document.getElementById('onboarding-overlay');
-    if (overlay) {
-      overlay.classList.remove('visible');
-      setTimeout(() => overlay.remove(), 300);
-    }
+    try {
+      this.#safeSetItem(this.storageKey, 'true');
+      this.#safeSetItem(this.versionKey, OnboardingManager.ONBOARDING_VERSION);
+      this.isActive = false;
+      this.removeTooltip();
+      
+      const overlay = document.getElementById('onboarding-overlay');
+      if (overlay) {
+        overlay.classList.remove('visible');
+        setTimeout(() => overlay.remove(), 300);
+      }
 
+      this.#cleanup();
+    } catch (e) {
+      console.error('[Onboarding] Failed to complete:', e);
+    }
+  }
+
+  /**
+   * Cleans up all event listeners and timers.
+   * Call this when destroying the manager instance.
+   * @private
+   */
+  #cleanup() {
     if (this.keyHandler) {
       document.removeEventListener('keydown', this.keyHandler);
       this.keyHandler = null;
@@ -483,12 +688,52 @@ export class OnboardingManager {
       window.removeEventListener('resize', this.resizeHandler);
       this.resizeHandler = null;
     }
+    
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+    
+    if (this.hintTimer) {
+      clearTimeout(this.hintTimer);
+      this.hintTimer = null;
+    }
+    
+    if (this.startTimer) {
+      clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
+  }
+
+  /**
+   * Public cleanup method for SPA navigation or component unmount.
+   */
+  destroy() {
+    this.#cleanup();
+    this.removeTooltip();
+    
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.remove();
+    
+    const hint = document.querySelector('.onboarding-first-time-hint');
+    if (hint) hint.remove();
+    
+    this.hintDisplayed = false;
+    this.isActive = false;
   }
 
   /**
    * Resets onboarding to show again.
    */
   reset() {
-    localStorage.removeItem(this.storageKey);
+    try {
+      localStorage.removeItem(this.storageKey);
+      localStorage.removeItem(this.versionKey);
+      sessionStorage.removeItem(this.hintShownKey);
+      this.hintDisplayed = false;
+      this.isActive = false;
+    } catch (e) {
+      console.warn('[Onboarding] Failed to reset:', e);
+    }
   }
 }
