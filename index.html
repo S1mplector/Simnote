@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self';" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Simnote - A beautiful journaling app for capturing your thoughts, tracking your moods, and reflecting on your journey." data-i18n-content="meta.description" />
     <meta name="theme-color" content="#fcd8ff" />
@@ -25,6 +26,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Shadows+Into+Light&family=Patrick+Hand&family=Indie+Flower&display=swap" rel="stylesheet" />
     <!-- sql.js for SQLite support (local for offline support) -->
     <script src="/js/lib/sql-wasm.js"></script>
+    <!-- HTML Sanitizer for XSS prevention -->
+    <script src="/js/utils/sanitizer.js"></script>
   </head>
   <body>
     <div class="utility-buttons" aria-label="Quick Controls" data-i18n-aria-label="aria.quickControls">
