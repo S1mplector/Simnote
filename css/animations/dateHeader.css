@@ -1,3 +1,6 @@
+/* ==================== DATE HEADER ANIMATIONS ==================== */
+
+/* === Base Keyframes === */
 @keyframes sunriseSlide {
   0%   { background-position: 0% 100%; }
   100% { background-position: 0% 0%;   }
@@ -9,12 +12,128 @@
 }
 
 @keyframes starTwinkle {
-  0%, 100% { opacity: 0.9; }
-  50%      { opacity: 0.2; }
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50%      { opacity: 0.2; transform: scale(0.8); }
 }
 
+@keyframes cloudDrift {
+  0%   { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+
+/* === Greeting Text Animations === */
+@keyframes greetingFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-15px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes emojiFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  25% {
+    transform: translateY(-4px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(5deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(0deg);
+  }
+}
+
+@keyframes emojiGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(255, 200, 100, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(255, 200, 100, 0.8));
+  }
+}
+
+@keyframes dateFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Date Cell Animations === */
+@keyframes dateCellSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes selectedPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* === Sun/Moon Animations === */
+@keyframes sunPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px 10px rgba(255, 200, 100, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px 15px rgba(255, 200, 100, 0.5);
+  }
+}
+
+@keyframes sunRays {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes moonGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px 5px rgba(200, 220, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px 10px rgba(200, 220, 255, 0.4);
+  }
+}
+
+@keyframes shootingStar {
+  0% {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150px) translateY(100px);
+    opacity: 0;
+  }
+}
+
+/* === Header Base Styles === */
 .date-header {
-  position: relative; /* enable absolute bg layer */
+  position: relative;
   overflow: hidden;
 }
 
@@ -25,14 +144,83 @@
   pointer-events: none;
 }
 
-/* Morning */
+/* === Greeting Styles with Animation === */
+.date-header .greeting {
+  animation: greetingFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.date-header .greeting .greeting-emoji {
+  display: inline-block;
+  animation: emojiFloat 4s ease-in-out infinite, emojiGlow 3s ease-in-out infinite;
+}
+
+.date-header .current-date {
+  animation: dateFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+/* === Date Cell Staggered Animation === */
+.date-header .date-cell {
+  animation: dateCellSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.date-header .date-cell:nth-child(1)  { animation-delay: 0.05s; }
+.date-header .date-cell:nth-child(2)  { animation-delay: 0.08s; }
+.date-header .date-cell:nth-child(3)  { animation-delay: 0.11s; }
+.date-header .date-cell:nth-child(4)  { animation-delay: 0.14s; }
+.date-header .date-cell:nth-child(5)  { animation-delay: 0.17s; }
+.date-header .date-cell:nth-child(6)  { animation-delay: 0.20s; }
+.date-header .date-cell:nth-child(7)  { animation-delay: 0.23s; }
+.date-header .date-cell:nth-child(8)  { animation-delay: 0.26s; }
+.date-header .date-cell:nth-child(9)  { animation-delay: 0.29s; }
+.date-header .date-cell:nth-child(10) { animation-delay: 0.32s; }
+.date-header .date-cell:nth-child(11) { animation-delay: 0.35s; }
+.date-header .date-cell:nth-child(12) { animation-delay: 0.38s; }
+.date-header .date-cell:nth-child(13) { animation-delay: 0.41s; }
+
+.date-header .date-cell.selected {
+  animation: dateCellSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.23s both,
+             selectedPulse 3s ease-in-out 0.8s infinite;
+}
+
+/* === Morning Theme === */
 .date-header.morning .date-bg {
-  background: linear-gradient(180deg, #ffebb7 0%, #ffe8a3 40%, #ffd38a 100%);
+  background: linear-gradient(180deg, #fff5e6 0%, #ffe8a3 40%, #ffd38a 100%);
   background-size: 100% 200%;
   animation: sunriseSlide 12s ease-in-out infinite alternate;
 }
 
-/* Afternoon */
+.date-header.morning .sun {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff9e6 0%, #ffd700 50%, #ffb347 100%);
+  top: 15%;
+  right: 12%;
+  animation: sunPulse 4s ease-in-out infinite;
+}
+
+.date-header.morning .sun-rays {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  top: 15%;
+  right: 12%;
+  transform: translate(25%, -25%);
+  animation: sunRays 60s linear infinite;
+}
+
+.date-header.morning .sun-ray {
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(255, 215, 0, 0.6), transparent);
+  left: 50%;
+  top: -10px;
+  transform-origin: center 50px;
+}
+
+/* === Afternoon Theme === */
 .date-header.afternoon .date-bg {
   background: linear-gradient(180deg, #d8f1ff 0%, #b6e6ff 50%, #a0d6ff 100%);
   background-size: 400% 100%;
@@ -41,30 +229,90 @@
 
 .date-header.afternoon .cloud {
   position: absolute;
-  fill: rgba(255,255,255,0.6);
+  fill: rgba(255,255,255,0.7);
   opacity: 0.9;
   animation: cloudDrift linear infinite;
-}
-@keyframes cloudDrift {
-  0%   { transform: translateX(-150%); }
-  100% { transform: translateX(150%); }
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
 }
 
-/* Evening */
+.date-header.afternoon .sun {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff9e6 0%, #ffd700 60%, #ffb347 100%);
+  top: 10%;
+  right: 8%;
+  animation: sunPulse 5s ease-in-out infinite;
+  opacity: 0.9;
+}
+
+/* === Evening Theme === */
 .date-header.evening .date-bg {
-  background: linear-gradient(180deg, #ffdfb5 0%, #ffb58e 50%, #ff9e8d 100%);
-  background-size: 100% 100%; /* static sunset */
+  background: linear-gradient(180deg, #ffdfb5 0%, #ffb58e 40%, #ff8c7a 70%, #e86b5c 100%);
+  background-size: 100% 100%;
 }
 
-/* Night */
+.date-header.evening .sun {
+  position: absolute;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff5e6 0%, #ff9966 50%, #ff6b4a 100%);
+  bottom: 10%;
+  left: 10%;
+  animation: sunPulse 6s ease-in-out infinite;
+  opacity: 0.85;
+}
+
+/* === Night Theme === */
 .date-header.night .date-bg {
-  background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.1) 0%, rgba(30,30,60,0.0) 40%),
+  background: radial-gradient(ellipse at 70% 20%, rgba(100, 120, 180, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 30% 70%, rgba(80, 100, 160, 0.1) 0%, transparent 40%),
               linear-gradient(180deg, #0d1b35 0%, #090e1a 60%, #04060c 100%);
 }
+
 .date-header.night .star {
   position: absolute;
-  width: 2px; height: 2px;
-  background:#ffffff;
+  width: 2px;
+  height: 2px;
+  background: #ffffff;
   border-radius: 50%;
   animation: starTwinkle 4s ease-in-out infinite;
+}
+
+.date-header.night .star.large {
+  width: 3px;
+  height: 3px;
+  box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.5);
+}
+
+.date-header.night .moon {
+  position: absolute;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #f5f5f5 0%, #e8e8e8 50%, #d0d0d0 100%);
+  top: 12%;
+  right: 10%;
+  animation: moonGlow 5s ease-in-out infinite;
+  box-shadow: inset -5px -2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.date-header.night .moon-crater {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(180, 180, 180, 0.4);
+}
+
+.date-header.night .shooting-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: white;
+  border-radius: 50%;
+  animation: shootingStar 2s ease-out forwards;
+  box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.6),
+              -20px 0 15px 2px rgba(255, 255, 255, 0.4),
+              -40px 0 10px 1px rgba(255, 255, 255, 0.2);
 } 

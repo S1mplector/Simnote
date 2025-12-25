@@ -305,7 +305,9 @@ function refreshDateHeader(){
   else if(hour >= 12 && hour < 18){ greeting='Good Afternoon'; emoji='🌤️'; }
   else if(hour >= 18 && hour < 22){ greeting='Good Evening'; emoji='🌙'; }
   else { greeting='Good Night'; emoji='🌙'; }
-  greetingEl.textContent = `${emoji}  ${greeting}.`;
+  
+  // Wrap emoji in span for separate animation
+  greetingEl.innerHTML = `<span class="greeting-emoji">${emoji}</span> ${greeting}.`;
 
   // Current date formatted
   const now = new Date();
