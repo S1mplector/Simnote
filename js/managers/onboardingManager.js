@@ -37,12 +37,16 @@ export class OnboardingManager {
   constructor() {
     /** @type {string} localStorage key for completion status */
     this.storageKey = 'simnote_onboarding_complete';
+    /** @type {string} localStorage key for hint shown status (session guard) */
+    this.hintShownKey = 'simnote_onboarding_hint_shown';
     /** @type {number} Current step index */
     this.currentStep = 0;
     /** @type {Function|null} Escape key handler reference */
     this.keyHandler = null;
     /** @type {Function|null} Window resize handler reference */
     this.resizeHandler = null;
+    /** @type {boolean} Watchdog flag to prevent multiple hint displays */
+    this.hintDisplayed = false;
     /** @type {Array<{title: string, content: string, target: string|null, position: string}>} */
     this.steps = [
       {
@@ -103,9 +107,21 @@ export class OnboardingManager {
    * Shows confirmation prompt before beginning tour.
    */
   start() {
+    // Watchdog: Multiple checks to ensure hint only shows once
     if (!this.shouldShowOnboarding()) return;
+    if (this.hintDisplayed) return;
+    if (sessionStorage.getItem(this.hintShownKey)) return;
+    
+    // Set watchdog flags immediately to prevent race conditions
+    this.hintDisplayed = true;
+    sessionStorage.setItem(this.hintShownKey, 'true');
     
     setTimeout(() => {
+      // Double-check before showing (in case complete() was called during timeout)
+      if (localStorage.getItem(this.storageKey)) {
+        this.hintDisplayed = false;
+        return;
+      }
       this.showWelcomePrompt();
     }, 4000);
   }
@@ -115,6 +131,11 @@ export class OnboardingManager {
    * @private
    */
   showWelcomePrompt() {
+    // Watchdog: Prevent duplicate hints in DOM
+    if (document.querySelector('.onboarding-first-time-hint')) {
+      return;
+    }
+    
     const hint = document.createElement('div');
     hint.className = 'onboarding-first-time-hint';
     hint.innerHTML = `

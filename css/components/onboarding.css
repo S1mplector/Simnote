@@ -318,32 +318,37 @@
 /* First-Time Hint */
 .onboarding-first-time-hint {
   position: fixed;
-  top: 20px;
-  left: 20px;
-  background: rgba(40, 40, 40, 0.95);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 12px 16px;
+  bottom: 80px;
+  left: 60px;
+  background: linear-gradient(135deg, rgba(50, 50, 55, 0.98) 0%, rgba(35, 35, 40, 0.98) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 16px 20px;
   z-index: 9999;
   opacity: 0;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-  max-width: 280px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: translateX(-10px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 300px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .onboarding-first-time-hint.visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 
 .first-time-hint-text {
   display: block;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.4;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .first-time-hint-actions {
@@ -372,12 +377,15 @@
 }
 
 .first-time-hint-btn--start {
-  background: var(--accent, #7c9eff);
+  background: linear-gradient(135deg, var(--accent, #7c9eff) 0%, var(--accent-dark, #5a7de6) 100%);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(124, 158, 255, 0.3);
 }
 
 .first-time-hint-btn--start:hover {
   filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 158, 255, 0.4);
 }
 
 .first-time-hint-btn--dismiss {
