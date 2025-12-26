@@ -6,10 +6,14 @@ const fs = require('fs');
 
 const { FileStorageManager } = require('../managers/fileStorageManager.js');
 const { NativeDbManager } = require('./nativeDbManager.js');
+const { SecurityManager } = require('./securityManager.js');
 
 let fileStorageManager = null;
 let nativeDb = null;
+let securityManager = null;
 let storageDirPath = null;
+let autoLockTimer = null;
+let mainWindow = null;
 
 function getStorageDirPath() {
   if (!storageDirPath) {
@@ -32,14 +36,41 @@ function ensureNativeDb() {
   return nativeDb;
 }
 
+function ensureSecurityManager() {
+  if (!securityManager) {
+    securityManager = new SecurityManager(getStorageDirPath());
+  }
+  return securityManager;
+}
+
+function resetAutoLockTimer() {
+  const security = ensureSecurityManager();
+  const config = security.getConfig();
+  
+  if (autoLockTimer) {
+    clearTimeout(autoLockTimer);
+    autoLockTimer = null;
+  }
+  
+  if (config.enabled && config.autoLockMinutes > 0 && security.isUnlocked) {
+    autoLockTimer = setTimeout(() => {
+      security.lock();
+      if (mainWindow) {
+        mainWindow.webContents.send('security-locked');
+      }
+    }, config.autoLockMinutes * 60 * 1000);
+  }
+}
+
 function createWindow() {
   // Store entries in ~/Documents/Simnote for easy access and cloud sync
   const storageDir = getStorageDirPath();
   ensureFileStorage();
   ensureNativeDb();
+  ensureSecurityManager();
   console.log(`[Electron] Storage directory: ${storageDir}`);
 
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     webPreferences: {
@@ -327,4 +358,110 @@ ipcMain.handle('native-db-clear', () => {
     console.error('[Electron] native-db-clear failed:', err);
     return false;
   }
+});
+
+// ==================== Security IPC Handlers ====================
+
+ipcMain.handle('security-get-config', () => {
+  return ensureSecurityManager().getConfig();
+});
+
+ipcMain.handle('security-is-touch-id-available', async () => {
+  return await ensureSecurityManager().isTouchIdAvailable();
+});
+
+ipcMain.handle('security-setup-passcode', async (event, passcode) => {
+  try {
+    await ensureSecurityManager().setupPasscode(passcode);
+    resetAutoLockTimer();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('security-enable-touch-id', async () => {
+  try {
+    await ensureSecurityManager().enableTouchId();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('security-disable-touch-id', () => {
+  ensureSecurityManager().disableTouchId();
+  return { success: true };
+});
+
+ipcMain.handle('security-authenticate-passcode', async (event, passcode) => {
+  try {
+    await ensureSecurityManager().authenticateWithPasscode(passcode);
+    resetAutoLockTimer();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('security-authenticate-touch-id', async () => {
+  try {
+    await ensureSecurityManager().authenticateWithTouchId();
+    resetAutoLockTimer();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('security-lock', () => {
+  ensureSecurityManager().lock();
+  if (autoLockTimer) {
+    clearTimeout(autoLockTimer);
+    autoLockTimer = null;
+  }
+  return { success: true };
+});
+
+ipcMain.handle('security-change-passcode', async (event, { currentPasscode, newPasscode }) => {
+  try {
+    await ensureSecurityManager().changePasscode(currentPasscode, newPasscode);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('security-disable', async (event, passcode) => {
+  try {
+    await ensureSecurityManager().disableSecurity(passcode);
+    if (autoLockTimer) {
+      clearTimeout(autoLockTimer);
+      autoLockTimer = null;
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('security-set-auto-lock', (event, minutes) => {
+  ensureSecurityManager().setAutoLockTimeout(minutes);
+  resetAutoLockTimer();
+  return { success: true };
+});
+
+ipcMain.handle('security-reset-timer', () => {
+  resetAutoLockTimer();
+  return { success: true };
+});
+
+ipcMain.handle('security-is-unlocked', () => {
+  const security = ensureSecurityManager();
+  if (!security.isSecurityEnabled()) return true;
+  return security.isUnlocked;
+});
+
+ipcMain.handle('security-is-enabled', () => {
+  return ensureSecurityManager().isSecurityEnabled();
 });

@@ -8,10 +8,9 @@
 //
 // API CATEGORIES:
 // - Entry operations: save, file storage
-// - Chat: AI chat with streaming support
-// - Memory: Conversation memory persistence
 // - File Storage: .simnote file operations
 // - Native DB: SQLite database operations (Electron-only)
+// - Security: Passcode, Touch ID, and lock management
 //
 // SECURITY:
 // - Only exposes specific IPC channels
@@ -65,5 +64,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
     exportToJSON: () => ipcRenderer.sendSync('native-db-export'),
     importFromJSON: (jsonString) => ipcRenderer.invoke('native-db-import', jsonString),
     clearAllData: () => ipcRenderer.invoke('native-db-clear')
+  },
+  // Security APIs (passcode, Touch ID, lock)
+  security: {
+    getConfig: () => ipcRenderer.invoke('security-get-config'),
+    isTouchIdAvailable: () => ipcRenderer.invoke('security-is-touch-id-available'),
+    setupPasscode: (passcode) => ipcRenderer.invoke('security-setup-passcode', passcode),
+    enableTouchId: () => ipcRenderer.invoke('security-enable-touch-id'),
+    disableTouchId: () => ipcRenderer.invoke('security-disable-touch-id'),
+    authenticatePasscode: (passcode) => ipcRenderer.invoke('security-authenticate-passcode', passcode),
+    authenticateTouchId: () => ipcRenderer.invoke('security-authenticate-touch-id'),
+    lock: () => ipcRenderer.invoke('security-lock'),
+    changePasscode: (currentPasscode, newPasscode) => 
+      ipcRenderer.invoke('security-change-passcode', { currentPasscode, newPasscode }),
+    disable: (passcode) => ipcRenderer.invoke('security-disable', passcode),
+    setAutoLock: (minutes) => ipcRenderer.invoke('security-set-auto-lock', minutes),
+    resetTimer: () => ipcRenderer.invoke('security-reset-timer'),
+    isUnlocked: () => ipcRenderer.invoke('security-is-unlocked'),
+    isEnabled: () => ipcRenderer.invoke('security-is-enabled'),
+    onLocked: (callback) => ipcRenderer.on('security-locked', callback)
   }
 });

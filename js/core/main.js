@@ -59,6 +59,7 @@ import { MoodsSmileyAnimator } from '../animators/moodsSmileyAnimator.js';
 import { setLanguage, getLanguage, initI18n } from './i18n.js';
 import { JournalPenAnimator } from '../animators/journalPenAnimator.js';
 import { EntriesBookAnimator } from '../animators/entriesBookAnimator.js';
+import { lockScreenManager } from '../managers/lockScreenManager.js';
 
 // Initialize i18n system early
 initI18n();
@@ -956,6 +957,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize entries book animator
   new EntriesBookAnimator();
 
+  // Initialize lock screen manager (Electron only)
+  lockScreenManager.init();
+
   /* --- Build Template Cards --- */
   const grid = document.querySelector('.template-grid');
   if(grid){
@@ -1592,3 +1596,150 @@ if (languageSelector) {
 }
 
 window.selectedTemplate = null;
+
+// ==================== Security Settings ====================
+
+/**
+ * Initializes security settings UI (Electron only).
+ */
+async function initSecuritySettings() {
+  // Only show security settings in Electron
+  if (!window.electronAPI?.security) return;
+
+  const section = document.getElementById('security-settings-section');
+  const setupRow = document.getElementById('passcode-setup-row');
+  const enabledRow = document.getElementById('passcode-enabled-row');
+  const touchIdRow = document.getElementById('touch-id-row');
+  const autoLockRow = document.getElementById('auto-lock-row');
+  const securityActions = document.getElementById('security-actions');
+  const lockNowBtn = document.getElementById('lock-now-btn');
+  const setupBtn = document.getElementById('setup-passcode-btn');
+  const changeBtn = document.getElementById('change-passcode-btn');
+  const disableBtn = document.getElementById('disable-security-btn');
+  const touchIdToggle = document.getElementById('touch-id-toggle');
+  const autoLockSelect = document.getElementById('auto-lock-select');
+
+  if (!section) return;
+
+  // Show security section
+  section.style.display = 'block';
+
+  // Get current config
+  const config = await window.electronAPI.security.getConfig();
+  const touchIdAvailable = await window.electronAPI.security.isTouchIdAvailable();
+
+  // Update UI based on config
+  function updateSecurityUI(cfg) {
+    if (cfg.enabled) {
+      setupRow.style.display = 'none';
+      enabledRow.style.display = 'flex';
+      autoLockRow.style.display = 'flex';
+      securityActions.style.display = 'block';
+      lockNowBtn.style.display = 'flex';
+
+      if (touchIdAvailable) {
+        touchIdRow.style.display = 'flex';
+        touchIdToggle.checked = cfg.useTouchId;
+      }
+
+      autoLockSelect.value = cfg.autoLockMinutes.toString();
+    } else {
+      setupRow.style.display = 'flex';
+      enabledRow.style.display = 'none';
+      touchIdRow.style.display = 'none';
+      autoLockRow.style.display = 'none';
+      securityActions.style.display = 'none';
+      lockNowBtn.style.display = 'none';
+    }
+  }
+
+  updateSecurityUI(config);
+
+  // Setup passcode button
+  setupBtn?.addEventListener('click', () => {
+    lockScreenManager.openSetupModal();
+  });
+
+  // Change passcode button
+  if (changeBtn) {
+    changeBtn.addEventListener('click', async () => {
+      console.log('[Security] Change passcode clicked');
+      const current = prompt('Enter current passcode:');
+      if (!current) return;
+      const newPass = prompt('Enter new passcode (4 digits):');
+      if (!newPass || newPass.length < 4) {
+        alert('Passcode must be at least 4 characters');
+        return;
+      }
+      const confirmPass = prompt('Confirm new passcode:');
+      if (confirmPass !== newPass) {
+        alert('Passcodes do not match');
+        return;
+      }
+      try {
+        const result = await window.electronAPI.security.changePasscode(current, newPass);
+        if (result.success) {
+          alert('Passcode changed successfully');
+        } else {
+          alert(result.error || 'Failed to change passcode');
+        }
+      } catch (err) {
+        console.error('[Security] Change passcode error:', err);
+        alert('Failed to change passcode');
+      }
+    });
+  }
+
+  // Disable security button
+  if (disableBtn) {
+    disableBtn.addEventListener('click', async () => {
+      console.log('[Security] Disable security clicked');
+      const passcode = prompt('Enter passcode to disable security:');
+      if (!passcode) return;
+      try {
+        const result = await window.electronAPI.security.disable(passcode);
+        if (result.success) {
+          const newConfig = await window.electronAPI.security.getConfig();
+          updateSecurityUI(newConfig);
+          window.dispatchEvent(new Event('security-config-changed'));
+        } else {
+          alert(result.error || 'Failed to disable security');
+        }
+      } catch (err) {
+        console.error('[Security] Disable security error:', err);
+        alert('Failed to disable security');
+      }
+    });
+  }
+
+  // Lock now button
+  lockNowBtn?.addEventListener('click', () => {
+    lockScreenManager.lock();
+  });
+
+  // Touch ID toggle
+  touchIdToggle?.addEventListener('change', async () => {
+    if (touchIdToggle.checked) {
+      await window.electronAPI.security.enableTouchId();
+    } else {
+      await window.electronAPI.security.disableTouchId();
+    }
+  });
+
+  // Auto-lock select
+  autoLockSelect?.addEventListener('change', async () => {
+    const minutes = parseInt(autoLockSelect.value, 10);
+    await window.electronAPI.security.setAutoLock(minutes);
+  });
+
+  // Listen for setup completion to refresh UI
+  window.addEventListener('security-config-changed', async () => {
+    const newConfig = await window.electronAPI.security.getConfig();
+    updateSecurityUI(newConfig);
+  });
+}
+
+// Initialize security settings after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(initSecuritySettings, 100);
+});

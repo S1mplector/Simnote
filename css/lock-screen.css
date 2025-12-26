@@ -1,0 +1,420 @@
+/* lock-screen.css
+ * Styles for the app lock screen and security settings
+ * Uses theme CSS variables from base.css
+ */
+
+/* ==================== Lock Screen Overlay ==================== */
+
+.lock-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.lock-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lock-screen__container {
+  text-align: center;
+  max-width: 320px;
+  padding: 40px;
+}
+
+.lock-screen__icon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+
+.lock-screen__icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lock-screen__title {
+  font-size: 24px;
+  font-weight: 600;
+  color: inherit;
+  margin: 0 0 8px 0;
+}
+
+.lock-screen__subtitle {
+  font-size: 14px;
+  color: var(--accent-secondary);
+  margin: 0 0 32px 0;
+  opacity: 0.7;
+}
+
+/* ==================== Passcode Input ==================== */
+
+.passcode-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.passcode-dots {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.passcode-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: transparent;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.passcode-dot.filled {
+  background: var(--accent);
+  transform: scale(1.1);
+}
+
+.passcode-dot.error {
+  border-color: #ff6b6b;
+  background: #ff6b6b;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.passcode-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 240px;
+}
+
+.passcode-key {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.05);
+  color: inherit;
+  font-size: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.passcode-key:hover {
+  background: rgba(var(--accent-rgb), 0.15);
+  border-color: var(--accent);
+}
+
+.passcode-key:active {
+  transform: scale(0.95);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.passcode-key.action {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.passcode-key.action svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.passcode-key:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ==================== Touch ID Button ==================== */
+
+.touch-id-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.05);
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 16px;
+}
+
+.touch-id-btn:hover {
+  background: rgba(var(--accent-rgb), 0.15);
+  border-color: var(--accent);
+}
+
+.touch-id-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ==================== Error Message ==================== */
+
+.lock-screen__error {
+  color: #ff6b6b;
+  font-size: 14px;
+  margin-top: 16px;
+  min-height: 20px;
+}
+
+/* ==================== Security Settings Panel ==================== */
+
+.security-settings {
+  padding: 20px;
+}
+
+.security-settings__section {
+  margin-bottom: 24px;
+}
+
+.security-settings__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: inherit;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+}
+
+.security-settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.1);
+}
+
+.security-settings__row:last-child {
+  border-bottom: none;
+}
+
+.security-settings__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.security-settings__label-text {
+  font-size: 15px;
+  color: inherit;
+}
+
+.security-settings__label-hint {
+  font-size: 12px;
+  color: var(--accent-secondary);
+  opacity: 0.7;
+}
+
+/* ==================== Toggle Switch ==================== */
+
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch__slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(var(--accent-rgb), 0.15);
+  border-radius: 28px;
+  transition: 0.3s;
+}
+
+.toggle-switch__slider::before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-switch__slider {
+  background: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-switch__slider::before {
+  transform: translateX(20px);
+}
+
+/* ==================== Select Dropdown ==================== */
+
+.security-select {
+  padding: 8px 32px 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.05);
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.security-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ==================== Buttons ==================== */
+
+.security-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.05);
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.security-btn:hover {
+  background: rgba(var(--accent-rgb), 0.15);
+}
+
+.security-btn--primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+}
+
+.security-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.security-btn--danger {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.security-btn--danger:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+/* ==================== Setup Modal ==================== */
+
+.passcode-setup-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.passcode-setup-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.passcode-setup-modal__content {
+  background: var(--settings-bg);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 360px;
+  text-align: center;
+}
+
+.passcode-setup-modal__step {
+  font-size: 12px;
+  color: var(--accent-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.passcode-setup-modal__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: inherit;
+  margin: 0 0 32px 0;
+}
+
+/* ==================== Lock Button (in settings) ==================== */
+
+.lock-now-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  margin-top: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.03);
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lock-now-btn:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent);
+}
+
+.lock-now-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+}
