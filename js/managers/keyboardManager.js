@@ -93,15 +93,31 @@ export class KeyboardManager {
       const visiblePanel = document.querySelector('#new-entry-panel:not([style*="display: none"]), #edit-entry-panel:not([style*="display: none"])');
       if (visiblePanel) {
         const saveBtn = visiblePanel.querySelector('.save-btn');
-        if (saveBtn) saveBtn.click();
+        if (saveBtn) {
+          saveBtn.click();
+        } else if (window.editorManager?.handleSaveButton) {
+          window.editorManager.handleSaveButton(visiblePanel);
+        }
       }
     }, 'Save Entry');
 
     // Escape to go back
     this.register('Escape', {}, () => {
+      const entryPanel = document.querySelector(
+        '#new-entry-panel:not([style*="display: none"]), ' +
+        '#edit-entry-panel:not([style*="display: none"])'
+      );
+      if (entryPanel && window.editorManager) {
+        if (window.editorManager.handleSaveButton) {
+          window.editorManager.handleSaveButton(entryPanel);
+        }
+        if (window.editorManager.handleBackButton) {
+          window.editorManager.handleBackButton(entryPanel);
+        }
+        return;
+      }
+
       const backBtn = document.querySelector(
-        '#new-entry-panel:not([style*="display: none"]) .back-btn, ' +
-        '#edit-entry-panel:not([style*="display: none"]) .back-btn, ' +
         '#journal-panel:not([style*="display: none"]) .back-to-menu, ' +
         '#stats-panel:not([style*="display: none"]) .stats-back-btn, ' +
         '#chat-panel:not([style*="display: none"]) .chat-back-btn'

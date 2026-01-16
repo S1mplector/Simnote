@@ -54,8 +54,9 @@ export class PanelManager {
           hidePanel.style.transition = '';
           
           // Prepare incoming panel
+          const showDisplay = showPanel.dataset.display || 'block';
           showPanel.style.opacity = '0';
-          showPanel.style.display = 'block';
+          showPanel.style.display = showDisplay;
           void showPanel.offsetWidth;
           
           // Fade in new panel

@@ -80,6 +80,7 @@ let currentAttributes = [];
 
 // Initialize the editor logic immediately (it doesn't interfere with the splash)
 const editorManager = new EditorManager();
+window.editorManager = editorManager;
 
 window.pendingQuoteEntry = null;
 window.queueQuoteForEntry = (quote) => {
@@ -1024,19 +1025,21 @@ function initDateHeader(){
 /* -------------------------------------
    Saving Entries (via Preload API)
 -------------------------------------- */
-const saveBtn = newEntryPanel.querySelector('.save-btn');
-saveBtn.addEventListener('click', async () => {
-  const entryName = newEntryPanel.querySelector('input.entry-name').value;
-  const entryContent = newEntryPanel.querySelector('textarea.entry-content').value;
-  try {
-    const result = await window.electronAPI.saveEntry(entryName, entryContent);
-    showPopup(result);
-    newEntryPanel.querySelector('input.entry-name').value = '';
-    newEntryPanel.querySelector('textarea.entry-content').value = '';
-  } catch (error) {
-    console.error("Error saving entry:", error);
-  }
-});
+const saveBtn = newEntryPanel?.querySelector('.save-btn');
+if (saveBtn) {
+  saveBtn.addEventListener('click', async () => {
+    const entryName = newEntryPanel.querySelector('input.entry-name').value;
+    const entryContent = newEntryPanel.querySelector('textarea.entry-content').value;
+    try {
+      const result = await window.electronAPI.saveEntry(entryName, entryContent);
+      showPopup(result);
+      newEntryPanel.querySelector('input.entry-name').value = '';
+      newEntryPanel.querySelector('textarea.entry-content').value = '';
+    } catch (error) {
+      console.error("Error saving entry:", error);
+    }
+  });
+}
 
 function showPopup(message) {
   const popup = document.getElementById('custom-popup');

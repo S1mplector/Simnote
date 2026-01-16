@@ -200,6 +200,7 @@ html, body {
   padding: 20px;
   box-sizing: border-box;
   overflow: hidden;
+  flex-direction: column;
 }
 
 /* Entries Pane */
@@ -212,8 +213,10 @@ html, body {
   color: #fff;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   box-sizing: border-box;
+  overflow: hidden;
 }
 .entries-pane h2 {
   margin-top: 0;
