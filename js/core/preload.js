@@ -65,6 +65,39 @@ contextBridge.exposeInMainWorld('electronAPI', {
     importFromJSON: (jsonString) => ipcRenderer.invoke('native-db-import', jsonString),
     clearAllData: () => ipcRenderer.invoke('native-db-clear')
   },
+  // Native utility APIs (macOS addon; Electron-only)
+  nativeUtils: {
+    makeDir: (path, recursive) => ipcRenderer.invoke('native-utils-make-dir', path, recursive),
+    removePath: (path) => ipcRenderer.invoke('native-utils-remove-path', path),
+    renamePath: (fromPath, toPath) => ipcRenderer.invoke('native-utils-rename-path', fromPath, toPath),
+    atomicReplace: (sourcePath, destPath) =>
+      ipcRenderer.invoke('native-utils-atomic-replace', sourcePath, destPath),
+    fileStats: (path) => ipcRenderer.invoke('native-utils-file-stats', path),
+    listDirRecursive: (path, maxDepth) => ipcRenderer.invoke('native-utils-list-recursive', path, maxDepth),
+    zipDirectory: (sourceDir, zipPath, level) =>
+      ipcRenderer.invoke('native-utils-zip-directory', sourceDir, zipPath, level),
+    unzipArchive: (zipPath, destDir) =>
+      ipcRenderer.invoke('native-utils-unzip-archive', zipPath, destDir),
+    readJsonStream: (path) => ipcRenderer.invoke('native-utils-read-json', path),
+    writeJsonStream: (path, value) => ipcRenderer.invoke('native-utils-write-json', path, value),
+    validateFileSize: (path, maxBytes) => ipcRenderer.invoke('native-utils-validate-size', path, maxBytes),
+    sha256File: (path) => ipcRenderer.invoke('native-utils-sha256-file', path),
+    search: {
+      createIndex: (indexId) => ipcRenderer.invoke('native-search-create-index', indexId),
+      clearIndex: (indexId) => ipcRenderer.invoke('native-search-clear-index', indexId),
+      removeDoc: (indexId, docId) => ipcRenderer.invoke('native-search-remove-doc', indexId, docId),
+      indexText: (indexId, docId, text) => ipcRenderer.invoke('native-search-index-text', indexId, docId, text),
+      query: (indexId, query, prefixSearch = false) =>
+        ipcRenderer.invoke('native-search-query', indexId, query, prefixSearch)
+    },
+    crypto: {
+      pbkdf2Sha256: (password, salt, iterations, keyLength) =>
+        ipcRenderer.invoke('native-crypto-pbkdf2', password, salt, iterations, keyLength),
+      sha256: (data) => ipcRenderer.invoke('native-crypto-sha256', data),
+      hmacSha256: (data, key) => ipcRenderer.invoke('native-crypto-hmac-sha256', data, key),
+      secureDelete: (path, passes) => ipcRenderer.invoke('native-crypto-secure-delete', path, passes)
+    }
+  },
   // Security APIs (passcode, Touch ID, lock)
   security: {
     getConfig: () => ipcRenderer.invoke('security-get-config'),

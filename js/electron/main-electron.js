@@ -59,6 +59,34 @@ function normalizeEntryPayload(entry) {
   };
 }
 
+function resolveStoragePath(targetPath) {
+  if (typeof targetPath !== 'string' || !targetPath.trim()) {
+    throw new Error('Invalid path');
+  }
+  const storageRoot = path.resolve(getStorageDirPath());
+  const resolved = path.resolve(storageRoot, targetPath);
+  if (resolved !== storageRoot && !resolved.startsWith(`${storageRoot}${path.sep}`)) {
+    throw new Error('Path escapes storage directory');
+  }
+  return resolved;
+}
+
+function ensureNativeAddon() {
+  if (!nativeAddon) {
+    throw new Error('Native addon not available');
+  }
+  return nativeAddon;
+}
+
+function coerceBuffer(value) {
+  if (Buffer.isBuffer(value)) return value;
+  if (value instanceof ArrayBuffer) return Buffer.from(value);
+  if (ArrayBuffer.isView(value)) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+  }
+  throw new Error('Expected binary buffer');
+}
+
 function attachSearchTokens(entry) {
   if (!entry || !nativeAddon?.indexText) return entry;
   const name = entry.name || '';
@@ -472,6 +500,158 @@ ipcMain.handle('native-db-clear', () => {
     console.error('[Electron] native-db-clear failed:', err);
     return false;
   }
+});
+
+// ==================== Native Utility IPC ====================
+ipcMain.handle('native-utils-make-dir', (event, targetPath, recursive = true) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.makeDir(resolved, !!recursive);
+});
+
+ipcMain.handle('native-utils-remove-path', (event, targetPath) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.removePath(resolved);
+});
+
+ipcMain.handle('native-utils-rename-path', (event, fromPath, toPath) => {
+  const addon = ensureNativeAddon();
+  const fromResolved = resolveStoragePath(fromPath);
+  const toResolved = resolveStoragePath(toPath);
+  return addon.renamePath(fromResolved, toResolved);
+});
+
+ipcMain.handle('native-utils-atomic-replace', (event, sourcePath, destPath) => {
+  const addon = ensureNativeAddon();
+  const sourceResolved = resolveStoragePath(sourcePath);
+  const destResolved = resolveStoragePath(destPath);
+  return addon.atomicReplace(sourceResolved, destResolved);
+});
+
+ipcMain.handle('native-utils-file-stats', (event, targetPath) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.fileStats(resolved);
+});
+
+ipcMain.handle('native-utils-list-recursive', (event, targetPath, maxDepth) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  if (Number.isFinite(maxDepth)) {
+    return addon.listDirRecursive(resolved, Math.max(-1, Math.floor(maxDepth)));
+  }
+  return addon.listDirRecursive(resolved);
+});
+
+ipcMain.handle('native-utils-zip-directory', (event, sourceDir, zipPath, level) => {
+  const addon = ensureNativeAddon();
+  const sourceResolved = resolveStoragePath(sourceDir);
+  const zipResolved = resolveStoragePath(zipPath);
+  if (Number.isFinite(level)) {
+    return addon.zipDirectory(sourceResolved, zipResolved, Math.max(0, Math.min(9, Math.floor(level))));
+  }
+  return addon.zipDirectory(sourceResolved, zipResolved);
+});
+
+ipcMain.handle('native-utils-unzip-archive', (event, zipPath, destDir) => {
+  const addon = ensureNativeAddon();
+  const zipResolved = resolveStoragePath(zipPath);
+  const destResolved = resolveStoragePath(destDir);
+  return addon.unzipArchive(zipResolved, destResolved);
+});
+
+ipcMain.handle('native-utils-read-json', (event, targetPath) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.readJsonStream(resolved);
+});
+
+ipcMain.handle('native-utils-write-json', (event, targetPath, value) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.writeJsonStream(resolved, value);
+});
+
+ipcMain.handle('native-utils-validate-size', (event, targetPath, maxBytes) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  const safeMax = Number.isFinite(maxBytes) ? maxBytes : 0;
+  return addon.validateFileSize(resolved, safeMax);
+});
+
+ipcMain.handle('native-utils-sha256-file', (event, targetPath) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.sha256File(resolved);
+});
+
+ipcMain.handle('native-search-create-index', (event, indexId) => {
+  const addon = ensureNativeAddon();
+  const safeId = typeof indexId === 'string' ? indexId : String(indexId || '');
+  if (!safeId) throw new Error('Invalid index id');
+  return addon.createSearchIndex(safeId);
+});
+
+ipcMain.handle('native-search-clear-index', (event, indexId) => {
+  const addon = ensureNativeAddon();
+  const safeId = typeof indexId === 'string' ? indexId : String(indexId || '');
+  if (!safeId) throw new Error('Invalid index id');
+  return addon.clearSearchIndex(safeId);
+});
+
+ipcMain.handle('native-search-remove-doc', (event, indexId, docId) => {
+  const addon = ensureNativeAddon();
+  const safeIndex = typeof indexId === 'string' ? indexId : String(indexId || '');
+  const safeDoc = typeof docId === 'string' ? docId : String(docId || '');
+  if (!safeIndex || !safeDoc) throw new Error('Invalid index/doc id');
+  return addon.removeIndexedDoc(safeIndex, safeDoc);
+});
+
+ipcMain.handle('native-search-index-text', (event, indexId, docId, text) => {
+  const addon = ensureNativeAddon();
+  const safeIndex = typeof indexId === 'string' ? indexId : String(indexId || '');
+  const safeDoc = typeof docId === 'string' ? docId : String(docId || '');
+  const safeText = typeof text === 'string' ? text : String(text || '');
+  if (!safeIndex || !safeDoc) throw new Error('Invalid index/doc id');
+  return addon.indexTextIncremental(safeIndex, safeDoc, safeText);
+});
+
+ipcMain.handle('native-search-query', (event, indexId, query, prefixSearch = false) => {
+  const addon = ensureNativeAddon();
+  const safeIndex = typeof indexId === 'string' ? indexId : String(indexId || '');
+  const safeQuery = typeof query === 'string' ? query : String(query || '');
+  if (!safeIndex) throw new Error('Invalid index id');
+  return addon.searchIndex(safeIndex, safeQuery, !!prefixSearch);
+});
+
+ipcMain.handle('native-crypto-pbkdf2', (event, password, salt, iterations, keyLength) => {
+  const addon = ensureNativeAddon();
+  const passBuf = coerceBuffer(password);
+  const saltBuf = coerceBuffer(salt);
+  const safeIterations = Number.isFinite(iterations) ? Math.max(1, Math.floor(iterations)) : 1;
+  const safeKeyLength = Number.isFinite(keyLength) ? Math.max(1, Math.floor(keyLength)) : 1;
+  return addon.pbkdf2Sha256(passBuf, saltBuf, safeIterations, safeKeyLength);
+});
+
+ipcMain.handle('native-crypto-sha256', (event, data) => {
+  const addon = ensureNativeAddon();
+  const dataBuf = coerceBuffer(data);
+  return addon.sha256(dataBuf);
+});
+
+ipcMain.handle('native-crypto-hmac-sha256', (event, data, key) => {
+  const addon = ensureNativeAddon();
+  const dataBuf = coerceBuffer(data);
+  const keyBuf = coerceBuffer(key);
+  return addon.hmacSha256(dataBuf, keyBuf);
+});
+
+ipcMain.handle('native-crypto-secure-delete', (event, targetPath, passes) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  const safePasses = Number.isFinite(passes) ? Math.max(1, Math.floor(passes)) : 1;
+  return addon.secureDelete(resolved, safePasses);
 });
 
 // ==================== Security IPC Handlers ====================
