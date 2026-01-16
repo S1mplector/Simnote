@@ -13,6 +13,14 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+body.main-menu-active .utility-buttons {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .utility-buttons::before {
@@ -114,7 +122,7 @@ body.main-menu-active .utility-buttons:focus-within::before {
 /* hide when journal panel active */
 body.journal-open .manual-btn,
 body.journal-open .theme-settings-btn{display:none !important;}
-body.journal-open .utility-buttons{pointer-events:none;}
+body.journal-open .utility-buttons{opacity:0 !important;pointer-events:none !important;visibility:hidden;}
 body.journal-open .utility-buttons::before{opacity:0;}
 
 /* Fade-in labels for Manual and Settings buttons */
