@@ -57,11 +57,6 @@
   transform: translate(18px, -50%);
 }
 
-.toggle-switch input:focus + .toggle-slider {
-  outline: 2px solid rgba(52, 199, 89, 0.35);
-  outline-offset: 2px;
-}
-
 .toggle-switch:hover .toggle-slider {
   border-color: rgba(255, 255, 255, 0.22);
 }
