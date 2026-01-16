@@ -1,4 +1,4 @@
-<p align="center">
+<p align="left">
   <img src="resources/icon.png" alt="Simnote logo" width="120" />
 </p>
 

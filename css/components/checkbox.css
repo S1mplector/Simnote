@@ -1,0 +1,87 @@
+/* Minimal macOS-style toggle switch */
+
+:root {
+  --toggle-track-off: #3a3a3a;
+  --toggle-track-on: #34c759;
+  --toggle-track-border: rgba(255, 255, 255, 0.12);
+  --toggle-thumb: #ffffff;
+  --toggle-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --toggle-ease: 180ms ease;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: var(--toggle-track-off);
+  border: 1px solid var(--toggle-track-border);
+  border-radius: 999px;
+  transition: background var(--toggle-ease), border-color var(--toggle-ease);
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--toggle-thumb);
+  border-radius: 50%;
+  box-shadow: var(--toggle-shadow);
+  transition: transform var(--toggle-ease);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--toggle-track-on);
+  border-color: rgba(52, 199, 89, 0.8);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translate(18px, -50%);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+  outline: 2px solid rgba(52, 199, 89, 0.35);
+  outline-offset: 2px;
+}
+
+.toggle-switch:hover .toggle-slider {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  gap: 16px;
+  max-width: 280px;
+}
+
+.settings-option-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+  flex: 1;
+}
