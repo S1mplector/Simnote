@@ -429,6 +429,69 @@ export class EditorManager {
   }
 
   /**
+   * Builds a serialized snapshot of the current panel state.
+   * @param {HTMLElement} panel - The entry panel
+   * @returns {string|null} Snapshot string
+   * @private
+   */
+  _getPanelSnapshot(panel) {
+    if (!panel) return null;
+    const panelId = panel.id;
+    if (!panelId) return null;
+    const nameInput = panel.querySelector('input.entry-name');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const richEditor = this.richEditors.get(panelId);
+    const content = richEditor ? richEditor.getContent() : '';
+    const mood = panel.dataset.mood || '';
+    const tags = Array.isArray(this.currentTags) ? this.currentTags : [];
+
+    return JSON.stringify({
+      name: name || 'Untitled',
+      content,
+      mood,
+      tags
+    });
+  }
+
+  /**
+   * Caches the current panel snapshot as the last saved state.
+   * @param {HTMLElement} panel - The entry panel
+   * @private
+   */
+  _cachePanelSnapshot(panel) {
+    const snapshot = this._getPanelSnapshot(panel);
+    if (snapshot && panel?.id) {
+      this.lastAutosaveState.set(panel.id, snapshot);
+      this.hasUnsavedChanges = false;
+    }
+  }
+
+  /**
+   * Returns to the entries list from the edit panel.
+   * @param {HTMLElement} panel - The edit entry panel
+   * @public
+   */
+  returnToEntriesPanel(panel) {
+    if (!panel || panel.id !== 'edit-entry-panel') return;
+
+    if (this.isAutosaveEnabled()) {
+      this.performLiveAutosave(panel);
+    }
+
+    // Reset edit panel state
+    panel.classList.remove('expand');
+    this.currentEntryId = null;
+    this.currentEntryIndex = null;
+    this.currentTags = [];
+    this.renderTagsUI(panel, { autosave: false });
+    this.clearAutosaveState(panel.id);
+
+    PanelManager.transitionPanels(panel, this.journalPanel).then(() => {
+      this.displayEntries();
+    });
+  }
+
+  /**
    * Configures the new entry panel animation.
    * Currently skips paint-drop and immediately expands panel.
    * 
@@ -691,6 +754,7 @@ export class EditorManager {
 
         // Render tags in edit panel
       this.renderTagsUI(this.editEntryPanel, { autosave: false });
+      this._cachePanelSnapshot(this.editEntryPanel);
 
         // Ensure edit panel shows its contents immediately, mirroring new-entry-panel behaviour
         this.editEntryPanel.classList.add('expand');

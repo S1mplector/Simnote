@@ -103,16 +103,19 @@ export class KeyboardManager {
 
     // Escape to go back
     this.register('Escape', {}, () => {
-      const entryPanel = document.querySelector(
-        '#new-entry-panel:not([style*="display: none"]), ' +
-        '#edit-entry-panel:not([style*="display: none"])'
-      );
-      if (entryPanel && window.editorManager) {
+      const editEntryPanel = document.querySelector('#edit-entry-panel:not([style*="display: none"])');
+      if (editEntryPanel && window.editorManager?.returnToEntriesPanel) {
+        window.editorManager.returnToEntriesPanel(editEntryPanel);
+        return;
+      }
+
+      const newEntryPanel = document.querySelector('#new-entry-panel:not([style*="display: none"])');
+      if (newEntryPanel && window.editorManager) {
         if (window.editorManager.handleSaveButton) {
-          window.editorManager.handleSaveButton(entryPanel);
+          window.editorManager.handleSaveButton(newEntryPanel);
         }
         if (window.editorManager.handleBackButton) {
-          window.editorManager.handleBackButton(entryPanel);
+          window.editorManager.handleBackButton(newEntryPanel);
         }
         return;
       }
