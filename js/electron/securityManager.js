@@ -394,12 +394,16 @@ class SecurityManager {
     const iv = crypto.randomBytes(IV_LENGTH);
 
     if (nativeAddon?.encryptAes256Gcm) {
-      const result = nativeAddon.encryptAes256Gcm(buffer, key, iv);
-      return {
-        iv,
-        authTag: Buffer.from(result.authTag),
-        encrypted: Buffer.from(result.ciphertext)
-      };
+      try {
+        const result = nativeAddon.encryptAes256Gcm(buffer, key, iv);
+        return {
+          iv,
+          authTag: Buffer.from(result.authTag),
+          encrypted: Buffer.from(result.ciphertext)
+        };
+      } catch (err) {
+        // Fall back to Node crypto if native AES-GCM is unavailable.
+      }
     }
 
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -419,8 +423,12 @@ class SecurityManager {
    */
   _decryptBufferWithKey(encrypted, key, iv, authTag) {
     if (nativeAddon?.decryptAes256Gcm) {
-      const decrypted = nativeAddon.decryptAes256Gcm(encrypted, key, iv, authTag);
-      return Buffer.from(decrypted);
+      try {
+        const decrypted = nativeAddon.decryptAes256Gcm(encrypted, key, iv, authTag);
+        return Buffer.from(decrypted);
+      } catch (err) {
+        // Fall back to Node crypto if native AES-GCM is unavailable.
+      }
     }
 
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);

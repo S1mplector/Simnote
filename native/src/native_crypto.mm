@@ -7,6 +7,12 @@
 #import <CommonCrypto/CommonCrypto.h>
 #import <Security/Security.h>
 
+#if defined(kCCModeGCM) && defined(CCCryptorGCMAddIV) && defined(CCCryptorGCMEncrypt) && defined(CCCryptorGCMDecrypt) && defined(CCCryptorGCMFinalize)
+#define SIMNOTE_HAS_GCM 1
+#else
+#define SIMNOTE_HAS_GCM 0
+#endif
+
 namespace simnote_native {
 
 Napi::Value EncryptAes256Cbc(const Napi::CallbackInfo& info) {
@@ -87,6 +93,7 @@ Napi::Value DecryptAes256Cbc(const Napi::CallbackInfo& info) {
   return Napi::Buffer<uint8_t>::Copy(env, out.data(), written);
 }
 
+#if SIMNOTE_HAS_GCM
 Napi::Value EncryptAes256Gcm(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   if (info.Length() < 3 || !info[0].IsBuffer() || !info[1].IsBuffer() || !info[2].IsBuffer()) {
@@ -230,6 +237,17 @@ Napi::Value DecryptAes256Gcm(const Napi::CallbackInfo& info) {
 
   return Napi::Buffer<uint8_t>::Copy(env, out.data(), out.size());
 }
+#else
+Napi::Value EncryptAes256Gcm(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  throw Napi::Error::New(env, "encryptAes256Gcm is not supported by this SDK");
+}
+
+Napi::Value DecryptAes256Gcm(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  throw Napi::Error::New(env, "decryptAes256Gcm is not supported by this SDK");
+}
+#endif
 
 Napi::Value Pbkdf2Sha256(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();

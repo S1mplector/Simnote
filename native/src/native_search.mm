@@ -24,12 +24,12 @@ struct DocTokens {
   std::vector<uint8_t> bloom;
 };
 
-struct SearchIndex {
+struct IndexState {
   std::unordered_map<std::string, DocTokens> docs;
   std::unordered_map<std::string, std::unordered_set<std::string>> prefixIndex;
 };
 
-std::unordered_map<std::string, SearchIndex> gIndices;
+std::unordered_map<std::string, IndexState> gIndices;
 std::mutex gMutex;
 
 uint64_t HashToken(const std::string& token, uint64_t seed) {
@@ -70,7 +70,7 @@ std::vector<std::string> Tokenize(NSString *text) {
   return tokens;
 }
 
-void RemoveDocFromPrefixIndex(SearchIndex& index, const std::string& docId, const std::unordered_set<std::string>& tokens) {
+void RemoveDocFromPrefixIndex(IndexState& index, const std::string& docId, const std::unordered_set<std::string>& tokens) {
   for (const auto& token : tokens) {
     size_t maxLen = std::min(token.size(), kMaxPrefixLength);
     for (size_t len = 1; len <= maxLen; len++) {
@@ -114,7 +114,7 @@ Napi::Value CreateSearchIndex(const Napi::CallbackInfo& info) {
 
   std::string indexId = info[0].As<Napi::String>().Utf8Value();
   std::lock_guard<std::mutex> lock(gMutex);
-  gIndices[indexId] = SearchIndex();
+  gIndices[indexId] = IndexState();
   return Napi::Boolean::New(env, true);
 }
 
@@ -183,7 +183,7 @@ Napi::Value IndexTextIncremental(const Napi::CallbackInfo& info) {
   }
 
   std::lock_guard<std::mutex> lock(gMutex);
-  SearchIndex& index = gIndices[indexId];
+  IndexState& index = gIndices[indexId];
 
   auto existing = index.docs.find(docId);
   if (existing != index.docs.end()) {
@@ -251,7 +251,7 @@ Napi::Value SearchIndex(const Napi::CallbackInfo& info) {
     return Napi::Array::New(env);
   }
 
-  SearchIndex& index = idxIt->second;
+  IndexState& index = idxIt->second;
   std::unordered_set<std::string> candidates;
   bool seeded = false;
   for (const auto& token : queryTokens) {

@@ -41,4 +41,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
 } // namespace simnote_native
 
-NODE_API_MODULE(simnote_native, simnote_native::Init)
+static Napi::Object InitModule(Napi::Env env, Napi::Object exports) {
+  return simnote_native::Init(env, exports);
+}
+
+NODE_API_MODULE(simnote_native, InitModule)
