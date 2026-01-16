@@ -28,6 +28,13 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+let nativeAddon = null;
+try {
+  ({ nativeAddon } = require('../electron/nativeAddon.js'));
+} catch (err) {
+  nativeAddon = null;
+}
+
 /** @constant {string} File extension for simnote files */
 const SIMNOTE_EXTENSION = '.simnote';
 /** @constant {number} Current file format version */
@@ -136,6 +143,37 @@ class FileStorageManager {
   }
 
   /**
+   * Reads a file with optional native acceleration.
+   * @param {string} filePath - Target path
+   * @param {string|null} [encoding] - Encoding or null for buffer
+   * @returns {string|Buffer}
+   * @private
+   */
+  _readFile(filePath, encoding = 'utf8') {
+    this._assertWithinStorageDir(filePath);
+    if (nativeAddon?.readFile) {
+      const buffer = nativeAddon.readFile(filePath);
+      return encoding ? buffer.toString(encoding) : buffer;
+    }
+    return fs.readFileSync(filePath, encoding || undefined);
+  }
+
+  /**
+   * Writes a binary file with optional native acceleration.
+   * @param {string} filePath - Target path
+   * @param {Buffer} buffer - Data to write
+   * @private
+   */
+  _writeBinaryFile(filePath, buffer) {
+    this._assertWithinStorageDir(filePath);
+    if (nativeAddon?.writeFile) {
+      nativeAddon.writeFile(filePath, buffer);
+      return;
+    }
+    fs.writeFileSync(filePath, buffer);
+  }
+
+  /**
    * Writes a file atomically to reduce corruption risk.
    * @param {string} filePath - Target path
    * @param {string|Buffer} data - File contents
@@ -145,6 +183,11 @@ class FileStorageManager {
   _writeFileAtomic(filePath, data, encoding = 'utf8') {
     const dir = path.dirname(filePath);
     this._assertWithinStorageDir(dir);
+    if (nativeAddon?.writeFileAtomic) {
+      const buffer = typeof data === 'string' ? Buffer.from(data, encoding) : data;
+      nativeAddon.writeFileAtomic(filePath, buffer);
+      return;
+    }
     const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
     if (typeof data === 'string') {
       fs.writeFileSync(tempPath, data, encoding);
@@ -342,7 +385,7 @@ class FileStorageManager {
       const fileName = `clip-${clipIndex}${extension}`;
       const filePath = this._resolveStoragePath(AUDIO_DIR_NAME, safeId, fileName);
       const buffer = Buffer.from(base64, 'base64');
-      fs.writeFileSync(filePath, buffer);
+      this._writeBinaryFile(filePath, buffer);
       const relPath = path.posix.join(AUDIO_DIR_NAME, safeId, fileName);
       audioFiles.push({ path: relPath, mimeType, bytes: buffer.length });
       return `data-audio-file="${relPath}"`;
@@ -362,7 +405,7 @@ class FileStorageManager {
     files.forEach((file) => {
       if (path.extname(file) === SIMNOTE_EXTENSION) {
         const filePath = this._resolveStoragePath(file);
-        const data = fs.readFileSync(filePath, 'utf8');
+        const data = this._readFile(filePath, 'utf8');
         try {
           const simnoteData = JSON.parse(data);
           entries.push(this._simnoteToEntry(simnoteData));
