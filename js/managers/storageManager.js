@@ -74,6 +74,61 @@ const WATCHDOG_CONFIG = {
   enableWarnings: true
 };
 
+/** @constant {number} Max length for entry names */
+const MAX_ENTRY_NAME_LENGTH = 200;
+/** @constant {number} Max length for moods */
+const MAX_MOOD_LENGTH = 50;
+/** @constant {number} Max length for tag text */
+const MAX_TAG_LENGTH = 40;
+/** @constant {number} Max number of tags per entry */
+const MAX_TAGS = 30;
+/** @constant {number} Max length for font settings */
+const MAX_FONT_VALUE_LENGTH = 100;
+
+/**
+ * Normalizes a string value with length limits.
+ * @param {string} value - Raw value
+ * @param {number} maxLen - Max length
+ * @returns {string}
+ * @private
+ */
+function normalizeString(value, maxLen) {
+  const text = typeof value === 'string' ? value : '';
+  const trimmed = text.trim();
+  if (!maxLen) return trimmed;
+  return trimmed.length > maxLen ? trimmed.slice(0, maxLen) : trimmed;
+}
+
+/**
+ * Normalizes tag arrays to safe strings.
+ * @param {string[]|string} tags - Raw tags
+ * @returns {string[]}
+ * @private
+ */
+function normalizeTags(tags) {
+  const list = Array.isArray(tags)
+    ? tags
+    : (typeof tags === 'string' ? tags.split(',') : []);
+  return list
+    .map(tag => normalizeString(String(tag), MAX_TAG_LENGTH))
+    .filter(Boolean)
+    .slice(0, MAX_TAGS);
+}
+
+/**
+ * Sanitizes rich HTML content if the sanitizer is available.
+ * @param {string} content - Raw HTML content
+ * @returns {string}
+ * @private
+ */
+function sanitizeEntryContent(content) {
+  const raw = typeof content === 'string' ? content : '';
+  if (typeof window !== 'undefined' && window.Sanitizer?.sanitizeHtml) {
+    return window.Sanitizer.sanitizeHtml(raw);
+  }
+  return raw;
+}
+
 /** @type {number} Last save timestamp for rate limiting */
 let lastSaveTime = 0;
 /** @type {number|null} Auto-backup interval ID */
@@ -662,19 +717,26 @@ export class StorageManager {
    */
   static saveEntry(name, content, mood = '', fontFamily = '', fontSize = '', tags = []) {
     try {
+      const safeName = normalizeString(name, MAX_ENTRY_NAME_LENGTH) || 'Untitled';
+      const safeContent = sanitizeEntryContent(content);
+      const safeMood = normalizeString(mood, MAX_MOOD_LENGTH);
+      const safeFontFamily = normalizeString(fontFamily, MAX_FONT_VALUE_LENGTH);
+      const safeFontSize = normalizeString(fontSize, MAX_FONT_VALUE_LENGTH);
+      const safeTags = normalizeTags(tags);
+
       if (isElectron) {
         return window.electronAPI.nativeDb.saveEntry({
-          name,
-          content,
-          mood,
-          fontFamily,
-          fontSize,
-          tags
+          name: safeName,
+          content: safeContent,
+          mood: safeMood,
+          fontFamily: safeFontFamily,
+          fontSize: safeFontSize,
+          tags: safeTags
         });
       }
 
       if (sqliteReady) {
-        const id = dbManager.saveEntry(name, content, mood, fontFamily, fontSize, tags);
+        const id = dbManager.saveEntry(safeName, safeContent, safeMood, safeFontFamily, safeFontSize, safeTags);
         return dbManager.getEntryById(id);
       }
       
@@ -686,17 +748,17 @@ export class StorageManager {
       
       const entries = StorageManager.getEntries();
       const now = new Date().toISOString();
-      const wordCount = StorageManager.countWords(content);
+      const wordCount = StorageManager.countWords(safeContent);
       
       const newEntry = {
         id: StorageManager.generateId(),
-        name,
-        content,
-        mood,
+        name: safeName,
+        content: safeContent,
+        mood: safeMood,
         wordCount,
-        fontFamily,
-        fontSize,
-        tags: Array.isArray(tags) ? tags : [],
+        fontFamily: safeFontFamily,
+        fontSize: safeFontSize,
+        tags: safeTags,
         favorite: false,
         createdAt: now,
         updatedAt: now,
@@ -751,6 +813,13 @@ export class StorageManager {
    * @static
    */
   static updateEntry(indexOrId, name, content, mood, fontFamily = '', fontSize = '', tags = null) {
+    const safeName = normalizeString(name, MAX_ENTRY_NAME_LENGTH) || 'Untitled';
+    const safeContent = sanitizeEntryContent(content);
+    const safeMood = normalizeString(mood, MAX_MOOD_LENGTH);
+    const safeFontFamily = normalizeString(fontFamily, MAX_FONT_VALUE_LENGTH);
+    const safeFontSize = normalizeString(fontSize, MAX_FONT_VALUE_LENGTH);
+    const safeTags = tags === null ? null : normalizeTags(tags);
+
     if (isElectron) {
       const id = typeof indexOrId === 'number'
         ? StorageManager.getEntries()[indexOrId]?.id
@@ -758,12 +827,12 @@ export class StorageManager {
       if (id) {
         return window.electronAPI.nativeDb.updateEntry({
           id,
-          name,
-          content,
-          mood,
-          fontFamily,
-          fontSize,
-          tags
+          name: safeName,
+          content: safeContent,
+          mood: safeMood,
+          fontFamily: safeFontFamily,
+          fontSize: safeFontSize,
+          tags: safeTags
         });
       }
       return null;
@@ -775,7 +844,7 @@ export class StorageManager {
         ? StorageManager.getEntries()[indexOrId]?.id 
         : indexOrId;
       if (id) {
-        dbManager.updateEntry(id, name, content, mood, fontFamily, fontSize, tags || []);
+        dbManager.updateEntry(id, safeName, safeContent, safeMood, safeFontFamily, safeFontSize, safeTags || []);
         return dbManager.getEntryById(id);
       }
       return null;
@@ -786,18 +855,18 @@ export class StorageManager {
     
     if (index >= 0 && index < entries.length) {
       const existing = entries[index];
-      const wordCount = StorageManager.countWords(content);
+      const wordCount = StorageManager.countWords(safeContent);
       const now = new Date().toISOString();
       
       entries[index] = {
         ...existing,
-        name,
-        content,
-        mood: mood !== undefined ? mood : (existing.mood || ''),
+        name: safeName,
+        content: safeContent,
+        mood: safeMood !== undefined ? safeMood : (existing.mood || ''),
         wordCount,
-        fontFamily: fontFamily || existing.fontFamily,
-        fontSize: fontSize || existing.fontSize,
-        tags: tags !== null ? tags : (existing.tags || []),
+        fontFamily: safeFontFamily || existing.fontFamily,
+        fontSize: safeFontSize || existing.fontSize,
+        tags: safeTags !== null ? safeTags : (existing.tags || []),
         updatedAt: now,
         date: now
       };
@@ -1426,13 +1495,13 @@ export class StorageManager {
     // Handle both object format and legacy parameters
     const entry = typeof entryData === 'object' ? {
       id: entryData.id || StorageManager.generateId(),
-      name: entryData.name || entryData.caption || 'Untitled',
-      content: entryData.content || '',
-      mood: entryData.mood || '',
-      wordCount: entryData.wordCount || StorageManager.countWords(entryData.content || ''),
-      fontFamily: entryData.fontFamily || '',
-      fontSize: entryData.fontSize || '',
-      tags: entryData.tags || [],
+      name: normalizeString(entryData.name || entryData.caption || 'Untitled', MAX_ENTRY_NAME_LENGTH),
+      content: sanitizeEntryContent(entryData.content || ''),
+      mood: normalizeString(entryData.mood || '', MAX_MOOD_LENGTH),
+      wordCount: entryData.wordCount || StorageManager.countWords(sanitizeEntryContent(entryData.content || '')),
+      fontFamily: normalizeString(entryData.fontFamily || '', MAX_FONT_VALUE_LENGTH),
+      fontSize: normalizeString(entryData.fontSize || '', MAX_FONT_VALUE_LENGTH),
+      tags: normalizeTags(entryData.tags || []),
       favorite: entryData.favorite || false,
       createdAt: entryData.createdAt || entryData.date || now,
       updatedAt: entryData.updatedAt || now,

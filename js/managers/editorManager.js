@@ -62,6 +62,22 @@ const EDITOR_WATCHDOG_CONFIG = {
 };
 
 /**
+ * Escapes HTML special characters for safe insertion into innerHTML.
+ * @param {string} value - Raw text value
+ * @returns {string} Escaped string
+ * @private
+ */
+function escapeHtml(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Saves draft content to localStorage as emergency backup.
  * @param {string} panelId - The panel ID
  * @param {Object} draft - Draft content object
@@ -614,7 +630,7 @@ export class EditorManager {
       entries.forEach((entry) => {
         if(entry.mood !== currentGroup){
           currentGroup = entry.mood;
-          html += `<li class="entry-group">${currentGroup || 'No Mood'}</li>`;
+          html += `<li class="entry-group">${escapeHtml(currentGroup || 'No Mood')}</li>`;
         }
         html += this.renderEntryItem(entry);
       });
@@ -728,16 +744,18 @@ export class EditorManager {
    */
   renderEntryItem(entry) {
     const formattedDate = new Date(entry.createdAt || entry.date).toLocaleString();
+    const safeId = escapeHtml(String(entry.id || ''));
+    const safeName = escapeHtml(entry.name || 'Untitled');
     const tagsHtml = (entry.tags || []).length > 0 
-      ? `<span class="entry-tags">${entry.tags.map(t => `<span class="tag-pill">${t}</span>`).join('')}</span>` 
+      ? `<span class="entry-tags">${entry.tags.map(t => `<span class="tag-pill">${escapeHtml(String(t))}</span>`).join('')}</span>` 
       : '';
     const favoriteClass = entry.favorite ? 'active' : '';
     const favoriteIcon = entry.favorite ? '⭐' : '☆';
     
     return `
-      <li data-id="${entry.id}" data-index="${entry.__index}" class="entry-item ${entry.favorite ? 'is-favorite' : ''}">
+      <li data-id="${safeId}" data-index="${entry.__index}" class="entry-item ${entry.favorite ? 'is-favorite' : ''}">
         <div class="entry-item-main">
-          <span class="entry-name-display">${entry.name}</span>
+          <span class="entry-name-display">${safeName}</span>
           ${tagsHtml}
         </div>
         <div class="entry-item-meta">
@@ -745,8 +763,8 @@ export class EditorManager {
           <span class="entry-word-count">${entry.wordCount || 0} words</span>
         </div>
         <div class="entry-item-actions">
-          <button class="favorite-btn ${favoriteClass}" data-id="${entry.id}" data-index="${entry.__index}">${favoriteIcon}</button>
-          <button class="delete-entry" data-id="${entry.id}" data-index="${entry.__index}">🗑️</button>
+          <button class="favorite-btn ${favoriteClass}" data-id="${safeId}" data-index="${entry.__index}">${favoriteIcon}</button>
+          <button class="delete-entry" data-id="${safeId}" data-index="${entry.__index}">🗑️</button>
         </div>
       </li>`;
   }
@@ -934,9 +952,10 @@ export class EditorManager {
           t.includes(val) && !this.currentTags.includes(t)
         ).slice(0, 5);
         
-        suggestions.innerHTML = matches.map(t => 
-          `<div class="tag-suggestion" data-tag="${t}">${t}</div>`
-        ).join('');
+        suggestions.innerHTML = matches.map(t => {
+          const safeTag = escapeHtml(String(t));
+          return `<div class="tag-suggestion" data-tag="${safeTag}">${safeTag}</div>`;
+        }).join('');
         
         suggestions.querySelectorAll('.tag-suggestion').forEach(el => {
           el.addEventListener('click', () => {
@@ -973,12 +992,13 @@ export class EditorManager {
     const tagsList = panel.querySelector('.tags-list');
     if (!tagsList) return;
     
-    tagsList.innerHTML = this.currentTags.map(tag => 
-      `<span class="tag-pill editable">
-        ${tag}
-        <button class="tag-remove" data-tag="${tag}">×</button>
-      </span>`
-    ).join('');
+    tagsList.innerHTML = this.currentTags.map(tag => {
+      const safeTag = escapeHtml(String(tag));
+      return `<span class="tag-pill editable">
+        ${safeTag}
+        <button class="tag-remove" data-tag="${safeTag}">×</button>
+      </span>`;
+    }).join('');
     
     // Add remove handlers
     tagsList.querySelectorAll('.tag-remove').forEach(btn => {

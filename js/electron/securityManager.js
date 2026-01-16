@@ -69,7 +69,11 @@ class SecurityManager {
       if (!fs.existsSync(this.storageDir)) {
         fs.mkdirSync(this.storageDir, { recursive: true });
       }
-      fs.writeFileSync(this.securityConfigPath, JSON.stringify(this.config, null, 2));
+      fs.writeFileSync(
+        this.securityConfigPath,
+        JSON.stringify(this.config, null, 2),
+        { mode: 0o600 }
+      );
     } catch (err) {
       console.error('[Security] Failed to save config:', err.message);
     }
@@ -165,7 +169,10 @@ class SecurityManager {
     }
     const encrypted = safeStorage.encryptString(value);
     const filePath = path.join(this.storageDir, `.${key}.enc`);
-    fs.writeFileSync(filePath, encrypted);
+    if (!fs.existsSync(this.storageDir)) {
+      fs.mkdirSync(this.storageDir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, encrypted, { mode: 0o600 });
   }
 
   /**
@@ -327,7 +334,13 @@ class SecurityManager {
       const passcodeHash = crypto.createHash('sha256').update(passcode + this.config.salt).digest('hex');
       const storedHash = this._secureRetrieve(ACCOUNT_PASSCODE_HASH);
 
-      if (passcodeHash !== storedHash) {
+      if (!storedHash) {
+        throw new Error('Invalid passcode');
+      }
+
+      const passcodeBuf = Buffer.from(passcodeHash, 'hex');
+      const storedBuf = Buffer.from(storedHash, 'hex');
+      if (passcodeBuf.length !== storedBuf.length || !crypto.timingSafeEqual(passcodeBuf, storedBuf)) {
         throw new Error('Invalid passcode');
       }
 
@@ -378,6 +391,9 @@ class SecurityManager {
    * Locks the app (clears master key from memory).
    */
   lock() {
+    if (this.masterKey) {
+      this.masterKey.fill(0);
+    }
     this.masterKey = null;
     this.isUnlocked = false;
     console.log('[Security] App locked');
@@ -460,6 +476,9 @@ class SecurityManager {
     this._saveConfig();
 
     // Clear state
+    if (this.masterKey) {
+      this.masterKey.fill(0);
+    }
     this.masterKey = null;
     this.isUnlocked = true; // No security means always "unlocked"
 

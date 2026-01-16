@@ -83,6 +83,45 @@ export class RichEditorManager {
   }
 
   /**
+   * Sanitizes HTML using the global sanitizer if available.
+   * @param {string} html - Raw HTML
+   * @returns {string} Sanitized HTML
+   * @private
+   */
+  _sanitizeHtml(html) {
+    if (typeof window !== 'undefined' && window.Sanitizer?.sanitizeHtml) {
+      return window.Sanitizer.sanitizeHtml(html || '');
+    }
+    return html || '';
+  }
+
+  /**
+   * Validates link URLs using the global sanitizer if available.
+   * @param {string} url - URL to validate
+   * @returns {string|null} Safe URL or null
+   * @private
+   */
+  _sanitizeLinkUrl(url) {
+    const trimmed = typeof url === 'string' ? url.trim() : '';
+    if (!trimmed) return null;
+    if (typeof window !== 'undefined' && window.Sanitizer?.isAllowedUrl) {
+      return window.Sanitizer.isAllowedUrl(trimmed, 'a', 'href') ? trimmed : null;
+    }
+    return trimmed;
+  }
+
+  /**
+   * Applies security attributes to all links in the editor.
+   * @private
+   */
+  _enforceLinkSecurity() {
+    this.editor.querySelectorAll('a[href]').forEach((link) => {
+      link.setAttribute('rel', 'noopener noreferrer');
+      link.setAttribute('target', '_blank');
+    });
+  }
+
+  /**
    * Initializes the audio recorder integration.
    * Creates an AudioRecorderManager instance bound to this panel.
    * 
@@ -231,6 +270,20 @@ export class RichEditorManager {
           this.insertImage(file);
           return;
         }
+      }
+
+      const html = e.clipboardData.getData('text/html');
+      if (html) {
+        e.preventDefault();
+        const sanitized = this._sanitizeHtml(html);
+        document.execCommand('insertHTML', false, sanitized);
+        return;
+      }
+
+      const text = e.clipboardData.getData('text/plain');
+      if (text) {
+        e.preventDefault();
+        document.execCommand('insertText', false, text);
       }
     });
 
@@ -417,18 +470,20 @@ export class RichEditorManager {
     dialog.querySelector('.cancel-btn').addEventListener('click', close);
     
     dialog.querySelector('.confirm-btn').addEventListener('click', () => {
-      const url = input.value.trim();
-      if (url) {
+      const safeUrl = this._sanitizeLinkUrl(input.value);
+      if (safeUrl) {
         this.editor.focus();
         
         // Restore selection
         if (selectedText) {
-          document.execCommand('createLink', false, url);
+          document.execCommand('createLink', false, safeUrl);
+          this._enforceLinkSecurity();
         } else {
           const link = document.createElement('a');
-          link.href = url;
-          link.textContent = url;
+          link.href = safeUrl;
+          link.textContent = safeUrl;
           link.target = '_blank';
+          link.rel = 'noopener noreferrer';
           this.insertAtCursor(link);
         }
       }
@@ -451,7 +506,14 @@ export class RichEditorManager {
    * @public
    */
   getContent() {
-    return this.editor.innerHTML;
+    const raw = this.editor.innerHTML;
+    const sanitized = this._sanitizeHtml(raw);
+    if (sanitized !== raw) {
+      this.editor.innerHTML = sanitized;
+      AudioRecorderManager.restoreAudioPlayers(this.editor);
+      this._enforceLinkSecurity();
+    }
+    return sanitized;
   }
 
   /**
@@ -462,9 +524,11 @@ export class RichEditorManager {
    * @public
    */
   setContent(html) {
-    this.editor.innerHTML = html || '';
+    const sanitized = this._sanitizeHtml(html || '');
+    this.editor.innerHTML = sanitized;
     // Restore audio players from saved data attributes
     AudioRecorderManager.restoreAudioPlayers(this.editor);
+    this._enforceLinkSecurity();
     if (typeof window !== 'undefined' && typeof window.updateEntryWordCount === 'function') {
       window.updateEntryWordCount(this.editor);
     }

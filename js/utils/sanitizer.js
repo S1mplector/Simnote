@@ -11,21 +11,19 @@ const ALLOWED_TAGS = new Set([
   'p', 'br', 'b', 'i', 'u', 's', 'em', 'strong', 'span', 'div',
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
-  'a', 'img', 'hr', 'sub', 'sup', 'mark'
+  'a', 'img', 'hr', 'sub', 'sup', 'mark', 'audio', 'source'
 ]);
 
 /**
  * Allowed attributes for HTML elements.
  */
 const ALLOWED_ATTRS = new Set([
-  'href', 'src', 'alt', 'title', 'class', 'id', 'style',
-  'target', 'rel', 'width', 'height', 'data-*'
+  'href', 'src', 'alt', 'title', 'class', 'id',
+  'target', 'rel', 'width', 'height', 'controls', 'preload', 'controlslist', 'data-*'
 ]);
 
-/**
- * URL protocols allowed in href/src attributes.
- */
-const ALLOWED_PROTOCOLS = ['http:', 'https:', 'data:', 'blob:'];
+/** @constant {RegExp} Allowed data URL prefixes for media */
+const DATA_URL_ALLOWLIST = /^data:(image|audio)\//i;
 
 /**
  * Escapes HTML special characters to prevent XSS.
@@ -48,11 +46,37 @@ function escapeHtml(str) {
  * @param {string} url - The URL to check
  * @returns {boolean} - True if protocol is allowed
  */
-function isAllowedUrl(url) {
+function isAllowedUrl(url, tagName = '', attrName = '') {
   if (!url || typeof url !== 'string') return false;
   try {
-    const parsed = new URL(url, window.location.href);
-    return ALLOWED_PROTOCOLS.includes(parsed.protocol);
+    const trimmed = url.trim();
+    const lower = trimmed.toLowerCase();
+    const tag = (tagName || '').toLowerCase();
+    const attr = (attrName || '').toLowerCase();
+
+    if (lower.startsWith('data:')) {
+      return attr === 'src' && DATA_URL_ALLOWLIST.test(trimmed);
+    }
+
+    if (lower.startsWith('blob:')) {
+      return attr === 'src' && (tag === 'img' || tag === 'audio' || tag === 'source');
+    }
+
+    if (lower.startsWith('file:')) {
+      return false;
+    }
+
+    const parsed = new URL(trimmed, window.location.href);
+
+    if (attr === 'href') {
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'mailto:';
+    }
+
+    if (attr === 'src') {
+      return false;
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -108,7 +132,7 @@ function sanitizeNode(node) {
         }
         
         // Validate URLs in href/src
-        if ((attrName === 'href' || attrName === 'src') && !isAllowedUrl(attr.value)) {
+        if ((attrName === 'href' || attrName === 'src') && !isAllowedUrl(attr.value, tagName, attrName)) {
           attrsToRemove.push(attr.name);
           continue;
         }

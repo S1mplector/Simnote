@@ -52,6 +52,47 @@ class BrowserFileStorage {
   }
 
   /**
+   * Normalizes an entry ID for safe filenames.
+   * @param {string|number} entryId - Entry ID
+   * @returns {string}
+   * @private
+   */
+  _normalizeEntryId(entryId) {
+    const raw = String(entryId || '').trim();
+    return raw ? encodeURIComponent(raw) : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  /**
+   * Ensures the entry has an ID.
+   * @param {Object} entry - Entry object
+   * @returns {string}
+   * @private
+   */
+  _ensureEntryId(entry) {
+    if (!entry || (!entry.id && entry.id !== 0)) {
+      const fallbackId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      if (entry) entry.id = fallbackId;
+      return fallbackId;
+    }
+    return String(entry.id);
+  }
+
+  /**
+   * Normalizes entry names for filenames.
+   * @param {string} entryName - Entry name
+   * @returns {string}
+   * @private
+   */
+  _normalizeEntryName(entryName) {
+    const safeName = String(entryName || 'entry')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 50);
+    return safeName || 'entry';
+  }
+
+  /**
    * Checks if File System Access API is supported.
    * @static
    * @returns {boolean} Whether API is available
@@ -203,12 +244,9 @@ class BrowserFileStorage {
    * @private
    */
   _generateFilename(entry) {
-    const safeName = (entry.name || 'untitled')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .substring(0, 50);
-    return `${safeName}-${entry.id}${SIMNOTE_EXTENSION}`;
+    const safeName = this._normalizeEntryName(entry?.name);
+    const safeId = this._normalizeEntryId(entry?.id);
+    return `${safeName}-${safeId}${SIMNOTE_EXTENSION}`;
   }
 
   /**
@@ -273,6 +311,7 @@ class BrowserFileStorage {
     }
 
     try {
+      this._ensureEntryId(entry);
       const filename = this._generateFilename(entry);
       const simnoteData = this._entryToSimnote(entry);
       
@@ -312,8 +351,10 @@ class BrowserFileStorage {
     if (!this.isEnabled || !this.dirHandle) return false;
 
     try {
+      const safeId = this._normalizeEntryId(id);
+      const targetSuffix = `-${safeId}${SIMNOTE_EXTENSION}`;
       for await (const [name, handle] of this.dirHandle) {
-        if (handle.kind === 'file' && name.endsWith(SIMNOTE_EXTENSION) && name.includes(id)) {
+        if (handle.kind === 'file' && name.endsWith(targetSuffix)) {
           await this.dirHandle.removeEntry(name);
           console.log(`[FileStorageBrowser] Deleted: ${name}`);
           return true;

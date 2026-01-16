@@ -3,6 +3,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { pathToFileURL } = require('url');
 
 const { FileStorageManager } = require('../managers/fileStorageManager.js');
 const { NativeDbManager } = require('./nativeDbManager.js');
@@ -14,6 +15,53 @@ let securityManager = null;
 let storageDirPath = null;
 let autoLockTimer = null;
 let mainWindow = null;
+
+const MAX_IMPORT_SIZE = 25 * 1024 * 1024;
+const MAX_ENTRY_NAME_LENGTH = 200;
+const MAX_MOOD_LENGTH = 50;
+const MAX_TAGS = 30;
+const MAX_TAG_LENGTH = 40;
+
+function normalizeString(value, maxLen) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!maxLen) return text;
+  return text.length > maxLen ? text.slice(0, maxLen) : text;
+}
+
+function normalizeTags(tags) {
+  const list = Array.isArray(tags)
+    ? tags
+    : (typeof tags === 'string' ? tags.split(',') : []);
+  return list
+    .map(tag => normalizeString(String(tag), MAX_TAG_LENGTH))
+    .filter(Boolean)
+    .slice(0, MAX_TAGS);
+}
+
+function normalizeEntryPayload(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const hasTags = Object.prototype.hasOwnProperty.call(entry, 'tags');
+  return {
+    id: entry.id !== undefined && entry.id !== null ? String(entry.id) : undefined,
+    name: normalizeString(entry.name, MAX_ENTRY_NAME_LENGTH) || 'Untitled',
+    content: typeof entry.content === 'string' ? entry.content : '',
+    mood: normalizeString(entry.mood, MAX_MOOD_LENGTH),
+    tags: hasTags ? normalizeTags(entry.tags) : undefined,
+    favorite: !!entry.favorite,
+    wordCount: Number.isFinite(entry.wordCount) ? entry.wordCount : undefined,
+    fontFamily: normalizeString(entry.fontFamily, 100),
+    fontSize: normalizeString(entry.fontSize, 100),
+    createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : undefined,
+    updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : undefined,
+    audioFiles: Array.isArray(entry.audioFiles) ? entry.audioFiles : []
+  };
+}
+
+function isAllowedNavigation(url, appIndexUrl) {
+  if (!url || !appIndexUrl) return false;
+  if (!url.startsWith('file://')) return false;
+  return url === appIndexUrl || url.startsWith(`${appIndexUrl}#`) || url.startsWith(`${appIndexUrl}?`);
+}
 
 function getStorageDirPath() {
   if (!storageDirPath) {
@@ -70,6 +118,9 @@ function createWindow() {
   ensureSecurityManager();
   console.log(`[Electron] Storage directory: ${storageDir}`);
 
+  const appIndexPath = path.join(__dirname, '../../index.html');
+  const appIndexUrl = pathToFileURL(appIndexPath).toString();
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -79,16 +130,16 @@ function createWindow() {
       sandbox: true,
       webSecurity: true,
       allowRunningInsecureContent: false,
+      webviewTag: false,
       preload: path.join(__dirname, '../core/preload.js')
     }
   });
 
-  mainWindow.loadFile(path.join(__dirname, '../../index.html'));
+  mainWindow.loadFile(appIndexPath);
 
   // Security: Block navigation to external URLs
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    const parsedUrl = new URL(url);
-    if (parsedUrl.protocol !== 'file:') {
+    if (!isAllowedNavigation(url, appIndexUrl)) {
       event.preventDefault();
     }
   });
@@ -99,6 +150,20 @@ function createWindow() {
       shell.openExternal(url);
     }
     return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-attach-webview', (event) => {
+    event.preventDefault();
+  });
+
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    if (permission === 'media') {
+      const mediaTypes = details?.mediaTypes || [];
+      const allow = mediaTypes.includes('audio') && !mediaTypes.includes('video');
+      callback(allow);
+      return;
+    }
+    callback(false);
   });
 }
 
@@ -119,7 +184,9 @@ ipcMain.handle('save-entry', (event, { entryName, entryContent }) => {
   if (!ensureFileStorage()) {
     throw new Error("FileStorageManager not initialized!");
   }
-  fileStorageManager.saveEntry({ name: entryName, content: entryContent, id: `${Date.now()}` });
+  const safeName = normalizeString(entryName, MAX_ENTRY_NAME_LENGTH) || 'Untitled';
+  const safeContent = typeof entryContent === 'string' ? entryContent : '';
+  fileStorageManager.saveEntry({ name: safeName, content: safeContent, id: `${Date.now()}` });
   return "Entry saved successfully!";
 });
 
@@ -129,7 +196,11 @@ ipcMain.handle('save-entry-file', (event, entry) => {
   if (!ensureFileStorage()) {
     throw new Error("FileStorageManager not initialized!");
   }
-  const filename = fileStorageManager.saveEntry(entry);
+  const normalized = normalizeEntryPayload(entry);
+  if (!normalized) {
+    throw new Error('Invalid entry payload');
+  }
+  const filename = fileStorageManager.saveEntry(normalized);
   console.log('[Electron] Saved .simnote file:', filename);
   return filename;
 });
@@ -139,7 +210,11 @@ ipcMain.handle('update-entry-file', (event, entry) => {
   if (!ensureFileStorage()) {
     throw new Error("FileStorageManager not initialized!");
   }
-  return fileStorageManager.updateEntry(entry);
+  const normalized = normalizeEntryPayload(entry);
+  if (!normalized) {
+    throw new Error('Invalid entry payload');
+  }
+  return fileStorageManager.updateEntry(normalized);
 });
 
 // Delete entry .simnote file
@@ -147,7 +222,11 @@ ipcMain.handle('delete-entry-file', (event, id) => {
   if (!ensureFileStorage()) {
     throw new Error("FileStorageManager not initialized!");
   }
-  return fileStorageManager.deleteEntryById(id);
+  const safeId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
+  if (!safeId) {
+    throw new Error('Invalid entry ID');
+  }
+  return fileStorageManager.deleteEntryById(safeId);
 });
 
 // Get all entries from .simnote files
@@ -163,7 +242,11 @@ ipcMain.handle('sync-all-entries', (event, entries) => {
   if (!ensureFileStorage()) {
     throw new Error("FileStorageManager not initialized!");
   }
-  return fileStorageManager.syncAllEntries(entries);
+  if (!Array.isArray(entries)) {
+    throw new Error('Invalid entries payload');
+  }
+  const normalizedEntries = entries.map(normalizeEntryPayload).filter(Boolean);
+  return fileStorageManager.syncAllEntries(normalizedEntries);
 });
 
 // Get storage directory path
@@ -209,7 +292,8 @@ ipcMain.on('native-db-get-entries', (event) => {
 
 ipcMain.on('native-db-get-entry', (event, id) => {
   try {
-    event.returnValue = ensureNativeDb().getEntryById(id);
+    const safeId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
+    event.returnValue = ensureNativeDb().getEntryById(safeId);
   } catch (err) {
     console.error('[Electron] native-db-get-entry failed:', err);
     event.returnValue = null;
@@ -218,7 +302,8 @@ ipcMain.on('native-db-get-entry', (event, id) => {
 
 ipcMain.on('native-db-save-entry', (event, entry) => {
   try {
-    const saved = ensureNativeDb().saveEntry(entry);
+    const normalized = normalizeEntryPayload(entry) || {};
+    const saved = ensureNativeDb().saveEntry(normalized);
     ensureFileStorage()?.saveEntry(saved);
     event.returnValue = saved;
   } catch (err) {
@@ -229,7 +314,8 @@ ipcMain.on('native-db-save-entry', (event, entry) => {
 
 ipcMain.on('native-db-update-entry', (event, entry) => {
   try {
-    const updated = ensureNativeDb().updateEntry(entry);
+    const normalized = normalizeEntryPayload(entry) || {};
+    const updated = ensureNativeDb().updateEntry(normalized);
     if (updated) {
       ensureFileStorage()?.updateEntry(updated);
     }
@@ -242,9 +328,10 @@ ipcMain.on('native-db-update-entry', (event, entry) => {
 
 ipcMain.on('native-db-delete-entry', (event, id) => {
   try {
-    const deleted = ensureNativeDb().deleteEntry(id);
+    const safeId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
+    const deleted = ensureNativeDb().deleteEntry(safeId);
     if (deleted) {
-      ensureFileStorage()?.deleteEntryById(id);
+      ensureFileStorage()?.deleteEntryById(safeId);
     }
     event.returnValue = deleted;
   } catch (err) {
@@ -255,8 +342,9 @@ ipcMain.on('native-db-delete-entry', (event, id) => {
 
 ipcMain.on('native-db-toggle-favorite', (event, id) => {
   try {
-    const updated = ensureNativeDb().toggleFavorite(id);
-    const entry = ensureNativeDb().getEntryById(id);
+    const safeId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
+    const updated = ensureNativeDb().toggleFavorite(safeId);
+    const entry = ensureNativeDb().getEntryById(safeId);
     if (entry) {
       ensureFileStorage()?.updateEntry(entry);
     }
@@ -269,7 +357,8 @@ ipcMain.on('native-db-toggle-favorite', (event, id) => {
 
 ipcMain.on('native-db-get-metadata', (event, key) => {
   try {
-    event.returnValue = ensureNativeDb().getMetadata(key);
+    const safeKey = typeof key === 'string' ? key : '';
+    event.returnValue = ensureNativeDb().getMetadata(safeKey);
   } catch (err) {
     console.error('[Electron] native-db-get-metadata failed:', err);
     event.returnValue = null;
@@ -278,7 +367,8 @@ ipcMain.on('native-db-get-metadata', (event, key) => {
 
 ipcMain.on('native-db-set-metadata', (event, payload) => {
   try {
-    ensureNativeDb().setMetadata(payload?.key, payload?.value);
+    const safeKey = typeof payload?.key === 'string' ? payload.key : '';
+    ensureNativeDb().setMetadata(safeKey, payload?.value);
     event.returnValue = true;
   } catch (err) {
     console.error('[Electron] native-db-set-metadata failed:', err);
@@ -297,7 +387,8 @@ ipcMain.on('native-db-get-todays-mood', (event) => {
 
 ipcMain.on('native-db-set-todays-mood', (event, mood) => {
   try {
-    ensureNativeDb().setTodaysMood(mood);
+    const safeMood = normalizeString(mood, MAX_MOOD_LENGTH);
+    ensureNativeDb().setTodaysMood(safeMood);
     event.returnValue = true;
   } catch (err) {
     console.error('[Electron] native-db-set-todays-mood failed:', err);
@@ -307,7 +398,8 @@ ipcMain.on('native-db-set-todays-mood', (event, mood) => {
 
 ipcMain.on('native-db-get-mood-history', (event, days) => {
   try {
-    event.returnValue = ensureNativeDb().getMoodHistory(days);
+    const safeDays = Number.isFinite(days) ? Math.max(0, Math.floor(days)) : 0;
+    event.returnValue = ensureNativeDb().getMoodHistory(safeDays);
   } catch (err) {
     console.error('[Electron] native-db-get-mood-history failed:', err);
     event.returnValue = [];
@@ -325,6 +417,9 @@ ipcMain.on('native-db-export', (event) => {
 
 ipcMain.handle('native-db-import', (event, jsonString) => {
   try {
+    if (typeof jsonString !== 'string' || jsonString.length > MAX_IMPORT_SIZE) {
+      throw new Error('Invalid import payload');
+    }
     const count = ensureNativeDb().importFromJSON(jsonString);
     ensureFileStorage()?.syncAllEntries(ensureNativeDb().getEntries());
     return count;
@@ -446,7 +541,8 @@ ipcMain.handle('security-disable', async (event, passcode) => {
 });
 
 ipcMain.handle('security-set-auto-lock', (event, minutes) => {
-  ensureSecurityManager().setAutoLockTimeout(minutes);
+  const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.floor(minutes)) : 0;
+  ensureSecurityManager().setAutoLockTimeout(safeMinutes);
   resetAutoLockTimer();
   return { success: true };
 });

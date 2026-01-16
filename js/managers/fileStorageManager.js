@@ -26,6 +26,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 /** @constant {string} File extension for simnote files */
 const SIMNOTE_EXTENSION = '.simnote';
@@ -52,9 +53,126 @@ class FileStorageManager {
   constructor(storageDir) {
     /** @type {string} Storage directory path */
     this.storageDir = storageDir;
+    this.storageRoot = path.resolve(storageDir);
     if (!fs.existsSync(this.storageDir)) {
       fs.mkdirSync(this.storageDir, { recursive: true });
     }
+  }
+
+  /**
+   * Generates a fallback entry ID when missing.
+   * @returns {string}
+   * @private
+   */
+  _generateFallbackId() {
+    return `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+  }
+
+  /**
+   * Ensures the entry has an ID.
+   * @param {Object} entry - Entry object
+   * @returns {string} Entry ID
+   * @private
+   */
+  _ensureEntryId(entry) {
+    if (!entry || (!entry.id && entry.id !== 0)) {
+      const fallbackId = this._generateFallbackId();
+      if (entry) entry.id = fallbackId;
+      return fallbackId;
+    }
+    return String(entry.id);
+  }
+
+  /**
+   * Normalizes an entry ID for safe filenames.
+   * @param {string|number} entryId - Entry ID
+   * @returns {string} Safe filename component
+   * @private
+   */
+  _normalizeEntryId(entryId) {
+    const raw = String(entryId || '').trim();
+    if (!raw) return this._generateFallbackId();
+    return encodeURIComponent(raw);
+  }
+
+  /**
+   * Normalizes entry names for filenames.
+   * @param {string} entryName - Entry name
+   * @returns {string} Safe filename component
+   * @private
+   */
+  _normalizeEntryName(entryName) {
+    const safeName = String(entryName || 'entry')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 50);
+    return safeName || 'entry';
+  }
+
+  /**
+   * Ensures a path stays inside the storage directory.
+   * @param {string} targetPath - Path to validate
+   * @returns {string} Resolved path
+   * @private
+   */
+  _assertWithinStorageDir(targetPath) {
+    const resolved = path.resolve(targetPath);
+    if (resolved !== this.storageRoot && !resolved.startsWith(this.storageRoot + path.sep)) {
+      throw new Error('Path escapes storage directory');
+    }
+    return resolved;
+  }
+
+  /**
+   * Resolves a path within the storage directory.
+   * @param {...string} segments - Path segments
+   * @returns {string} Resolved path
+   * @private
+   */
+  _resolveStoragePath(...segments) {
+    const targetPath = path.resolve(this.storageRoot, ...segments);
+    return this._assertWithinStorageDir(targetPath);
+  }
+
+  /**
+   * Writes a file atomically to reduce corruption risk.
+   * @param {string} filePath - Target path
+   * @param {string|Buffer} data - File contents
+   * @param {string} [encoding] - Encoding for string data
+   * @private
+   */
+  _writeFileAtomic(filePath, data, encoding = 'utf8') {
+    const dir = path.dirname(filePath);
+    this._assertWithinStorageDir(dir);
+    const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+    if (typeof data === 'string') {
+      fs.writeFileSync(tempPath, data, encoding);
+    } else {
+      fs.writeFileSync(tempPath, data);
+    }
+    fs.renameSync(tempPath, filePath);
+  }
+
+  /**
+   * Validates relative audio paths for safety.
+   * @param {string} audioPath - Relative audio path
+   * @param {string} [entryId] - Optional entry ID for scoping
+   * @returns {boolean}
+   * @private
+   */
+  _isSafeAudioPath(audioPath, entryId = null) {
+    if (!audioPath || typeof audioPath !== 'string') return false;
+    const normalized = audioPath.replace(/\\/g, '/');
+    if (normalized.includes('..')) return false;
+    if (normalized.startsWith('/')) return false;
+    if (/^[a-zA-Z]:/.test(normalized)) return false;
+    if (!normalized.startsWith(`${AUDIO_DIR_NAME}/`)) return false;
+    if (entryId) {
+      const safeId = this._normalizeEntryId(entryId);
+      return normalized.startsWith(`${AUDIO_DIR_NAME}/${safeId}/`);
+    }
+    return true;
   }
 
   /**
@@ -65,12 +183,9 @@ class FileStorageManager {
    * @private
    */
   _generateFilename(entry) {
-    const safeName = (entry.name || 'untitled')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .substring(0, 50);
-    return `${safeName}-${entry.id}${SIMNOTE_EXTENSION}`;
+    const safeName = this._normalizeEntryName(entry?.name);
+    const safeId = this._normalizeEntryId(entry?.id);
+    return `${safeName}-${safeId}${SIMNOTE_EXTENSION}`;
   }
 
   /**
@@ -155,7 +270,8 @@ class FileStorageManager {
    */
   _clearAudioDir(entryId) {
     if (!entryId) return;
-    const audioDir = path.join(this.storageDir, AUDIO_DIR_NAME, entryId);
+    const safeId = this._normalizeEntryId(entryId);
+    const audioDir = this._resolveStoragePath(AUDIO_DIR_NAME, safeId);
     if (fs.existsSync(audioDir)) {
       fs.rmSync(audioDir, { recursive: true, force: true });
     }
@@ -168,13 +284,16 @@ class FileStorageManager {
    * @returns {Array<{path: string}>} Audio file references
    * @private
    */
-  _collectAudioFileRefs(content) {
+  _collectAudioFileRefs(content, entryId = null) {
     if (!content) return [];
     const refs = [];
     const regex = /data-audio-file=(["'])([^"']+)\1/g;
     let match;
     while ((match = regex.exec(content)) !== null) {
-      refs.push({ path: match[2] });
+      const audioPath = match[2];
+      if (this._isSafeAudioPath(audioPath, entryId)) {
+        refs.push({ path: audioPath });
+      }
     }
     return refs;
   }
@@ -191,20 +310,22 @@ class FileStorageManager {
       return { content: entry?.content || '', audioFiles: [] };
     }
 
+    const entryId = this._ensureEntryId(entry);
+    const safeId = this._normalizeEntryId(entryId);
     const matches = [...entry.content.matchAll(AUDIO_DATA_ATTR_REGEX)];
     const hasAudioData = matches.length > 0;
     const hasAudioFiles = /data-audio-file=/.test(entry.content);
 
     if (!hasAudioData) {
       if (!hasAudioFiles) {
-        this._clearAudioDir(entry.id);
+        this._clearAudioDir(entryId);
         return { content: entry.content, audioFiles: [] };
       }
-      return { content: entry.content, audioFiles: this._collectAudioFileRefs(entry.content) };
+      return { content: entry.content, audioFiles: this._collectAudioFileRefs(entry.content, entryId) };
     }
 
-    this._clearAudioDir(entry.id);
-    const audioDir = path.join(this.storageDir, AUDIO_DIR_NAME, entry.id);
+    this._clearAudioDir(entryId);
+    const audioDir = this._resolveStoragePath(AUDIO_DIR_NAME, safeId);
     if (!fs.existsSync(audioDir)) {
       fs.mkdirSync(audioDir, { recursive: true });
     }
@@ -219,10 +340,10 @@ class FileStorageManager {
       clipIndex += 1;
       const extension = this._getAudioExtension(mimeType);
       const fileName = `clip-${clipIndex}${extension}`;
-      const filePath = path.join(audioDir, fileName);
+      const filePath = this._resolveStoragePath(AUDIO_DIR_NAME, safeId, fileName);
       const buffer = Buffer.from(base64, 'base64');
       fs.writeFileSync(filePath, buffer);
-      const relPath = path.join(AUDIO_DIR_NAME, entry.id, fileName).replace(/\\/g, '/');
+      const relPath = path.posix.join(AUDIO_DIR_NAME, safeId, fileName);
       audioFiles.push({ path: relPath, mimeType, bytes: buffer.length });
       return `data-audio-file="${relPath}"`;
     });
@@ -240,7 +361,7 @@ class FileStorageManager {
     const files = fs.readdirSync(this.storageDir);
     files.forEach((file) => {
       if (path.extname(file) === SIMNOTE_EXTENSION) {
-        const filePath = path.join(this.storageDir, file);
+        const filePath = this._resolveStoragePath(file);
         const data = fs.readFileSync(filePath, 'utf8');
         try {
           const simnoteData = JSON.parse(data);
@@ -273,15 +394,17 @@ class FileStorageManager {
    * @returns {string} Saved filename
    */
   saveEntry(entry) {
-    const audioResult = this._extractAudioAssets(entry);
+    const normalizedEntry = { ...entry };
+    normalizedEntry.id = this._ensureEntryId(normalizedEntry);
+    const audioResult = this._extractAudioAssets(normalizedEntry);
     const simnoteData = this._entryToSimnote({
-      ...entry,
+      ...normalizedEntry,
       content: audioResult.content,
       audioFiles: audioResult.audioFiles
     });
-    const filename = this._generateFilename(entry);
-    const filePath = path.join(this.storageDir, filename);
-    fs.writeFileSync(filePath, JSON.stringify(simnoteData, null, 2), 'utf8');
+    const filename = this._generateFilename(normalizedEntry);
+    const filePath = this._resolveStoragePath(filename);
+    this._writeFileAtomic(filePath, JSON.stringify(simnoteData, null, 2), 'utf8');
     console.log(`[FileStorage] Saved: ${filename}`);
     return filename;
   }
@@ -305,9 +428,11 @@ class FileStorageManager {
    */
   deleteEntryById(id) {
     const files = fs.readdirSync(this.storageDir);
+    const safeId = this._normalizeEntryId(id);
+    const targetSuffix = `-${safeId}${SIMNOTE_EXTENSION}`;
     for (const file of files) {
-      if (path.extname(file) === SIMNOTE_EXTENSION && file.includes(id)) {
-        const filePath = path.join(this.storageDir, file);
+      if (path.extname(file) === SIMNOTE_EXTENSION && file.endsWith(targetSuffix)) {
+        const filePath = this._resolveStoragePath(file);
         fs.unlinkSync(filePath);
         console.log(`[FileStorage] Deleted: ${file}`);
         this._clearAudioDir(id);
@@ -326,9 +451,11 @@ class FileStorageManager {
    */
   _deleteEntryFileOnly(id) {
     const files = fs.readdirSync(this.storageDir);
+    const safeId = this._normalizeEntryId(id);
+    const targetSuffix = `-${safeId}${SIMNOTE_EXTENSION}`;
     for (const file of files) {
-      if (path.extname(file) === SIMNOTE_EXTENSION && file.includes(id)) {
-        const filePath = path.join(this.storageDir, file);
+      if (path.extname(file) === SIMNOTE_EXTENSION && file.endsWith(targetSuffix)) {
+        const filePath = this._resolveStoragePath(file);
         fs.unlinkSync(filePath);
         console.log(`[FileStorage] Deleted: ${file}`);
         return true;
@@ -367,12 +494,12 @@ class FileStorageManager {
     let deleted = 0;
     for (const file of files) {
       if (path.extname(file) === SIMNOTE_EXTENSION) {
-        const filePath = path.join(this.storageDir, file);
+        const filePath = this._resolveStoragePath(file);
         fs.unlinkSync(filePath);
         deleted++;
       }
     }
-    const audioRoot = path.join(this.storageDir, AUDIO_DIR_NAME);
+    const audioRoot = this._resolveStoragePath(AUDIO_DIR_NAME);
     if (fs.existsSync(audioRoot)) {
       fs.rmSync(audioRoot, { recursive: true, force: true });
     }

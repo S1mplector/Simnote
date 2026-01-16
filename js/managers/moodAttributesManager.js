@@ -21,6 +21,22 @@
 // - localStorage for persistence
 
 /**
+ * Escapes HTML special characters for safe innerHTML usage.
+ * @param {string} value - Raw text value
+ * @returns {string}
+ * @private
+ */
+function escapeHtml(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Manages mood attributes grid with iOS-style interactions.
  * Supports selection, editing, drag-drop reordering, and custom attributes.
  * 
@@ -162,10 +178,12 @@ export class MoodAttributesManager {
       item.classList.add('selected');
     }
     
+    const safeEmoji = escapeHtml(String(attr.emoji || ''));
+    const safeName = escapeHtml(String(attr.name || ''));
     item.innerHTML = `
-      <div class="attribute-icon">${attr.emoji}</div>
-      <div class="attribute-name">${attr.name}</div>
-      <button class="delete-badge" aria-label="Delete ${attr.name}">×</button>
+      <div class="attribute-icon">${safeEmoji}</div>
+      <div class="attribute-name">${safeName}</div>
+      <button class="delete-badge" aria-label="Delete ${safeName}">×</button>
     `;
     
     // Bind interactions

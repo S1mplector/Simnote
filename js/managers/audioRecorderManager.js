@@ -574,14 +574,25 @@ export class AudioRecorderManager {
       ? Promise.resolve(window.electronAPI.getStorageDir()).catch(() => null)
       : Promise.resolve(null);
 
+    const isSafeRelativeAudioPath = (audioFile) => {
+      if (!audioFile || typeof audioFile !== 'string') return false;
+      const normalized = audioFile.replace(/\\/g, '/');
+      if (normalized.includes('..')) return false;
+      if (normalized.startsWith('/')) return false;
+      if (/^[a-zA-Z]:/.test(normalized)) return false;
+      return normalized.startsWith('audio/');
+    };
+
     const toFileUrl = (audioFile, storageDir) => {
       if (!audioFile) return null;
-      if (/^(blob:|data:|https?:|file:)/i.test(audioFile)) return audioFile;
+      if (/^(blob:|data:)/i.test(audioFile)) return audioFile;
+      if (/^(https?:|file:)/i.test(audioFile)) return null;
+      if (!isSafeRelativeAudioPath(audioFile)) return null;
 
-      const isAbsolute = audioFile.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(audioFile);
       const baseDir = storageDir?.replace(/[\\/]+$/, '');
+      if (!baseDir) return null;
       const relativePath = audioFile.replace(/^[/\\]+/, '');
-      const absolutePath = isAbsolute || !baseDir ? audioFile : `${baseDir}/${relativePath}`;
+      const absolutePath = `${baseDir}/${relativePath}`;
       const normalized = absolutePath.replace(/\\/g, '/');
       const prefix = normalized.startsWith('/') ? 'file://' : 'file:///';
 

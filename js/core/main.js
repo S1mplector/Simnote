@@ -779,7 +779,7 @@ const openZenMode = (panel) => {
   
   // Copy content from the active editor to zen editor
   if (richEditor) {
-    zenEditor.innerHTML = richEditor.innerHTML;
+    zenEditor.innerHTML = sanitizeRichHtml(richEditor.innerHTML);
   }
   
   // Apply current font settings to zen editor
@@ -802,7 +802,7 @@ const closeZenMode = () => {
   
   // Sync content back to the original editor
   if (richEditor) {
-    richEditor.innerHTML = zenEditor.innerHTML;
+    richEditor.innerHTML = sanitizeRichHtml(zenEditor.innerHTML);
     // Trigger input event for autosave
     richEditor.dispatchEvent(new Event('input', { bubbles: true }));
   }
@@ -842,7 +842,7 @@ if (zenEditor) {
     if (activeEditorPanel) {
       const richEditor = activeEditorPanel.querySelector('.rich-editor');
       if (richEditor) {
-        richEditor.innerHTML = zenEditor.innerHTML;
+        richEditor.innerHTML = sanitizeRichHtml(zenEditor.innerHTML);
       }
     }
   });
@@ -1206,6 +1206,13 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function sanitizeRichHtml(value) {
+  if (typeof window !== 'undefined' && window.Sanitizer?.sanitizeHtml) {
+    return window.Sanitizer.sanitizeHtml(value || '');
+  }
+  return value || '';
+}
+
 function buildQuoteHtml(quote) {
   if (!quote || !quote.text) return '';
   const text = escapeHtml(quote.text);
@@ -1247,7 +1254,7 @@ function goToEntryPanel() {
         meta.appendChild(attrContainer);
       }
       attrContainer.innerHTML = currentAttributes.map(a => 
-        `<span class="attribute-tag">${a.emoji} ${a.name}</span>`
+        `<span class="attribute-tag">${escapeHtml(String(a.emoji || ''))} ${escapeHtml(String(a.name || ''))}</span>`
       ).join('');
     }
     // Guarantee the panel is expanded and content visible on every open
@@ -1259,7 +1266,7 @@ function goToEntryPanel() {
     if(window.selectedTemplate){
       titleInput.value = window.selectedTemplate.name;
       if (richEditor) {
-        richEditor.innerHTML = window.selectedTemplate.content || '';
+        richEditor.innerHTML = sanitizeRichHtml(window.selectedTemplate.content || '');
       }
       window.selectedTemplate = null;
       // Start guided prompts if template has them
@@ -1276,7 +1283,7 @@ function goToEntryPanel() {
     if (pendingQuote && richEditor) {
       const quoteHtml = buildQuoteHtml(pendingQuote);
       if (quoteHtml) {
-        richEditor.innerHTML = quoteHtml + (richEditor.innerHTML || '');
+        richEditor.innerHTML = sanitizeRichHtml(quoteHtml + (richEditor.innerHTML || ''));
         richEditor.dispatchEvent(new Event('input', { bubbles: true }));
       }
       window.pendingQuoteEntry = null;
