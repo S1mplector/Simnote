@@ -8,6 +8,7 @@ const { pathToFileURL } = require('url');
 const { FileStorageManager } = require('../managers/fileStorageManager.js');
 const { NativeDbManager } = require('./nativeDbManager.js');
 const { SecurityManager } = require('./securityManager.js');
+const { nativeAddon } = require('./nativeAddon.js');
 
 let fileStorageManager = null;
 let nativeDb = null;
@@ -21,6 +22,7 @@ const MAX_ENTRY_NAME_LENGTH = 200;
 const MAX_MOOD_LENGTH = 50;
 const MAX_TAGS = 30;
 const MAX_TAG_LENGTH = 40;
+const MAX_INDEX_TEXT_LENGTH = 200000;
 
 function normalizeString(value, maxLen) {
   const text = typeof value === 'string' ? value.trim() : '';
@@ -55,6 +57,19 @@ function normalizeEntryPayload(entry) {
     updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : undefined,
     audioFiles: Array.isArray(entry.audioFiles) ? entry.audioFiles : []
   };
+}
+
+function attachSearchTokens(entry) {
+  if (!entry || !nativeAddon?.indexText) return entry;
+  const name = entry.name || '';
+  const content = entry.content || '';
+  const text = `${name} ${content}`.slice(0, MAX_INDEX_TEXT_LENGTH);
+  try {
+    const tokens = nativeAddon.indexText(text);
+    return { ...entry, searchTokens: Array.isArray(tokens) ? tokens : [] };
+  } catch (err) {
+    return entry;
+  }
 }
 
 function isAllowedNavigation(url, appIndexUrl) {
@@ -283,7 +298,10 @@ ipcMain.on('native-db-get-entry-count', (event) => {
 
 ipcMain.on('native-db-get-entries', (event) => {
   try {
-    event.returnValue = ensureNativeDb().getEntries();
+    const entries = ensureNativeDb().getEntries();
+    event.returnValue = nativeAddon?.indexText
+      ? entries.map(attachSearchTokens)
+      : entries;
   } catch (err) {
     console.error('[Electron] native-db-get-entries failed:', err);
     event.returnValue = [];
@@ -293,7 +311,8 @@ ipcMain.on('native-db-get-entries', (event) => {
 ipcMain.on('native-db-get-entry', (event, id) => {
   try {
     const safeId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
-    event.returnValue = ensureNativeDb().getEntryById(safeId);
+    const entry = ensureNativeDb().getEntryById(safeId);
+    event.returnValue = attachSearchTokens(entry);
   } catch (err) {
     console.error('[Electron] native-db-get-entry failed:', err);
     event.returnValue = null;
@@ -305,7 +324,7 @@ ipcMain.on('native-db-save-entry', (event, entry) => {
     const normalized = normalizeEntryPayload(entry) || {};
     const saved = ensureNativeDb().saveEntry(normalized);
     ensureFileStorage()?.saveEntry(saved);
-    event.returnValue = saved;
+    event.returnValue = attachSearchTokens(saved);
   } catch (err) {
     console.error('[Electron] native-db-save-entry failed:', err);
     event.returnValue = null;
@@ -319,7 +338,7 @@ ipcMain.on('native-db-update-entry', (event, entry) => {
     if (updated) {
       ensureFileStorage()?.updateEntry(updated);
     }
-    event.returnValue = updated;
+    event.returnValue = attachSearchTokens(updated);
   } catch (err) {
     console.error('[Electron] native-db-update-entry failed:', err);
     event.returnValue = null;

@@ -35,6 +35,7 @@ Simnote is an Electron-powered desktop experience crafted for thoughtful journal
 - **Frontend:** Vanilla JS modules, rich CSS (panels, themes, typography), and HTML-based UI with animated SVG/Canvas components.
 - **Storage:** `better-sqlite3`, localStorage fallbacks, and native Electron IPC bindings.
 - **Tooling:** `electron-packager`, `electron-builder`, and `electron-rebuild` for native modules.
+- **macOS Native Bridge:** Objective-C++ addon (`native/src/simnote_native.mm`) compiled via N-API for high-trust system access.
 
 ## Getting Started
 1. **Install dependencies**
@@ -70,6 +71,23 @@ The `build` block in `package.json` is configured for:
 - **Linux:** AppImage packaging.
 
 Artifacts are emitted to the `dist/` folder. The build uses ASAR with selective unpacking for `better-sqlite3` binaries.
+
+## Project Structure
+```
+Simnote/
+├─ css/                 # Panel, component, theme styles (core, journal, entries, etc.)
+├─ js/
+│  ├─ animators/        # Background + splash animations
+│  ├─ managers/         # Feature controllers (editor, mood, stats, onboarding, panels)
+│  ├─ analytics/        # Mood analytics, stability, stress engines
+│  ├─ core/             # App bootstrap, templates, i18n, keyboard handling
+│  └─ utils/            # Helpers such as emoji mapping
+├─ resources/           # Icon, audio cues, quotes dataset
+├─ index.html           # Primary UI shell loaded by Electron/Web
+├─ manifest.json        # PWA metadata for web build targets
+├─ package.json         # Scripts, dependencies, builder config
+└─ sw.js                # Service worker for offline/PWA support
+```
 
 ## Data & Storage
 - **Journal entries & moods** are persisted through `StorageManager`, which automatically promotes from localStorage to SQLite/native databases when available.

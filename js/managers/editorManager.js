@@ -656,11 +656,8 @@ export class EditorManager {
     // Text search filter (case-insensitive; match name, content, or tags)
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
-      entries = entries.filter(entry =>
-        (entry.name && entry.name.toLowerCase().includes(q)) ||
-        (entry.content && entry.content.toLowerCase().includes(q)) ||
-        (entry.tags && entry.tags.some(t => t.toLowerCase().includes(q)))
-      );
+      const queryTokens = this._tokenizeSearchQuery(q);
+      entries = entries.filter(entry => this._matchesSearchQuery(entry, q, queryTokens));
     }
 
     // Apply sorting / grouping
@@ -831,6 +828,52 @@ export class EditorManager {
           <button class="delete-entry" data-id="${safeId}" data-index="${entry.__index}">🗑️</button>
         </div>
       </li>`;
+  }
+
+  /**
+   * Tokenizes a search query for faster matching.
+   * @param {string} query - Raw query
+   * @returns {string[]} Tokens
+   * @private
+   */
+  _tokenizeSearchQuery(query) {
+    if (!query) return [];
+    return query
+      .toLowerCase()
+      .split(/[^a-z0-9]+/i)
+      .map(token => token.trim())
+      .filter(Boolean);
+  }
+
+  /**
+   * Checks if an entry matches the search query.
+   * Uses native tokens when available to avoid scanning large content.
+   * @param {Object} entry - Entry data
+   * @param {string} query - Lowercased query string
+   * @param {string[]} queryTokens - Tokenized query
+   * @returns {boolean}
+   * @private
+   */
+  _matchesSearchQuery(entry, query, queryTokens) {
+    if (!entry || !query) return false;
+
+    if (Array.isArray(entry.searchTokens) && queryTokens.length > 1) {
+      const tokenSet = new Set(entry.searchTokens);
+      const hasAllTokens = queryTokens.every(token => tokenSet.has(token));
+      if (!hasAllTokens) {
+        return false;
+      }
+    }
+
+    const name = entry.name ? entry.name.toLowerCase() : '';
+    const content = entry.content ? entry.content.toLowerCase() : '';
+    const tags = Array.isArray(entry.tags) ? entry.tags : [];
+
+    return (
+      (name && name.includes(query)) ||
+      (content && content.includes(query)) ||
+      (tags && tags.some(t => String(t).toLowerCase().includes(query)))
+    );
   }
 
   /**

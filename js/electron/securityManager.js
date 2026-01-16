@@ -17,6 +17,7 @@ const { systemPreferences, safeStorage } = require('electron');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const { nativeAddon } = require('./nativeAddon.js');
 
 const SERVICE_NAME = 'com.simnote.app';
 const ACCOUNT_MASTER_KEY = 'master-encryption-key';
@@ -28,6 +29,7 @@ const PBKDF2_ITERATIONS = 100000;
 const KEY_LENGTH = 32; // 256-bit key
 const SALT_LENGTH = 32;
 const IV_LENGTH = 16;
+const AUTH_TAG_LENGTH = 16;
 
 class SecurityManager {
   constructor(storageDir) {
@@ -224,10 +226,7 @@ class SecurityManager {
       const derivedKey = this._deriveKeyFromPasscode(passcode, salt);
 
       // Encrypt master key with derived key
-      const iv = crypto.randomBytes(IV_LENGTH);
-      const cipher = crypto.createCipheriv('aes-256-gcm', derivedKey, iv);
-      const encrypted = Buffer.concat([cipher.update(masterKey), cipher.final()]);
-      const authTag = cipher.getAuthTag();
+      const { iv, authTag, encrypted } = this._encryptBufferWithKey(masterKey, derivedKey);
 
       // Store encrypted master key
       const encryptedMasterKey = Buffer.concat([iv, authTag, encrypted]).toString('base64');
@@ -378,12 +377,54 @@ class SecurityManager {
   _decryptMasterKey(encryptedMasterKey, derivedKey) {
     const data = Buffer.from(encryptedMasterKey, 'base64');
     const iv = data.subarray(0, IV_LENGTH);
-    const authTag = data.subarray(IV_LENGTH, IV_LENGTH + 16);
-    const encrypted = data.subarray(IV_LENGTH + 16);
+    const authTag = data.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+    const encrypted = data.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
-    const decipher = crypto.createDecipheriv('aes-256-gcm', derivedKey, iv);
+    return this._decryptBufferWithKey(encrypted, derivedKey, iv, authTag);
+  }
+
+  /**
+   * Encrypts a buffer using AES-256-GCM (native when available).
+   * @param {Buffer} buffer - Data to encrypt
+   * @param {Buffer} key - 32-byte key
+   * @returns {{iv: Buffer, authTag: Buffer, encrypted: Buffer}}
+   * @private
+   */
+  _encryptBufferWithKey(buffer, key) {
+    const iv = crypto.randomBytes(IV_LENGTH);
+
+    if (nativeAddon?.encryptAes256Gcm) {
+      const result = nativeAddon.encryptAes256Gcm(buffer, key, iv);
+      return {
+        iv,
+        authTag: Buffer.from(result.authTag),
+        encrypted: Buffer.from(result.ciphertext)
+      };
+    }
+
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    return { iv, authTag, encrypted };
+  }
+
+  /**
+   * Decrypts a buffer using AES-256-GCM (native when available).
+   * @param {Buffer} encrypted - Ciphertext
+   * @param {Buffer} key - 32-byte key
+   * @param {Buffer} iv - 16-byte IV
+   * @param {Buffer} authTag - 16-byte auth tag
+   * @returns {Buffer}
+   * @private
+   */
+  _decryptBufferWithKey(encrypted, key, iv, authTag) {
+    if (nativeAddon?.decryptAes256Gcm) {
+      const decrypted = nativeAddon.decryptAes256Gcm(encrypted, key, iv, authTag);
+      return Buffer.from(decrypted);
+    }
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(authTag);
-
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
   }
 
@@ -426,10 +467,7 @@ class SecurityManager {
     const derivedKey = this._deriveKeyFromPasscode(newPasscode, newSalt);
 
     // Encrypt master key with new derived key
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv('aes-256-gcm', derivedKey, iv);
-    const encrypted = Buffer.concat([cipher.update(masterKey), cipher.final()]);
-    const authTag = cipher.getAuthTag();
+    const { iv, authTag, encrypted } = this._encryptBufferWithKey(masterKey, derivedKey);
 
     const encryptedMasterKey = Buffer.concat([iv, authTag, encrypted]).toString('base64');
     this._secureStore(ACCOUNT_MASTER_KEY, encryptedMasterKey);
@@ -503,14 +541,8 @@ class SecurityManager {
   encrypt(plaintext) {
     if (!this.masterKey) throw new Error('App is locked');
 
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv('aes-256-gcm', this.masterKey, iv);
-    const encrypted = Buffer.concat([
-      cipher.update(plaintext, 'utf8'),
-      cipher.final()
-    ]);
-    const authTag = cipher.getAuthTag();
-
+    const data = Buffer.from(String(plaintext), 'utf8');
+    const { iv, authTag, encrypted } = this._encryptBufferWithKey(data, this.masterKey);
     return Buffer.concat([iv, authTag, encrypted]).toString('base64');
   }
 
@@ -524,16 +556,11 @@ class SecurityManager {
 
     const data = Buffer.from(ciphertext, 'base64');
     const iv = data.subarray(0, IV_LENGTH);
-    const authTag = data.subarray(IV_LENGTH, IV_LENGTH + 16);
-    const encrypted = data.subarray(IV_LENGTH + 16);
+    const authTag = data.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+    const encrypted = data.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
-    const decipher = crypto.createDecipheriv('aes-256-gcm', this.masterKey, iv);
-    decipher.setAuthTag(authTag);
-
-    return Buffer.concat([
-      decipher.update(encrypted),
-      decipher.final()
-    ]).toString('utf8');
+    const decrypted = this._decryptBufferWithKey(encrypted, this.masterKey, iv, authTag);
+    return Buffer.from(decrypted).toString('utf8');
   }
 }
 

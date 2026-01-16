@@ -2,7 +2,12 @@
   "targets": [
     {
       "target_name": "simnote_native",
-      "sources": [ "src/simnote_native.mm" ],
+      "sources": [
+        "src/native_module.mm",
+        "src/native_file_io.mm",
+        "src/native_indexer.mm",
+        "src/native_crypto.mm"
+      ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
