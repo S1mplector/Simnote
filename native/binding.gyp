@@ -5,8 +5,11 @@
       "sources": [
         "src/native_module.mm",
         "src/native_file_io.mm",
+        "src/native_file_utils.mm",
         "src/native_indexer.mm",
-        "src/native_crypto.mm"
+        "src/native_crypto.mm",
+        "src/native_export.mm",
+        "src/native_search.mm"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"
