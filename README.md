@@ -4,7 +4,7 @@
 
 # Simnote
 
-A beautifully animated journaling companion that pairs mindful writing with mood tracking, guided prompts, and ambient audio to create a calming daily ritual.
+A beautifully minimal journaling companion that pairs mindful writing with mood tracking, guided prompts, and ambient audio to create a calming daily journaling space. 
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -71,33 +71,10 @@ The `build` block in `package.json` is configured for:
 
 Artifacts are emitted to the `dist/` folder. The build uses ASAR with selective unpacking for `better-sqlite3` binaries.
 
-## Project Structure
-```
-Simnote/
-├─ css/                 # Panel, component, theme styles (core, journal, entries, etc.)
-├─ js/
-│  ├─ animators/        # Background + splash animations
-│  ├─ managers/         # Feature controllers (editor, mood, stats, onboarding, panels)
-│  ├─ analytics/        # Mood analytics, stability, stress engines
-│  ├─ core/             # App bootstrap, templates, i18n, keyboard handling
-│  └─ utils/            # Helpers such as emoji mapping
-├─ resources/           # Icon, audio cues, quotes dataset
-├─ index.html           # Primary UI shell loaded by Electron/Web
-├─ manifest.json        # PWA metadata for web build targets
-├─ package.json         # Scripts, dependencies, builder config
-└─ sw.js                # Service worker for offline/PWA support
-```
-
 ## Data & Storage
 - **Journal entries & moods** are persisted through `StorageManager`, which automatically promotes from localStorage to SQLite/native databases when available.
 - **Daily moods** and history are trimmed to the latest 30–90 days for faster analytics.
 - **Security:** No data leaves the device; analytics run locally inside Electron.
-
-## Assets & Media
-All visual and audio assets live in `resources/`. Key files include:
-- `resources/icon.png` / `icon.icns` – branding used across the README, app window, and installers.
-- `resources/quotes.json` – curated inspirational snippets used by the guided quote feature.
-- `resources/*.mp3` – warm UI feedback (drawer slides, swooshes, welcome tone, etc.).
 
 ## License
 Simnote is released under the [MIT License](LICENSE).
