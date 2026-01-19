@@ -535,6 +535,42 @@ ipcMain.handle('native-utils-file-stats', (event, targetPath) => {
   return addon.fileStats(resolved);
 });
 
+ipcMain.handle('native-utils-path-exists', (event, targetPath) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.pathExists(resolved);
+});
+
+ipcMain.handle('native-utils-copy-path', (event, sourcePath, destPath, overwrite = false) => {
+  const addon = ensureNativeAddon();
+  const sourceResolved = resolveStoragePath(sourcePath);
+  const destResolved = resolveStoragePath(destPath);
+  return addon.copyPath(sourceResolved, destResolved, !!overwrite);
+});
+
+ipcMain.handle('native-utils-read-range', (event, targetPath, offset, length) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  const safeOffset = Number.isFinite(offset) ? Math.max(0, offset) : 0;
+  const safeLength = Number.isFinite(length) ? Math.max(0, length) : 0;
+  return addon.readFileRange(resolved, safeOffset, safeLength);
+});
+
+ipcMain.handle('native-utils-directory-size', (event, targetPath, maxDepth) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  if (Number.isFinite(maxDepth)) {
+    return addon.directorySize(resolved, Math.max(-1, Math.floor(maxDepth)));
+  }
+  return addon.directorySize(resolved);
+});
+
+ipcMain.handle('native-utils-list-with-stats', (event, targetPath) => {
+  const addon = ensureNativeAddon();
+  const resolved = resolveStoragePath(targetPath);
+  return addon.listDirWithStats(resolved);
+});
+
 ipcMain.handle('native-utils-list-recursive', (event, targetPath, maxDepth) => {
   const addon = ensureNativeAddon();
   const resolved = resolveStoragePath(targetPath);

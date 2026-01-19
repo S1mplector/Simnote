@@ -16,6 +16,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("atomicReplace", Napi::Function::New(env, AtomicReplace));
   exports.Set("fileStats", Napi::Function::New(env, FileStats));
   exports.Set("listDirRecursive", Napi::Function::New(env, ListDirRecursive));
+  exports.Set("pathExists", Napi::Function::New(env, PathExists));
+  exports.Set("copyPath", Napi::Function::New(env, CopyPath));
+  exports.Set("readFileRange", Napi::Function::New(env, ReadFileRange));
+  exports.Set("directorySize", Napi::Function::New(env, DirectorySize));
+  exports.Set("listDirWithStats", Napi::Function::New(env, ListDirWithStats));
   exports.Set("zipDirectory", Napi::Function::New(env, ZipDirectory));
   exports.Set("unzipArchive", Napi::Function::New(env, UnzipArchive));
   exports.Set("readJsonStream", Napi::Function::New(env, ReadJsonStream));

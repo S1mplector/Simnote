@@ -73,6 +73,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     atomicReplace: (sourcePath, destPath) =>
       ipcRenderer.invoke('native-utils-atomic-replace', sourcePath, destPath),
     fileStats: (path) => ipcRenderer.invoke('native-utils-file-stats', path),
+    pathExists: (path) => ipcRenderer.invoke('native-utils-path-exists', path),
+    copyPath: (sourcePath, destPath, overwrite) =>
+      ipcRenderer.invoke('native-utils-copy-path', sourcePath, destPath, overwrite),
+    readFileRange: (path, offset, length) =>
+      ipcRenderer.invoke('native-utils-read-range', path, offset, length),
+    directorySize: (path, maxDepth) => ipcRenderer.invoke('native-utils-directory-size', path, maxDepth),
+    listDirWithStats: (path) => ipcRenderer.invoke('native-utils-list-with-stats', path),
     listDirRecursive: (path, maxDepth) => ipcRenderer.invoke('native-utils-list-recursive', path, maxDepth),
     zipDirectory: (sourceDir, zipPath, level) =>
       ipcRenderer.invoke('native-utils-zip-directory', sourceDir, zipPath, level),
