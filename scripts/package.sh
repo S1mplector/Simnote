@@ -12,6 +12,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DIST_DIR="$PROJECT_DIR/dist"
 ICON_PATH="$PROJECT_DIR/resources/icon.icns"
 COPY_TO_DESKTOP=false
+MAC_ARCH="arm64"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -20,13 +21,27 @@ while [[ $# -gt 0 ]]; do
             COPY_TO_DESKTOP=true
             shift
             ;;
+        --arch)
+            if [[ -z $2 ]]; then
+                echo "Missing value for --arch"
+                exit 1
+            fi
+            MAC_ARCH="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./package.sh [--desktop]"
+            echo "Usage: ./package.sh [--desktop] [--arch arm64|universal]"
             exit 1
             ;;
     esac
 done
+
+if [[ "$MAC_ARCH" != "arm64" && "$MAC_ARCH" != "universal" ]]; then
+    echo "Unsupported architecture: $MAC_ARCH"
+    echo "Valid values: arm64, universal"
+    exit 1
+fi
 
 echo "============================================"
 echo "  Simnote Packaging Script v$VERSION"
@@ -48,12 +63,24 @@ rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 
 # Build the app using electron-builder
-echo "🔨 Building macOS app..."
-npx electron-builder --mac --arm64
+echo "🔨 Building macOS app for $MAC_ARCH..."
+if [[ "$MAC_ARCH" == "universal" ]]; then
+    npx electron-builder --mac universal
+else
+    npx electron-builder --mac --$MAC_ARCH
+fi
 
 # Find the built .app
-APP_PATH=$(find "$DIST_DIR" -name "*.app" -type d | head -1)
-DMG_PATH=$(find "$DIST_DIR" -name "*.dmg" -type f | head -1)
+APP_PATH=$(find "$DIST_DIR" -name "*${MAC_ARCH}*.app" -type d | head -1)
+DMG_PATH=$(find "$DIST_DIR" -name "*${MAC_ARCH}*.dmg" -type f | head -1)
+
+if [ -z "$APP_PATH" ]; then
+    APP_PATH=$(find "$DIST_DIR" -name "*.app" -type d | head -1)
+fi
+
+if [ -z "$DMG_PATH" ]; then
+    DMG_PATH=$(find "$DIST_DIR" -name "*.dmg" -type f | head -1)
+fi
 
 if [ -z "$APP_PATH" ]; then
     echo "❌ Error: Could not find built .app"

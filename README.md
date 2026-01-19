@@ -4,7 +4,7 @@
 
 # Simnote
 
-A beautifully minimal journaling companion that pairs mindful writing with mood tracking, guided prompts, and ambient audio to create a calming daily journaling space. 
+A beautifully minimal mac-native journaling companion that aims to create a calming daily journaling space. 
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -22,7 +22,7 @@ A beautifully minimal journaling companion that pairs mindful writing with mood 
 Simnote is an Electron-powered desktop experience crafted for thoughtful journaling. It blends hand‑drawn animations, seasonal themes, ambient sounds, and intelligent insights into a single distraction-free workspace. Whether you are jotting down a quick note or performing a full mood check-in, Simnote keeps everything synced locally for privacy while still feeling polished and modern.
 
 ## Highlights
-- **Immersive journaling UI** – animated backgrounds, handwriting overlays, and tactile transitions powered by custom animators (Aurora, Sakura, Fireflies, Lavender, Plain variants, and more).
+- **Immersive journaling UI** – animated backgrounds, handwriting overlays, and tactile transitions
 - **Daily mood check-ins** – lightweight prompts the moment the main panel is ready, complete with emoji suggestions via the `MoodEmojiMapper` utility.
 - **Mood analytics & insights** – `MoodAnalyticsEngine`, `MoodInsightsManager`, and stability/stress engines surface trends, volatility, and attribute correlations across your entries.
 - **Attribute tagging** – `MoodAttributesManager` provides an iOS-style jiggle grid where you can select, reorder, and customize the drivers behind each mood.
@@ -71,6 +71,17 @@ The `build` block in `package.json` is configured for:
 - **Linux:** AppImage packaging.
 
 Artifacts are emitted to the `dist/` folder. The build uses ASAR with selective unpacking for `better-sqlite3` binaries.
+
+### Packaging macOS builds
+Use the helper script for repeatable packaging:
+
+```bash
+./scripts/package.sh [--desktop] [--arch arm64|universal]
+```
+
+- `--arch arm64` (default) creates Apple Silicon-only assets quickly.
+- `--arch universal` bundles arm64 + x64 slices for a single universal app/dmg/pkg.
+- `--desktop` copies the resulting DMG and PKG to your Desktop for easier access.
 
 ## Project Structure
 ```

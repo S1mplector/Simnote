@@ -65,7 +65,7 @@ var initSqlJs = function (moduleConfig) {
         // Since those are the only lines of code that care about module, we will undefine it. It's the most straightforward
         // of the options, and has the side effect of reducing emcc's efforts to modify the module if its output were to change in the future.
         // That's a nice side effect since we're handling the modularization efforts ourselves
-        module = undefined;
+        (function(module) {
 
         // The emcc-generated code and shell-post.js code goes below,
         // meaning that all of it runs inside of this promise. If anything throws an exception, our promise will abort
@@ -165,6 +165,7 @@ g._sqlite3_create_function_v2=(a,b,c,d,e,h,k,r,w)=>(g._sqlite3_create_function_v
 g.stackSave=()=>pa();g.stackRestore=a=>ta(a);g.stackAlloc=a=>u(a);g.cwrap=(a,b,c,d)=>{var e=!c||c.every(h=>"number"===h||"boolean"===h);return"string"!==b&&e&&!d?g["_"+a]:(...h)=>Qc(a,b,c,h)};g.addFunction=wa;g.removeFunction=y;g.UTF8ToString=ra;g.stringToNewUTF8=fa;g.writeArrayToMemory=(a,b)=>{m.set(a,b)};
 function Vc(){function a(){g.calledRun=!0;if(!Ha){if(!g.noFSInit&&!Fb){var b,c;Fb=!0;d??=g.stdin;b??=g.stdout;c??=g.stderr;d?V("stdin",d):Wb("/dev/tty","/dev/stdin");b?V("stdout",null,b):Wb("/dev/tty","/dev/stdout");c?V("stderr",null,c):Wb("/dev/tty1","/dev/stderr");ma("/dev/stdin",0);ma("/dev/stdout",1);ma("/dev/stderr",1)}Z.N();Gb=!1;g.onRuntimeInitialized?.();if(g.postRun)for("function"==typeof g.postRun&&(g.postRun=[g.postRun]);g.postRun.length;){var d=g.postRun.shift();Wa.unshift(d)}Va(Wa)}}
 if(0<H)Na=Vc;else{if(g.preRun)for("function"==typeof g.preRun&&(g.preRun=[g.preRun]);g.preRun.length;)Ya();Va(Xa);0<H?Na=Vc:g.setStatus?(g.setStatus("Running..."),setTimeout(()=>{setTimeout(()=>g.setStatus(""),1);a()},1)):a()}}if(g.preInit)for("function"==typeof g.preInit&&(g.preInit=[g.preInit]);0<g.preInit.length;)g.preInit.pop()();Vc();
+        })(undefined);
 
 
         // The shell-pre.js and emcc-generated code goes above
