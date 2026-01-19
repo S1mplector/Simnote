@@ -31,7 +31,8 @@
       "!.env.*",
       "!*.md",
       "!.git/**",
-      "!.github/**"
+      "!.github/**",
+      "!node_modules/better-sqlite3/build/deps/**"
     ],
     "directories": {
       "output": "dist"

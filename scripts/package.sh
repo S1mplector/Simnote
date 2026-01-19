@@ -12,6 +12,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DIST_DIR="$PROJECT_DIR/dist"
 ICON_PATH="$PROJECT_DIR/resources/icon.icns"
 COPY_TO_DESKTOP=false
+CLEAN_NODE_MODULES=false
 MAC_ARCH="arm64"
 
 # Parse arguments
@@ -19,6 +20,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --desktop)
             COPY_TO_DESKTOP=true
+            shift
+            ;;
+        --clean)
+            CLEAN_NODE_MODULES=true
             shift
             ;;
         --arch)
@@ -65,7 +70,20 @@ mkdir -p "$DIST_DIR"
 # Build the app using electron-builder
 echo "🔨 Building macOS app for $MAC_ARCH..."
 if [[ "$MAC_ARCH" == "universal" ]]; then
-    npx electron-builder --mac universal
+    echo "   > Building arm64 slice"
+    npx electron-builder --mac --arm64 --dir
+
+    if [[ "$CLEAN_NODE_MODULES" == true ]]; then
+        echo "   > Cleaning node_modules for x64 rebuild"
+        rm -rf node_modules
+        npm install
+    fi
+
+    echo "   > Building x64 slice"
+    npx electron-builder --mac --x64 --dir
+
+    echo "   > Creating universal binary"
+    npx electron-builder --mac --universal
 else
     npx electron-builder --mac --$MAC_ARCH
 fi

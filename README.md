@@ -76,11 +76,12 @@ Artifacts are emitted to the `dist/` folder. The build uses ASAR with selective 
 Use the helper script for repeatable packaging:
 
 ```bash
-./scripts/package.sh [--desktop] [--arch arm64|universal]
+./scripts/package.sh [--desktop] [--arch arm64|universal] [--clean]
 ```
 
 - `--arch arm64` (default) creates Apple Silicon-only assets quickly.
 - `--arch universal` bundles arm64 + x64 slices for a single universal app/dmg/pkg.
+- `--clean` wipes `node_modules` between arm64/x64 slices so universal builds have architecture-specific native modules.
 - `--desktop` copies the resulting DMG and PKG to your Desktop for easier access.
 
 ## Project Structure
