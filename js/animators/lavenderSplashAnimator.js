@@ -18,7 +18,7 @@
 // - foreground: Larger, faster, more opaque
 //
 // DEPENDENCIES:
-// - Lavender images in /img/lavender1-8.png
+// - Lavender images in /resources/img/themes/lavender/lavender1-8.png
 
 /**
  * Lavender wind-sweep splash screen animator.
@@ -67,7 +67,7 @@ export class LavenderSplashAnimator {
     };
     for (let i = 1; i <= 8; i++) {
       const img = new Image();
-      img.src = `img/lavender${i}.png`;
+      img.src = `resources/img/themes/lavender/lavender${i}.png`;
       img.onload = onLoad;
       this.petalImgs.push(img);
     }

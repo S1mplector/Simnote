@@ -155,8 +155,8 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body || 'Time to journal!',
-      icon: '/img/icon-192.png',
-      badge: '/img/icon-72.png',
+      icon: '/resources/icons/pwa/icon-192.png',
+      badge: '/resources/icons/pwa/icon-72.png',
       vibrate: [100, 50, 100],
       data: {
         url: data.url || '/'

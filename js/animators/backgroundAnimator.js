@@ -19,7 +19,7 @@
 //
 // DEPENDENCIES:
 // - Canvas element with id 'bg-canvas'
-// - Petal images in /img/petal1-9.png
+// - Petal images in /resources/img/themes/sakura/petal1-9.png
 
 /**
  * Sakura petal particle animator for background.
@@ -65,7 +65,7 @@ export class BackgroundAnimator {
   loadPetalImages() {
     for (let i = 1; i <= 9; i++) {
       const img = new Image();
-      img.src = `img/petal${i}.png`;
+      img.src = `resources/img/themes/sakura/petal${i}.png`;
       img.onload = () => {
         if(this.destroyed) return;
         this.imagesLoaded++;

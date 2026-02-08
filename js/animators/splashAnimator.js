@@ -18,7 +18,7 @@
 // - Fades during last 20%
 //
 // DEPENDENCIES:
-// - Petal image at /img/petal1.png
+// - Petal image at /resources/img/themes/sakura/petal1.png
 
 /**
  * Single petal drop splash animator.
@@ -57,7 +57,7 @@ export class SplashAnimator {
 
     // Load one of the petal images already in the project
     this.petalImg = new Image();
-    this.petalImg.src = 'img/petal1.png';
+    this.petalImg.src = 'resources/img/themes/sakura/petal1.png';
     this.petalImg.onload = () => {
       this.startTime = performance.now();
       requestAnimationFrame((t) => this.animate(t));

@@ -18,7 +18,7 @@
 //
 // DEPENDENCIES:
 // - Canvas element with id 'bg-canvas'
-// - Lavender images in /img/lavender1-8.png
+// - Lavender images in /resources/img/themes/lavender/lavender1-8.png
 
 /**
  * Lavender breeze background animator with layered depth.
@@ -80,7 +80,7 @@ export class LavenderBreezeAnimator {
   loadPetalImages() {
     for (let i = 1; i <= 8; i++) {
       const img = new Image();
-      img.src = `img/lavender${i}.png`;
+      img.src = `resources/img/themes/lavender/lavender${i}.png`;
       img.onload = () => {
         if (this.destroyed) return;
         this.imagesLoaded++;

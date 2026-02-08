@@ -1,5 +1,5 @@
 <p align="left">
-  <img src="resources/icon.png" alt="Simnote logo" width="120" />
+  <img src="resources/icons/app/icon.png" alt="Simnote logo" width="120" />
 </p>
 
 # Simnote
@@ -67,7 +67,7 @@ During development you can:
 ## Build & Distribution
 The `build` block in `package.json` is configured for:
 - **Windows:** NSIS installers.
-- **macOS:** Signed DMG targets (arm64 + x64) with hardened runtime support and `resources/icon.icns` branding.
+- **macOS:** Signed DMG targets (arm64 + x64) with hardened runtime support and `resources/icons/app/icon.icns` branding.
 - **Linux:** AppImage packaging.
 
 Artifacts are emitted to the `dist/` folder. The build uses ASAR with selective unpacking for `better-sqlite3` binaries.
@@ -94,7 +94,18 @@ Simnote/
 │  ├─ analytics/        # Mood analytics, stability, stress engines
 │  ├─ core/             # App bootstrap, templates, i18n, keyboard handling
 │  └─ utils/            # Helpers such as emoji mapping
-├─ resources/           # Icon, audio cues, quotes dataset
+├─ resources/
+│  ├─ audio/
+│  │  └─ ui/             # UI sound effects
+│  ├─ data/              # Quotes dataset
+│  ├─ icons/
+│  │  ├─ app/            # Desktop app icons (.png, .icns)
+│  │  └─ pwa/            # PWA icons (icon-*.png)
+│  └─ img/
+│     ├─ backgrounds/    # Background artwork
+│     └─ themes/
+│        ├─ lavender/    # Lavender petals
+│        └─ sakura/      # Sakura petals
 ├─ index.html           # Primary UI shell loaded by Electron/Web
 ├─ manifest.json        # PWA metadata for web build targets
 ├─ package.json         # Scripts, dependencies, builder config

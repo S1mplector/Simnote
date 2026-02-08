@@ -1,5 +1,5 @@
 const QUOTE_API_URL = 'https://api.api-ninjas.com/v1/quotes';
-const QUOTE_LOCAL_URL = 'resources/quotes.json';
+const QUOTE_LOCAL_URL = 'resources/data/quotes.json';
 const QUOTE_API_KEY_STORAGE = 'simnote_quote_api_key';
 const QUOTE_CATEGORY_STORAGE = 'simnote_quote_category';
 const FAVORITES_KEY = 'simnote_quote_favorites';
@@ -8,7 +8,7 @@ const LAST_QUOTE_KEY = 'simnote_quote_last';
 class QuoteCardManager {
   constructor() {
     this.card = document.getElementById('quote-card');
-    this.clickSound = new Audio('resources/quote_card_click.mp3');
+    this.clickSound = new Audio('resources/audio/ui/quote_card_click.mp3');
     this.overlay = document.getElementById('quote-overlay');
     this.panel = document.getElementById('quote-panel');
     this.textEl = document.getElementById('quote-panel-text');
@@ -382,7 +382,7 @@ class QuoteCardManager {
     
     // Play swoosh sound
     if (window.playSfx) {
-      const swoosh = new Audio('resources/swoosh.mp3');
+      const swoosh = new Audio('resources/audio/ui/swoosh.mp3');
       window.playSfx(swoosh);
     }
     
@@ -396,7 +396,7 @@ class QuoteCardManager {
     
     // Play reverse swoosh if available
     if (window.playSfx) {
-      const swoosh = new Audio('resources/swoosh.mp3');
+      const swoosh = new Audio('resources/audio/ui/swoosh.mp3');
       window.playSfx(swoosh);
     }
     

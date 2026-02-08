@@ -1383,7 +1383,7 @@ export class EditorManager {
     
     // Play saved sound effect
     if (window.playSfx) {
-      const savedSound = new Audio('resources/saved.mp3');
+      const savedSound = new Audio('resources/audio/ui/saved.mp3');
       window.playSfx(savedSound);
     }
   }

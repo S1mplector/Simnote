@@ -103,7 +103,7 @@ themeSettingsBtn.style.display = 'none';
 // Hold off on starting the background animation & intro until the splash finishes
 
 // Preload welcome sound for smooth playback
-const welcomeSound = new Audio('resources/welcome.mp3');
+const welcomeSound = new Audio('resources/audio/ui/welcome.mp3');
 welcomeSound.preload = 'auto';
 
 function startIntroAnimation() {
@@ -403,7 +403,7 @@ function showMoodPanel(fromPanel) {
  }
 
 // Preload drawer opening sound effect
-const drawerOpenSound = new Audio('resources/drawer_opening.mp3');
+const drawerOpenSound = new Audio('resources/audio/ui/drawer_opening.mp3');
 window.drawerOpenSound = drawerOpenSound;
 
 // Helper to animate drawer open before action
@@ -488,12 +488,12 @@ const settingsPanel = document.getElementById('settings-panel');
 const settingsCloseBtn = document.getElementById('settings-close-btn');
 
 // Preload entry settings swoosh sound (reuses same file as theme settings)
-const entrySettingsSwoosh = new Audio('resources/swoosh.mp3');
+const entrySettingsSwoosh = new Audio('resources/audio/ui/swoosh.mp3');
 let entrySettingsSwooshCtx = null;
 let entrySettingsSwooshReversed = null;
 
 // Prepare reversed buffer for entry settings close
-fetch('resources/swoosh.mp3')
+fetch('resources/audio/ui/swoosh.mp3')
   .then(res => res.arrayBuffer())
   .then(buf => {
     entrySettingsSwooshCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -863,12 +863,12 @@ const themeSettingsPopup = document.getElementById('theme-settings-popup');
 const themeSettingsCloseBtn = document.getElementById('theme-settings-close-btn');
 
 // Swoosh sound for settings panel open/close
-const settingsSwooshSound = new Audio('resources/swoosh.mp3');
+const settingsSwooshSound = new Audio('resources/audio/ui/swoosh.mp3');
 let swooshAudioContext = null;
 let swooshReversedBuffer = null;
 
 // Preload and prepare reversed audio buffer for close animation
-fetch('resources/swoosh.mp3')
+fetch('resources/audio/ui/swoosh.mp3')
   .then(response => response.arrayBuffer())
   .then(arrayBuffer => {
     swooshAudioContext = new (window.AudioContext || window.webkitAudioContext)();

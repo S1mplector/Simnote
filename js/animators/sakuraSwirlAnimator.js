@@ -18,7 +18,7 @@
 // 3. Canvas removed, callback fired
 //
 // DEPENDENCIES:
-// - Petal images in /img/petal1-9.png
+// - Petal images in /resources/img/themes/sakura/petal1-9.png
 
 /**
  * Sakura swirl splash screen animator.
@@ -66,7 +66,7 @@ export class SakuraSwirlAnimator {
     };
     for (let i = 1; i <= 9; i++) {
       const img = new Image();
-      img.src = `img/petal${i}.png`;
+      img.src = `resources/img/themes/sakura/petal${i}.png`;
       img.onload = onLoad;
       this.petalImgs.push(img);
     }

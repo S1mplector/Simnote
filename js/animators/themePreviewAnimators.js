@@ -159,7 +159,7 @@ export class SakuraPreviewAnimator {
       size: 2 + Math.random() * 3
     }));
     this.img = new Image();
-    this.img.src = 'img/petal1.png';
+    this.img.src = 'resources/img/themes/sakura/petal1.png';
     this.running = true;
     this.img.onload = () => this.frame();
   }
@@ -205,7 +205,7 @@ export class LavenderPreviewAnimator {
       size: 2 + Math.random() * 3
     }));
     this.img = new Image();
-    this.img.src = 'img/lavender1.png';
+    this.img.src = 'resources/img/themes/lavender/lavender1.png';
     this.running = true;
     this.img.onload = () => this.frame();
   }

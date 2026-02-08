@@ -44,7 +44,7 @@
     "mac": {
       "category": "public.app-category.productivity",
       "darkModeSupport": true,
-      "icon": "resources/icon.icns",
+      "icon": "resources/icons/app/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "target": [
