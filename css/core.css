@@ -833,6 +833,15 @@ html, body {
   right: 20px;
   bottom: 20px;
   z-index: 201;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.theme-settings-popup.visible #theme-settings-close-btn {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* ===== Themes ===== */
