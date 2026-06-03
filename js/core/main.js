@@ -94,9 +94,8 @@ const logoTextEl = document.querySelector('.logo-text');
 
 // Buttons
 const manualBtn = document.getElementById('manual-btn');
-const chatBtn = document.getElementById('chat-btn');
 const themeSettingsBtn = document.getElementById('theme-settings-btn');
-const utilityButtons = [manualBtn, chatBtn, themeSettingsBtn].filter(Boolean);
+const utilityButtons = [manualBtn, themeSettingsBtn].filter(Boolean);
 
 const setUtilityButtonsVisible = (visible) => {
   utilityButtons.forEach((button) => {

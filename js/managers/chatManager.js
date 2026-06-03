@@ -42,8 +42,6 @@ class ChatManager{
    */
   constructor(){
     // DOM element references
-    /** @type {HTMLElement} Chat button in main menu */
-    this.chatBtn = document.getElementById('chat-btn');
     /** @type {HTMLElement} Chat panel container */
     this.chatPanel = document.getElementById('chat-panel');
     /** @type {HTMLElement} Main menu panel */
@@ -95,24 +93,6 @@ class ChatManager{
       this.newMsgIndicator.style.display='none';
     });
     this.chatPanel.appendChild(this.newMsgIndicator);
-
-    if(this.chatBtn){
-      this.chatBtn.addEventListener('click', ()=>{
-        window.setUtilityButtonsVisible?.(false);
-        document.body.classList.remove('main-menu-active');
-        PanelManager.transitionPanels(this.mainPanel, this.chatPanel);
-        this.input?.focus();
-        // Show intro only on first open
-        if(!this.introShown){
-          this.appendMessage("Hello, I'm Serenity – your calming companion here in Simnote. I specialize in relaxing conversation and gentle CBT-style guidance. How can I support you today?", 'assistant', true);
-          this.appendMessage("Your privacy matters: our chat isn't stored anywhere once you close Simnote. Serenity only knows what you share during this session.", 'assistant', true);
-          this.introShown = true;
-          // reset state each open
-          if(this.inputRow){this.inputRow.classList.add('collapsed');}
-          if(this.newBtn){this.newBtn.style.display='inline-block';}
-        }
-      });
-    }
 
     if(this.backBtn){
       this.backBtn.addEventListener('click', ()=>{
