@@ -9,6 +9,7 @@ const translations = {
     aria: {
       quickControls: 'Quick Controls',
       manual: 'Manual',
+      serenity: 'Open Serenity',
       settings: 'Settings',
       editorSettings: 'Editor Settings',
       languageSelect: 'Language'
@@ -31,7 +32,10 @@ const translations = {
       clear: 'Clear',
       clearAll: 'Clear All',
       startWriting: 'Start Writing',
-      begin: 'Begin'
+      begin: 'Begin',
+      restore: 'Restore',
+      dismiss: 'Dismiss',
+      retry: 'Retry'
     },
     nav: {
       backToMenu: 'Back to Menu'
@@ -107,7 +111,12 @@ const translations = {
       sortOldest: 'Oldest First',
       sortAz: 'A → Z',
       sortMood: 'By Mood',
-      filterByDate: 'Filter by date'
+      filterByDate: 'Filter by date',
+      clearFilters: 'Clear filters',
+      filterSearch: 'Search',
+      filterDate: 'Date',
+      filterFavorites: 'Favorites only',
+      filterTag: 'Tag: {tag}'
     },
     stats: {
       title: 'Mood Tracking',
@@ -129,6 +138,7 @@ const translations = {
     chat: {
       placeholder: 'Type a message...',
       newChat: 'New Chat',
+      openTitle: 'Open Serenity',
       newMessages: 'New messages ↓',
       intro1: "Hello, I'm Serenity – your calming companion here in Simnote. I specialize in relaxing conversation and gentle CBT-style guidance. How can I support you today?",
       intro2: "Your privacy matters: our chat isn't stored anywhere once you close Simnote. Serenity only knows what you share during this session.",
@@ -144,7 +154,17 @@ const translations = {
       nothingToSave: 'Nothing to save yet.',
       noEntries: 'No entries saved.',
       noMatching: 'No matching entries.',
-      noMood: 'No Mood'
+      noMood: 'No Mood',
+      recoverTitle: 'Draft backup available',
+      recoverNewMessage: 'We found an unsaved draft from {timeAgo}.',
+      recoverEditMessage: 'We found unsaved changes for "{name}" from {timeAgo}.',
+      restoreDraft: 'Restore draft',
+      dismissDraft: 'Dismiss',
+      draftRestored: 'Draft restored.',
+      autosaveFailedTitle: 'Autosave needs attention',
+      autosaveFailedBody: 'Your latest changes are backed up locally. Retry now or keep editing safely.',
+      retrySave: 'Retry save',
+      autosaveRecovered: 'Autosave completed.'
     },
     mood: {
       heading: 'How are you feeling right now?',
@@ -217,6 +237,53 @@ const translations = {
       showToolbar: 'Show formatting toolbar',
       showWordCount: 'Show word count',
       spellcheck: 'Spellcheck'
+    },
+    security: {
+      title: 'Security',
+      passcodeLock: 'Passcode Lock',
+      enabled: 'Enabled',
+      useTouchId: 'Use Touch ID',
+      autoLockAfter: 'Auto-lock after',
+      never: 'Never',
+      oneMinute: '1 minute',
+      fiveMinutes: '5 minutes',
+      fifteenMinutes: '15 minutes',
+      thirtyMinutes: '30 minutes',
+      setUp: 'Set Up',
+      changePasscode: 'Change Passcode',
+      disable: 'Disable',
+      lockNow: 'Lock Now',
+      lockTitle: 'Simnote is Locked',
+      lockSubtitle: 'Enter your passcode to unlock',
+      useTouchIdButton: 'Use Touch ID',
+      stepLabel: 'Step {current} of {total}',
+      setupTitle: 'Create a passcode',
+      setupSubtitle: 'Choose a 4-digit code to protect Simnote.',
+      confirmTitle: 'Confirm your passcode',
+      confirmSubtitle: 'Re-enter your new passcode.',
+      currentTitle: 'Enter current passcode',
+      currentSubtitle: 'Verify your existing passcode to continue.',
+      newTitle: 'Enter a new passcode',
+      newSubtitle: 'Choose a new 4-digit code.',
+      changeConfirmTitle: 'Confirm new passcode',
+      changeConfirmSubtitle: 'Re-enter the new passcode.',
+      disableTitle: 'Disable passcode lock',
+      disableSubtitle: 'Enter your current passcode to turn security off.',
+      touchIdPromptTitle: 'Enable Touch ID?',
+      touchIdPromptBody: 'Use Touch ID for faster unlocking on this device.',
+      touchIdEnable: 'Enable',
+      touchIdLater: 'Not now',
+      passcodesDoNotMatch: 'Passcodes do not match.',
+      invalidPasscode: 'Invalid passcode.',
+      authFailed: 'Authentication failed.',
+      setupFailed: 'Setup failed.',
+      passcodeSet: 'Passcode lock enabled.',
+      changeSuccess: 'Passcode changed.',
+      changeFailed: 'Failed to change passcode.',
+      disableSuccess: 'Passcode lock disabled.',
+      disableFailed: 'Failed to disable security.',
+      touchIdFailed: 'Touch ID could not be enabled.',
+      touchIdUpdateFailed: 'Touch ID setting could not be updated.'
     },
     exportImport: {
       entriesExported: 'Entries exported successfully!',
@@ -308,6 +375,7 @@ const translations = {
     aria: {
       quickControls: 'Hızlı Kontroller',
       manual: 'Kılavuz',
+      serenity: 'Serenity\'yi aç',
       settings: 'Ayarlar',
       editorSettings: 'Düzenleyici Ayarları',
       languageSelect: 'Dil'
@@ -330,7 +398,10 @@ const translations = {
       clear: 'Temizle',
       clearAll: 'Tümünü Temizle',
       startWriting: 'Yazmaya Başla',
-      begin: 'Başla'
+      begin: 'Başla',
+      restore: 'Geri Yükle',
+      dismiss: 'Kapat',
+      retry: 'Tekrar Dene'
     },
     nav: {
       backToMenu: 'Menüye Dön'
@@ -406,7 +477,12 @@ const translations = {
       sortOldest: 'En Eski',
       sortAz: 'A → Z',
       sortMood: 'Duyguya Göre',
-      filterByDate: 'Tarihe göre filtrele'
+      filterByDate: 'Tarihe göre filtrele',
+      clearFilters: 'Filtreleri temizle',
+      filterSearch: 'Arama',
+      filterDate: 'Tarih',
+      filterFavorites: 'Yalnızca favoriler',
+      filterTag: 'Etiket: {tag}'
     },
     stats: {
       title: 'Duygu Takibi',
@@ -428,6 +504,7 @@ const translations = {
     chat: {
       placeholder: 'Bir mesaj yaz...',
       newChat: 'Yeni Sohbet',
+      openTitle: 'Serenity\'yi aç',
       newMessages: 'Yeni mesajlar ↓',
       intro1: 'Merhaba, ben Serenity – Simnote’taki sakinleştirici yol arkadaşın. Rahatlatıcı sohbet ve nazik CBT tarzı yönlendirmelerde uzmanım. Sana bugün nasıl destek olabilirim?',
       intro2: 'Gizliliğin önemli: Simnote’u kapattığında sohbetimiz saklanmaz. Serenity yalnızca bu oturumda paylaştıklarını bilir.',
@@ -443,7 +520,17 @@ const translations = {
       nothingToSave: 'Henüz kaydedilecek bir şey yok.',
       noEntries: 'Henüz kayıt yok.',
       noMatching: 'Eşleşen kayıt bulunamadı.',
-      noMood: 'Duygu Yok'
+      noMood: 'Duygu Yok',
+      recoverTitle: 'Taslak yedeği hazır',
+      recoverNewMessage: '{timeAgo} önce kaydedilmemiş bir taslak bulduk.',
+      recoverEditMessage: '"{name}" için {timeAgo} önce kaydedilmemiş değişiklikler bulduk.',
+      restoreDraft: 'Taslağı geri yükle',
+      dismissDraft: 'Kapat',
+      draftRestored: 'Taslak geri yüklendi.',
+      autosaveFailedTitle: 'Otomatik kaydetme dikkat istiyor',
+      autosaveFailedBody: 'Son değişikliklerin yerel olarak yedeklendi. Şimdi tekrar deneyebilir veya güvenle yazmaya devam edebilirsin.',
+      retrySave: 'Tekrar kaydet',
+      autosaveRecovered: 'Otomatik kaydetme tamamlandı.'
     },
     mood: {
       heading: 'Şu anda nasıl hissediyorsun?',
@@ -516,6 +603,53 @@ const translations = {
       showToolbar: 'Biçimlendirme araç çubuğunu göster',
       showWordCount: 'Kelime sayısını göster',
       spellcheck: 'Yazım denetimi'
+    },
+    security: {
+      title: 'Güvenlik',
+      passcodeLock: 'Parola Kilidi',
+      enabled: 'Etkin',
+      useTouchId: 'Touch ID kullan',
+      autoLockAfter: 'Otomatik kilit süresi',
+      never: 'Asla',
+      oneMinute: '1 dakika',
+      fiveMinutes: '5 dakika',
+      fifteenMinutes: '15 dakika',
+      thirtyMinutes: '30 dakika',
+      setUp: 'Kur',
+      changePasscode: 'Parolayı Değiştir',
+      disable: 'Kapat',
+      lockNow: 'Şimdi Kilitle',
+      lockTitle: 'Simnote Kilitli',
+      lockSubtitle: 'Kilidi açmak için parolanı gir',
+      useTouchIdButton: 'Touch ID Kullan',
+      stepLabel: 'Adım {current} / {total}',
+      setupTitle: 'Parola oluştur',
+      setupSubtitle: 'Simnote’u korumak için 4 haneli bir kod seç.',
+      confirmTitle: 'Parolanı doğrula',
+      confirmSubtitle: 'Yeni parolanı tekrar gir.',
+      currentTitle: 'Mevcut parolayı gir',
+      currentSubtitle: 'Devam etmek için mevcut parolanı doğrula.',
+      newTitle: 'Yeni parola gir',
+      newSubtitle: 'Yeni 4 haneli bir kod seç.',
+      changeConfirmTitle: 'Yeni parolayı doğrula',
+      changeConfirmSubtitle: 'Yeni parolayı tekrar gir.',
+      disableTitle: 'Parola kilidini kapat',
+      disableSubtitle: 'Güvenliği kapatmak için mevcut parolanı gir.',
+      touchIdPromptTitle: 'Touch ID etkinleştirilsin mi?',
+      touchIdPromptBody: 'Bu cihazda daha hızlı kilit açma için Touch ID kullan.',
+      touchIdEnable: 'Etkinleştir',
+      touchIdLater: 'Şimdi değil',
+      passcodesDoNotMatch: 'Parolalar eşleşmiyor.',
+      invalidPasscode: 'Geçersiz parola.',
+      authFailed: 'Kimlik doğrulama başarısız.',
+      setupFailed: 'Kurulum başarısız.',
+      passcodeSet: 'Parola kilidi etkinleştirildi.',
+      changeSuccess: 'Parola değiştirildi.',
+      changeFailed: 'Parola değiştirilemedi.',
+      disableSuccess: 'Parola kilidi kapatıldı.',
+      disableFailed: 'Güvenlik kapatılamadı.',
+      touchIdFailed: 'Touch ID etkinleştirilemedi.',
+      touchIdUpdateFailed: 'Touch ID ayarı güncellenemedi.'
     },
     exportImport: {
       entriesExported: 'Kayıtlar dışa aktarıldı!',

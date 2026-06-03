@@ -5,7 +5,7 @@
 // ----------------------
 // This module provides an iOS-style grid of selectable mood attributes
 // (reasons why user feels a certain way). Features include:
-// - Selectable attribute grid with emoji icons
+// - Selectable attribute grid with text-only labels
 // - Long-press to enter edit mode (iOS-style jiggle)
 // - Drag-and-drop reordering
 // - Add/delete custom attributes
@@ -157,7 +157,7 @@ export class MoodAttributesManager {
     const addItem = document.createElement('div');
     addItem.className = 'attribute-item add-new';
     addItem.innerHTML = `
-      <div class="attribute-icon">➕</div>
+      <div class="attribute-add-mark" aria-hidden="true">+</div>
       <div class="attribute-name">Add</div>
     `;
     addItem.addEventListener('click', () => this.showAddDialog());
@@ -178,10 +178,8 @@ export class MoodAttributesManager {
       item.classList.add('selected');
     }
     
-    const safeEmoji = escapeHtml(String(attr.emoji || ''));
     const safeName = escapeHtml(String(attr.name || ''));
     item.innerHTML = `
-      <div class="attribute-icon">${safeEmoji}</div>
       <div class="attribute-name">${safeName}</div>
       <button class="delete-badge" aria-label="Delete ${safeName}">×</button>
     `;
@@ -448,16 +446,16 @@ export class MoodAttributesManager {
   /**
    * Adds a new custom attribute.
    * @param {string} name - Attribute name
-   * @param {string} emoji - Emoji icon
+   * @param {string} [emoji=''] - Optional legacy icon value kept for storage compatibility
    */
-  addAttribute(name, emoji) {
+  addAttribute(name, emoji = '') {
     const id = 'custom_' + Date.now();
     const maxOrder = Math.max(...this.attributes.map(a => a.order), -1);
     
     const newAttr = {
       id,
       name: name.trim(),
-      emoji: emoji || '📌',
+      emoji: emoji,
       order: maxOrder + 1
     };
     
@@ -486,10 +484,6 @@ export class MoodAttributesManager {
     dialog.innerHTML = `
       <h3>Add Attribute</h3>
       <div class="dialog-field">
-        <label>Emoji</label>
-        <input type="text" class="emoji-input" maxlength="2" placeholder="😊" />
-      </div>
-      <div class="dialog-field">
         <label>Name</label>
         <input type="text" class="name-input" maxlength="20" placeholder="e.g. Travel" />
       </div>
@@ -506,7 +500,6 @@ export class MoodAttributesManager {
     setTimeout(() => dialog.querySelector('.name-input').focus(), 100);
     
     // Bind events
-    const emojiInput = dialog.querySelector('.emoji-input');
     const nameInput = dialog.querySelector('.name-input');
     const cancelBtn = dialog.querySelector('.cancel-btn');
     const saveBtn = dialog.querySelector('.save-btn');
@@ -523,7 +516,6 @@ export class MoodAttributesManager {
     
     saveBtn.addEventListener('click', () => {
       const name = nameInput.value.trim();
-      const emoji = emojiInput.value.trim() || '📌';
       
       if (!name) {
         nameInput.focus();
@@ -531,7 +523,7 @@ export class MoodAttributesManager {
         return;
       }
       
-      this.addAttribute(name, emoji);
+      this.addAttribute(name);
       close();
     });
     

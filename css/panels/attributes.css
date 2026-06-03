@@ -1,4 +1,4 @@
-/* === Mood Attributes Panel - iOS-style icon grid === */
+/* === Mood Attributes Panel - iOS-style text grid === */
 
 #mood-attributes-panel {
   display: none;
@@ -48,11 +48,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   cursor: pointer;
-  padding: 12px 8px;
+  min-height: 92px;
+  padding: 14px 10px;
   border-radius: 16px;
-  transition: transform 0.15s ease, background 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   user-select: none;
   -webkit-user-select: none;
@@ -60,39 +64,37 @@
 
 .attribute-item:hover {
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .attribute-item:active {
   transform: scale(0.95);
 }
 
-/* Icon container */
-.attribute-icon {
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.attribute-add-mark {
   font-size: 1.8rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-weight: 300;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .attribute-name {
-  font-size: 0.75rem;
+  font-size: 0.86rem;
+  font-weight: 500;
   color: #ccc;
   text-align: center;
-  max-width: 70px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.3;
 }
 
 /* === Selected State === */
-.attribute-item.selected .attribute-icon {
-  background: rgba(var(--accent-rgb), 0.3);
-  box-shadow: 0 0 0 3px var(--accent), 0 4px 12px rgba(var(--accent-rgb), 0.4);
+.attribute-item.selected {
+  background: rgba(var(--accent-rgb), 0.22);
+  border-color: rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.55), 0 8px 24px rgba(var(--accent-rgb), 0.18);
 }
 
 .attribute-item.selected .attribute-name {
@@ -101,16 +103,15 @@
 }
 
 /* === Add New Button === */
-.attribute-item.add-new .attribute-icon {
-  background: rgba(255, 255, 255, 0.06);
-  border: 2px dashed rgba(255, 255, 255, 0.25);
-  font-size: 1.5rem;
-  color: #888;
+.attribute-item.add-new {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.attribute-item.add-new:hover .attribute-icon {
+.attribute-item.add-new:hover {
   border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 /* === Delete Badge (hidden by default) === */
@@ -175,7 +176,7 @@
   opacity: 0.9;
 }
 
-.attribute-item.dragging .attribute-icon {
+.attribute-item.dragging {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
@@ -274,12 +275,6 @@
   border-color: var(--accent);
 }
 
-.dialog-field .emoji-input {
-  text-align: center;
-  font-size: 1.8rem;
-  padding: 8px;
-}
-
 .dialog-buttons {
   display: flex;
   gap: 12px;
@@ -324,11 +319,5 @@
   .attributes-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
-  }
-  
-  .attribute-icon {
-    width: 48px;
-    height: 48px;
-    font-size: 1.5rem;
   }
 }

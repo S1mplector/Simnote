@@ -98,10 +98,7 @@ class ChatManager{
 
     if(this.chatBtn){
       this.chatBtn.addEventListener('click', ()=>{
-        const manualBtn = document.getElementById('manual-btn');
-        const themeSettingsBtn = document.getElementById('theme-settings-btn');
-        if (manualBtn) manualBtn.style.display = 'none';
-        if (themeSettingsBtn) themeSettingsBtn.style.display = 'none';
+        window.setUtilityButtonsVisible?.(false);
         document.body.classList.remove('main-menu-active');
         PanelManager.transitionPanels(this.mainPanel, this.chatPanel);
         this.input?.focus();

@@ -24,6 +24,8 @@
 // - MediaRecorder API for audio capture
 // - RichEditorManager (parent) for editor panel context
 
+import { t } from '../core/i18n.js';
+
 /**
  * Manages audio recording functionality with a visual tape recorder interface.
  * Each instance is tied to a specific editor panel and handles its own recording state.
@@ -299,7 +301,7 @@ export class AudioRecorderManager {
       
     } catch (err) {
       console.error('Error accessing microphone:', err);
-      alert('Could not access microphone. Please ensure microphone permissions are granted.');
+      window.showPopup?.(t('audio.micError'));
     }
   }
 

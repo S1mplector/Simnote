@@ -56,6 +56,8 @@ export class MoodInsightsManager {
     this.watchdogTimer = null;
     /** @type {string|null} Loader template HTML */
     this.loaderTemplate = null;
+    /** @type {Map<string, Object>} Cached snapshots keyed by period */
+    this.cacheByPeriod = new Map();
     
     this.init();
   }
@@ -81,7 +83,27 @@ export class MoodInsightsManager {
       this.loaderTemplate = loader.innerHTML;
     }
 
+    window.addEventListener('simnote:data-changed', () => {
+      this.clearCache();
+    });
+
     window.moodInsightsManager = this;
+  }
+
+  /**
+   * Returns whether the current period has cached insights.
+   * @param {string} [period=this.currentPeriod]
+   * @returns {boolean}
+   */
+  hasCachedPeriod(period = this.currentPeriod) {
+    return this.cacheByPeriod.has(period);
+  }
+
+  /**
+   * Clears all cached insight snapshots.
+   */
+  clearCache() {
+    this.cacheByPeriod.clear();
   }
 
   /**
@@ -137,8 +159,15 @@ export class MoodInsightsManager {
   render() {
     if (this.isRendering) return;
     this.isRendering = true;
+    const cachedSnapshot = this.cacheByPeriod.get(this.currentPeriod);
+    if (cachedSnapshot) {
+      this.hideLoader();
+      this.renderSnapshot(cachedSnapshot);
+      return;
+    }
+
     this.showLoader();
-    
+
     // Reset render status
     this.renderStatus = {
       overview: false,
@@ -155,57 +184,77 @@ export class MoodInsightsManager {
     this.watchdogTimer = setTimeout(() => this.onWatchdogTimeout(), 5000);
 
     try {
-      // Load fresh data
-      const days = this.currentPeriod === 'week' ? 7 : 
+      const days = this.currentPeriod === 'week' ? 7 :
                    this.currentPeriod === 'month' ? 30 : 90;
-      
+
       const moodHistory = StorageManager.getMoodHistory(days);
       const entries = StorageManager.getEntries();
-      
+
       this.analytics.loadData(
         (d) => StorageManager.getMoodHistory(d),
         () => entries,
         days
       );
 
-      const data = this.analytics.computeAnalytics();
-      this.cachedData = data;
+      const snapshot = {
+        data: this.analytics.computeAnalytics(),
+        stressAnalysis: (() => {
+          this.stressEngine.loadData(moodHistory, entries);
+          return this.stressEngine.analyze();
+        })(),
+        stabilityAnalysis: (() => {
+          this.stabilityEngine.loadData(moodHistory, entries);
+          return this.stabilityEngine.analyze();
+        })()
+      };
 
-      // Load data into specialized engines
-      this.stressEngine.loadData(moodHistory, entries);
-      this.stabilityEngine.loadData(moodHistory, entries);
-      
-      // Run specialized analyses
-      this.stressAnalysis = this.stressEngine.analyze();
-      this.stabilityAnalysis = this.stabilityEngine.analyze();
-
-      // Log analytics for debugging
-      console.log('[MoodInsights] Analytics computed:', {
-        overview: !!data.overview,
-        trends: !!data.trends,
-        insights: data.insights?.length || 0,
-        timeOfDay: !!data.timeOfDay,
-        dayOfWeek: !!data.dayOfWeek,
-        stressTriggers: this.stressAnalysis?.triggers?.length || 0,
-        stabilityScore: this.stabilityAnalysis?.overall?.score
-      });
-
-      // Render all components with verification
-      this.safeRender('overview', () => this.renderOverview(data.overview));
-      this.safeRender('trends', () => this.renderTrendGraph(data.trends));
-      this.safeRender('insights', () => this.renderInsights(data.insights));
-      this.safeRender('timeOfDay', () => this.renderTimeOfDay(data.timeOfDay));
-      this.safeRender('dayOfWeek', () => this.renderDayOfWeek(data.dayOfWeek));
-      this.safeRender('drivers', () => this.renderDrivers(data.attributeCorrelations));
-      this.safeRender('volatility', () => this.renderStability(this.stabilityAnalysis));
-
-      // Verify all rendered
-      this.verifyRender();
-      
+      this.cacheByPeriod.set(this.currentPeriod, snapshot);
+      this.renderSnapshot(snapshot);
     } catch (error) {
       console.error('[MoodInsights] Render error:', error);
       this.onRenderError(error.message);
     }
+  }
+
+  /**
+   * Renders a cached or freshly-computed snapshot.
+   * @param {Object} snapshot
+   */
+  renderSnapshot(snapshot) {
+    this.renderStatus = {
+      overview: false,
+      trends: false,
+      insights: false,
+      timeOfDay: false,
+      dayOfWeek: false,
+      drivers: false,
+      volatility: false
+    };
+
+    this.cachedData = snapshot?.data || null;
+    this.stressAnalysis = snapshot?.stressAnalysis || null;
+    this.stabilityAnalysis = snapshot?.stabilityAnalysis || null;
+
+    const data = this.cachedData;
+    if (!data) {
+      this.onRenderError('Missing analytics snapshot.');
+      return;
+    }
+
+    console.log('[MoodInsights] Rendering snapshot:', {
+      period: this.currentPeriod,
+      cached: this.cacheByPeriod.has(this.currentPeriod),
+      insights: data.insights?.length || 0
+    });
+
+    this.safeRender('overview', () => this.renderOverview(data.overview));
+    this.safeRender('trends', () => this.renderTrendGraph(data.trends));
+    this.safeRender('insights', () => this.renderInsights(data.insights));
+    this.safeRender('timeOfDay', () => this.renderTimeOfDay(data.timeOfDay));
+    this.safeRender('dayOfWeek', () => this.renderDayOfWeek(data.dayOfWeek));
+    this.safeRender('drivers', () => this.renderDrivers(data.attributeCorrelations));
+    this.safeRender('volatility', () => this.renderStability(this.stabilityAnalysis));
+    this.verifyRender();
   }
 
   /**

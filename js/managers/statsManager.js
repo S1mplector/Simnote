@@ -74,7 +74,10 @@ export class StatsManager {
     const preloader = document.getElementById('stats-preloader');
     
     // Show preloader immediately
-    if (preloader) preloader.classList.add('visible');
+    if (preloader) {
+      const shouldShowPreloader = !moodInsightsManager.hasCachedPeriod();
+      preloader.classList.toggle('visible', shouldShowPreloader);
+    }
     
     if (drawer) {
       drawer.classList.add('drawer-open');
@@ -104,10 +107,7 @@ export class StatsManager {
    */
   showStats() {
     // Hide utility buttons
-    const manualBtn = document.getElementById('manual-btn');
-    const themeSettingsBtn = document.getElementById('theme-settings-btn');
-    if (manualBtn) manualBtn.style.display = 'none';
-    if (themeSettingsBtn) themeSettingsBtn.style.display = 'none';
+    window.setUtilityButtonsVisible?.(false);
     document.body.classList.remove('main-menu-active');
 
     // Hide drawer navigation and other main menu elements

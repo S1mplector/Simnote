@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "main": "js/electron/main-electron.js",
   "scripts": {
-    "start": "electron .",
+    "dev": "node scripts/start-electron.js .",
+    "start": "node scripts/start-electron.js .",
     "build:native": "node-gyp rebuild --directory native",
     "pack": "electron-packager . Simnote --platform=win32 --arch=x64 --out=dist",
     "dist": "electron-builder",

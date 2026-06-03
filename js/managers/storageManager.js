@@ -137,6 +137,19 @@ let autoBackupIntervalId = null;
 let storageAvailable = true;
 
 /**
+ * Broadcasts local data mutations so derived UI can invalidate caches.
+ * @param {string} type
+ * @param {Object} [detail={}]
+ * @private
+ */
+function notifyDataChange(type, detail = {}) {
+  if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+  window.dispatchEvent(new CustomEvent('simnote:data-changed', {
+    detail: { type, ...detail }
+  }));
+}
+
+/**
  * Checks if localStorage is available and functional.
  * @returns {boolean} Whether storage is available
  * @private
@@ -725,7 +738,7 @@ export class StorageManager {
       const safeTags = normalizeTags(tags);
 
       if (isElectron) {
-        return window.electronAPI.nativeDb.saveEntry({
+        const saved = window.electronAPI.nativeDb.saveEntry({
           name: safeName,
           content: safeContent,
           mood: safeMood,
@@ -733,11 +746,15 @@ export class StorageManager {
           fontSize: safeFontSize,
           tags: safeTags
         });
+        if (saved) notifyDataChange('entry-saved', { id: saved.id });
+        return saved;
       }
 
       if (sqliteReady) {
         const id = dbManager.saveEntry(safeName, safeContent, safeMood, safeFontFamily, safeFontSize, safeTags);
-        return dbManager.getEntryById(id);
+        const saved = dbManager.getEntryById(id);
+        if (saved) notifyDataChange('entry-saved', { id: saved.id });
+        return saved;
       }
       
       // Watchdog: Rate limiting
@@ -791,6 +808,7 @@ export class StorageManager {
       
       // Update streaks
       StorageManager.updateStreaks();
+      notifyDataChange('entry-saved', { id: newEntry.id });
       
       return newEntry;
     } catch (e) {
@@ -825,7 +843,7 @@ export class StorageManager {
         ? StorageManager.getEntries()[indexOrId]?.id
         : indexOrId;
       if (id) {
-        return window.electronAPI.nativeDb.updateEntry({
+        const updated = window.electronAPI.nativeDb.updateEntry({
           id,
           name: safeName,
           content: safeContent,
@@ -834,6 +852,8 @@ export class StorageManager {
           fontSize: safeFontSize,
           tags: safeTags
         });
+        if (updated) notifyDataChange('entry-updated', { id: updated.id || id });
+        return updated;
       }
       return null;
     }
@@ -845,7 +865,9 @@ export class StorageManager {
         : indexOrId;
       if (id) {
         dbManager.updateEntry(id, safeName, safeContent, safeMood, safeFontFamily, safeFontSize, safeTags || []);
-        return dbManager.getEntryById(id);
+        const updated = dbManager.getEntryById(id);
+        if (updated) notifyDataChange('entry-updated', { id });
+        return updated;
       }
       return null;
     }
@@ -872,6 +894,7 @@ export class StorageManager {
       };
       
       localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      notifyDataChange('entry-updated', { id: entries[index].id });
       return entries[index];
     }
     return null;
@@ -891,7 +914,9 @@ export class StorageManager {
           ? StorageManager.getEntries()[indexOrId]?.id
           : indexOrId;
         if (id) {
-          return window.electronAPI.nativeDb.deleteEntry(id);
+          const deleted = window.electronAPI.nativeDb.deleteEntry(id);
+          if (deleted) notifyDataChange('entry-deleted', { id });
+          return deleted;
         }
         return false;
       }
@@ -901,7 +926,9 @@ export class StorageManager {
           ? StorageManager.getEntries()[indexOrId]?.id 
           : indexOrId;
         if (id) {
-          return dbManager.deleteEntry(id);
+          const deleted = dbManager.deleteEntry(id);
+          if (deleted) notifyDataChange('entry-deleted', { id });
+          return deleted;
         }
         return false;
       }
@@ -919,6 +946,7 @@ export class StorageManager {
           console.error('[Storage Watchdog] Failed to save after delete!');
           return false;
         }
+        notifyDataChange('entry-deleted');
         return true;
       }
       return false;
@@ -941,7 +969,9 @@ export class StorageManager {
         ? StorageManager.getEntries()[indexOrId]?.id
         : indexOrId;
       if (id) {
-        return window.electronAPI.nativeDb.toggleFavorite(id);
+        const nextState = window.electronAPI.nativeDb.toggleFavorite(id);
+        notifyDataChange('entry-favorite-toggled', { id, favorite: nextState });
+        return nextState;
       }
       return false;
     }
@@ -951,7 +981,9 @@ export class StorageManager {
         ? StorageManager.getEntries()[indexOrId]?.id 
         : indexOrId;
       if (id) {
-        return dbManager.toggleFavorite(id);
+        const nextState = dbManager.toggleFavorite(id);
+        notifyDataChange('entry-favorite-toggled', { id, favorite: nextState });
+        return nextState;
       }
       return false;
     }
@@ -962,6 +994,7 @@ export class StorageManager {
     if (index >= 0 && index < entries.length) {
       entries[index].favorite = !entries[index].favorite;
       localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+      notifyDataChange('entry-favorite-toggled', { id: entries[index].id, favorite: entries[index].favorite });
       return entries[index].favorite;
     }
     return false;
@@ -1232,11 +1265,14 @@ export class StorageManager {
    */
   static setTodaysMood(mood) {
     if (isElectron) {
-      return window.electronAPI.nativeDb.setTodaysMood(mood);
+      const result = window.electronAPI.nativeDb.setTodaysMood(mood);
+      notifyDataChange('daily-mood-updated', { mood });
+      return result;
     }
 
     if (sqliteReady) {
       dbManager.setTodaysMood(mood);
+      notifyDataChange('daily-mood-updated', { mood });
       return;
     }
 
@@ -1256,6 +1292,7 @@ export class StorageManager {
     });
 
     localStorage.setItem(DAILY_MOOD_KEY, JSON.stringify(data));
+    notifyDataChange('daily-mood-updated', { mood });
   }
 
   /**
@@ -1374,12 +1411,14 @@ export class StorageManager {
         if (isElectron) {
           const count = await window.electronAPI.nativeDb.importFromJSON(fileContent);
           StorageManager.updateStreaks();
+          notifyDataChange('entries-imported', { count });
           return count;
         }
 
         if (sqliteReady) {
           const count = await dbManager.importFromJSON(fileContent);
           StorageManager.updateStreaks();
+          notifyDataChange('entries-imported', { count });
           return count;
         }
 
@@ -1413,6 +1452,7 @@ export class StorageManager {
           }
         }
         StorageManager.updateStreaks();
+        notifyDataChange('entries-imported', { count: importedCount });
         return importedCount;
       }
     } catch (e) {
@@ -1457,6 +1497,7 @@ export class StorageManager {
       };
       const count = await window.electronAPI.nativeDb.importFromJSON(JSON.stringify(exportData));
       StorageManager.updateStreaks();
+      notifyDataChange('entries-imported', { count });
       return count;
     }
 
@@ -1468,6 +1509,7 @@ export class StorageManager {
       };
       const count = await dbManager.importFromJSON(JSON.stringify(exportData));
       StorageManager.updateStreaks();
+      notifyDataChange('entries-imported', { count });
       return count;
     }
 
@@ -1477,6 +1519,7 @@ export class StorageManager {
     });
     
     StorageManager.updateStreaks();
+    notifyDataChange('entries-imported', { count: importedCount });
     return importedCount;
   }
 
@@ -1659,6 +1702,7 @@ export class StorageManager {
       }
       // Note: Intentionally keep BACKUP_KEY for emergency recovery
       console.log('[Storage Watchdog] All data cleared. Backup preserved for emergency recovery.');
+      notifyDataChange('data-cleared');
     } catch (e) {
       console.error('[Storage Watchdog] clearAllData failed:', e);
       throw e; // Re-throw so caller knows it failed
@@ -1694,12 +1738,14 @@ export class StorageManager {
     if (isElectron) {
       const count = await window.electronAPI.nativeDb.importFromJSON(jsonString);
       StorageManager.updateStreaks();
+      notifyDataChange('entries-imported', { count });
       return count;
     }
 
     if (sqliteReady) {
       const count = await dbManager.importFromJSON(jsonString);
       StorageManager.updateStreaks();
+      notifyDataChange('entries-imported', { count });
       return count;
     }
     const count = await StorageManager.importEntries(jsonString);

@@ -15,7 +15,7 @@
 // - StorageManager: Persistence layer for entries
 // - PanelManager: Panel transition animations
 // - RichEditorManager: Rich text editing in entry panels
-// - MoodEmojiMapper: Mood display formatting
+// - Mood and metadata display formatting
 // - PaintDropAnimator: Entry panel expansion animation
 //
 // STATE MANAGEMENT:
@@ -33,14 +33,14 @@
 //
 // DEPENDENCIES:
 // - StorageManager, PanelManager, RichEditorManager
-// - PaintDropAnimator, MoodEmojiMapper, typeText utility
+// - PaintDropAnimator, typeText utility
 
 import { StorageManager } from './storageManager.js';
 import { PanelManager } from './panelManager.js';
 import { PaintDropAnimator } from '../animators/paintDropAnimator.js';
 import { typeText } from '../utils/typingEffect.js';
-import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 import { RichEditorManager } from './richEditorManager.js';
+import { t, tPlural, getLocale } from '../core/i18n.js';
 
 // ==================== EDITOR WATCHDOG SYSTEM ====================
 
@@ -75,6 +75,29 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/**
+ * Escapes a string for safe use in a regular expression.
+ * @param {string} value
+ * @returns {string}
+ * @private
+ */
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Converts stored rich HTML content into plain text.
+ * @param {string} html
+ * @returns {string}
+ * @private
+ */
+function htmlToText(html) {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -154,6 +177,12 @@ export class EditorManager {
     this.editEntryPanel = document.getElementById('edit-entry-panel');
     /** @type {HTMLElement} Container for entry list items */
     this.entriesListDiv = document.querySelector('.entry-list');
+    /** @type {HTMLElement|null} Active filters summary bar */
+    this.filterBar = document.getElementById('entry-filter-bar');
+    /** @type {HTMLElement|null} Active filters chip list */
+    this.activeFiltersEl = document.getElementById('entry-active-filters');
+    /** @type {HTMLButtonElement|null} Clear filters button */
+    this.clearFiltersBtn = document.getElementById('clear-entry-filters-btn');
 
     // Current entry tracking
     /** @type {string|null} ID of the entry currently being edited */
@@ -200,6 +229,8 @@ export class EditorManager {
     this.autosaveRetryCount = 0;
     /** @type {number|null} Draft backup interval ID */
     this.draftBackupInterval = null;
+    /** @type {Set<string>} Dismissed recovery prompts for the current session */
+    this.dismissedRecoveryKeys = new Set();
 
     this.initializeUI();
     this._setupWatchdog();
@@ -262,19 +293,342 @@ export class EditorManager {
    * @private
    */
   _checkForRecoveredDrafts() {
-    const newDraft = getDraftBackup('new-entry-panel');
-    const editDraft = getDraftBackup('edit-entry-panel');
-    
-    if (newDraft && newDraft.content && !newDraft.entryId) {
-      // There's an unsaved new entry draft
-      const age = Date.now() - new Date(newDraft.timestamp).getTime();
-      const ageMinutes = Math.round(age / 60000);
-      
-      // Only offer recovery for drafts less than 24 hours old
-      if (age < 24 * 60 * 60 * 1000) {
-        console.log(`[Editor Watchdog] Found unsaved draft from ${ageMinutes} minutes ago`);
-        // Could show a notification here offering to recover
+    const candidates = [
+      this._buildRecoveryInfo('new-entry-panel', getDraftBackup('new-entry-panel')),
+      this._buildRecoveryInfo('edit-entry-panel', getDraftBackup('edit-entry-panel'))
+    ]
+      .filter(Boolean)
+      .sort((a, b) => a.ageMs - b.ageMs);
+
+    if (!candidates.length) return;
+    this._queueDraftRecoveryNotice(candidates[0]);
+  }
+
+  /**
+   * Builds normalized recovery metadata for a backed-up draft.
+   * @param {string} panelId
+   * @param {Object|null} draft
+   * @returns {Object|null}
+   * @private
+   */
+  _buildRecoveryInfo(panelId, draft) {
+    if (!draft || !draft.timestamp) return null;
+
+    const plainText = htmlToText(draft.content || '');
+    if (!draft.name?.trim() && !plainText) return null;
+
+    const timestamp = new Date(draft.timestamp).getTime();
+    if (!Number.isFinite(timestamp)) return null;
+
+    const ageMs = Date.now() - timestamp;
+    if (ageMs < 0 || ageMs > 24 * 60 * 60 * 1000) return null;
+
+    return {
+      panelId,
+      draft,
+      ageMs,
+      key: `${panelId}:${draft.entryId || 'new'}:${draft.timestamp}`,
+      kind: panelId === 'edit-entry-panel' && draft.entryId ? 'edit' : 'new'
+    };
+  }
+
+  /**
+   * Shows a queued startup recovery prompt once the main menu is visible.
+   * @param {Object} recoveryInfo
+   * @private
+   */
+  _queueDraftRecoveryNotice(recoveryInfo) {
+    if (!recoveryInfo || this.dismissedRecoveryKeys.has(recoveryInfo.key)) return;
+
+    const showNotice = () => {
+      if (this.dismissedRecoveryKeys.has(recoveryInfo.key)) return;
+      this._showDraftRecoveryNotice(recoveryInfo);
+    };
+
+    if (window.__mainMenuReady) {
+      setTimeout(showNotice, 280);
+      return;
+    }
+
+    const onReady = () => {
+      window.removeEventListener('mainMenuReady', onReady);
+      setTimeout(showNotice, 280);
+    };
+    window.addEventListener('mainMenuReady', onReady);
+  }
+
+  /**
+   * Returns or creates the persistent notice stack.
+   * @returns {HTMLElement}
+   * @private
+   */
+  _getNoticeStack() {
+    let stack = document.getElementById('editor-notice-stack');
+    if (stack) return stack;
+
+    stack = document.createElement('div');
+    stack.id = 'editor-notice-stack';
+    stack.className = 'editor-notice-stack';
+    document.body.appendChild(stack);
+    return stack;
+  }
+
+  /**
+   * Renders a persistent notice card with actions.
+   * @param {Object} options
+   * @returns {HTMLElement}
+   * @private
+   */
+  _showPersistentNotice({ id, title, message, variant = 'info', actions = [] }) {
+    const stack = this._getNoticeStack();
+    this._dismissPersistentNotice(id, { immediate: true });
+
+    const notice = document.createElement('div');
+    notice.className = `editor-notice editor-notice--${variant}`;
+    notice.dataset.noticeId = id;
+
+    const actionsMarkup = actions.map((action, index) => `
+      <button type="button" class="editor-notice-btn ${action.className || ''}" data-action-index="${index}">
+        ${escapeHtml(action.label)}
+      </button>
+    `).join('');
+
+    notice.innerHTML = `
+      <div class="editor-notice__body">
+        <p class="editor-notice__title">${escapeHtml(title)}</p>
+        <p class="editor-notice__message">${escapeHtml(message)}</p>
+      </div>
+      <div class="editor-notice__actions">
+        ${actionsMarkup}
+      </div>
+    `;
+
+    stack.appendChild(notice);
+    requestAnimationFrame(() => notice.classList.add('visible'));
+
+    notice.querySelectorAll('[data-action-index]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const index = Number(button.getAttribute('data-action-index'));
+        actions[index]?.handler?.();
+      });
+    });
+
+    return notice;
+  }
+
+  /**
+   * Removes a persistent notice.
+   * @param {string} id
+   * @param {Object} [options]
+   * @returns {boolean}
+   * @private
+   */
+  _dismissPersistentNotice(id, options = {}) {
+    const notice = document.querySelector(`.editor-notice[data-notice-id="${id}"]`);
+    if (!notice) return false;
+
+    if (options.immediate) {
+      notice.remove();
+      return true;
+    }
+
+    notice.classList.remove('visible');
+    setTimeout(() => notice.remove(), 180);
+    return true;
+  }
+
+  /**
+   * Formats a relative timestamp for recovery prompts.
+   * @param {string} timestamp
+   * @returns {string}
+   * @private
+   */
+  _formatRelativeTime(timestamp) {
+    const then = new Date(timestamp).getTime();
+    if (!Number.isFinite(then)) return '';
+
+    const diffMs = then - Date.now();
+    const diffMinutes = Math.round(diffMs / 60000);
+    const formatter = new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto' });
+
+    if (Math.abs(diffMinutes) < 60) {
+      return formatter.format(diffMinutes, 'minute');
+    }
+
+    const diffHours = Math.round(diffMinutes / 60);
+    if (Math.abs(diffHours) < 48) {
+      return formatter.format(diffHours, 'hour');
+    }
+
+    return formatter.format(Math.round(diffHours / 24), 'day');
+  }
+
+  /**
+   * Shows a restore prompt for a backed-up draft.
+   * @param {Object} recoveryInfo
+   * @private
+   */
+  _showDraftRecoveryNotice(recoveryInfo) {
+    if (!recoveryInfo || this.dismissedRecoveryKeys.has(recoveryInfo.key)) return;
+
+    const timeAgo = this._formatRelativeTime(recoveryInfo.draft.timestamp);
+    const entryName = recoveryInfo.draft.name?.trim() || t('entry.untitled');
+    const message = recoveryInfo.kind === 'edit'
+      ? t('entry.recoverEditMessage', { name: entryName, timeAgo })
+      : t('entry.recoverNewMessage', { timeAgo });
+
+    this._showPersistentNotice({
+      id: `draft-recovery:${recoveryInfo.key}`,
+      title: t('entry.recoverTitle'),
+      message,
+      variant: 'info',
+      actions: [
+        {
+          label: t('entry.restoreDraft'),
+          className: 'editor-notice-btn--primary',
+          handler: () => this._restoreDraft(recoveryInfo)
+        },
+        {
+          label: t('entry.dismissDraft'),
+          handler: () => {
+            this.dismissedRecoveryKeys.add(recoveryInfo.key);
+            this._dismissPersistentNotice(`draft-recovery:${recoveryInfo.key}`);
+          }
+        }
+      ]
+    });
+  }
+
+  /**
+   * Restores a backed-up draft into the correct editor panel.
+   * @param {Object} recoveryInfo
+   * @private
+   */
+  _restoreDraft(recoveryInfo) {
+    if (!recoveryInfo) return;
+
+    const entry = recoveryInfo.kind === 'edit' && recoveryInfo.draft.entryId
+      ? StorageManager.getEntryById(recoveryInfo.draft.entryId)
+      : null;
+    const targetPanel = entry ? this.editEntryPanel : this.newEntryPanel;
+    const visiblePanel = this._getVisiblePanel();
+
+    this.dismissedRecoveryKeys.add(recoveryInfo.key);
+    this._dismissPersistentNotice(`draft-recovery:${recoveryInfo.key}`);
+
+    this._applyDraftToPanel(targetPanel, recoveryInfo, entry);
+
+    if (visiblePanel === this.mainPanel) {
+      document.body.classList.remove('main-menu-active');
+      window.setUtilityButtonsVisible?.(false);
+    }
+
+    const transition = visiblePanel && visiblePanel !== targetPanel
+      ? PanelManager.transitionPanels(visiblePanel, targetPanel)
+      : Promise.resolve();
+
+    transition.then(() => {
+      targetPanel.classList.add('expand');
+      targetPanel.querySelector('input.entry-name')?.focus();
+      this.showPopup(t('entry.draftRestored'));
+    });
+  }
+
+  /**
+   * Returns the currently visible high-level panel.
+   * @returns {HTMLElement}
+   * @private
+   */
+  _getVisiblePanel() {
+    const candidates = [
+      this.editEntryPanel,
+      this.newEntryPanel,
+      document.getElementById('mood-attributes-panel'),
+      document.getElementById('mood-panel'),
+      document.getElementById('template-panel'),
+      document.getElementById('stats-panel'),
+      document.getElementById('chat-panel'),
+      this.journalPanel,
+      this.mainPanel
+    ];
+
+    return candidates.find((panel) => {
+      if (!panel) return false;
+      const style = window.getComputedStyle(panel);
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0;
+    }) || this.mainPanel;
+  }
+
+  /**
+   * Populates an editor panel with recovered draft content.
+   * @param {HTMLElement} panel
+   * @param {Object} recoveryInfo
+   * @param {Object|null} entry
+   * @private
+   */
+  _applyDraftToPanel(panel, recoveryInfo, entry = null) {
+    if (!panel) return;
+
+    const draft = recoveryInfo.draft || {};
+    const titleInput = panel.querySelector('input.entry-name');
+    const richEditor = this.richEditors.get(panel.id);
+
+    if (panel.id === 'edit-entry-panel' && entry) {
+      this.currentEntryId = entry.id;
+      this.currentEntryIndex = StorageManager.getEntries().findIndex((item) => item.id === entry.id);
+      this.newEntryDraftId = null;
+    } else {
+      this.currentEntryId = null;
+      this.currentEntryIndex = null;
+      this.newEntryDraftId = draft.entryId || null;
+    }
+
+    this.currentTags = Array.isArray(draft.tags) ? [...draft.tags] : [];
+    panel.dataset.mood = draft.mood || entry?.mood || '';
+
+    if (titleInput) {
+      titleInput.value = draft.name || entry?.name || '';
+      titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    richEditor?.setContent(draft.content || entry?.content || '');
+    this._populateEntryMeta(panel, {
+      mood: panel.dataset.mood,
+      date: draft.timestamp || entry?.updatedAt || entry?.createdAt || new Date().toISOString()
+    });
+    this.renderTagsUI(panel, { autosave: false });
+    this._cachePanelSnapshot(panel);
+  }
+
+  /**
+   * Updates an editor panel's mood/date metadata.
+   * @param {HTMLElement} panel
+   * @param {Object} meta
+   * @private
+   */
+  _populateEntryMeta(panel, meta = {}) {
+    const metaRoot = panel?.querySelector('.entry-meta');
+    if (!metaRoot) return;
+
+    const moodEl = metaRoot.querySelector('.mood-badge');
+    const dateEl = metaRoot.querySelector('.date-stamp');
+    const attrContainer = metaRoot.querySelector('.attribute-tags');
+    if (attrContainer) {
+      attrContainer.innerHTML = '';
+    }
+
+    if (moodEl) {
+      if (meta.mood) {
+        moodEl.textContent = meta.mood;
+        moodEl.style.display = 'inline-block';
+      } else {
+        moodEl.textContent = '';
+        moodEl.style.display = 'none';
       }
+    }
+
+    if (dateEl) {
+      dateEl.textContent = new Date(meta.date || Date.now()).toLocaleString();
     }
   }
 
@@ -313,6 +667,10 @@ export class EditorManager {
 
     // Setup favorites filter button
     this.setupFavoritesFilter();
+
+    if (this.clearFiltersBtn) {
+      this.clearFiltersBtn.addEventListener('click', () => this.clearFilters());
+    }
 
     // Initialize rich text editors
     this.initRichEditors();
@@ -635,6 +993,7 @@ export class EditorManager {
    */
   displayEntries() {
     let entries = StorageManager.getEntries().map((e,i)=>({...e,__index:i}));
+    const queryTokens = this._tokenizeSearchQuery(this.searchQuery.toLowerCase());
 
     // Favorites filter
     if (this.showFavoritesOnly) {
@@ -656,7 +1015,6 @@ export class EditorManager {
     // Text search filter (case-insensitive; match name, content, or tags)
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
-      const queryTokens = this._tokenizeSearchQuery(q);
       entries = entries.filter(entry => this._matchesSearchQuery(entry, q, queryTokens));
     }
 
@@ -673,12 +1031,13 @@ export class EditorManager {
 
     // Always show favorites first within sort order
     entries.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+    this.renderActiveFilters();
 
     if (entries.length === 0) {
       this.entriesListDiv.innerHTML = "<p id=\"no-entries-msg\"></p>";
       const msg = (this.filterDate || this.searchQuery || this.showFavoritesOnly || this.filterTags.length) 
-        ? 'No matching entries.' 
-        : 'No entries saved.';
+        ? t('entry.noMatching')
+        : t('entry.noEntries');
       typeText('no-entries-msg', msg, 45, true);
       return;
     }
@@ -690,13 +1049,13 @@ export class EditorManager {
       entries.forEach((entry) => {
         if(entry.mood !== currentGroup){
           currentGroup = entry.mood;
-          html += `<li class="entry-group">${escapeHtml(currentGroup || 'No Mood')}</li>`;
+          html += `<li class="entry-group">${escapeHtml(currentGroup || t('entry.noMood'))}</li>`;
         }
-        html += this.renderEntryItem(entry);
+        html += this.renderEntryItem(entry, queryTokens);
       });
     } else {
       entries.forEach((entry) => {
-        html += this.renderEntryItem(entry);
+        html += this.renderEntryItem(entry, queryTokens);
       });
     }
     html += "</ul>";
@@ -706,8 +1065,7 @@ export class EditorManager {
     document.querySelectorAll('.entry-item').forEach(item => {
       item.addEventListener('click', (e) => {
         // Skip if clicking action buttons
-        if (e.target.classList.contains('delete-entry') || 
-            e.target.classList.contains('favorite-btn')) return;
+        if (e.target.closest('.entry-item-actions')) return;
 
         const entryId = item.getAttribute('data-id');
         const idx = parseInt(item.getAttribute('data-index'));
@@ -730,24 +1088,10 @@ export class EditorManager {
         // store mood for possible editing
         this.editEntryPanel.dataset.mood = loadedEntry.mood || '';
 
-        // Populate meta info in edit panel
-        const meta = this.editEntryPanel.querySelector('.entry-meta');
-        if (meta) {
-          const moodEl = meta.querySelector('.mood-badge');
-          const dateEl = meta.querySelector('.date-stamp');
-          if (moodEl) {
-            if (loadedEntry.mood) {
-              const emoji = MoodEmojiMapper.getEmoji(loadedEntry.mood);
-              moodEl.textContent = emoji ? `${emoji} ${loadedEntry.mood}` : loadedEntry.mood;
-              moodEl.style.display = 'inline-block';
-            } else {
-              moodEl.style.display = 'none';
-            }
-          }
-          if (dateEl) {
-            dateEl.textContent = new Date(loadedEntry.createdAt || loadedEntry.date).toLocaleString();
-          }
-        }
+        this._populateEntryMeta(this.editEntryPanel, {
+          mood: loadedEntry.mood || '',
+          date: loadedEntry.createdAt || loadedEntry.date
+        });
 
         // Render tags in edit panel
       this.renderTagsUI(this.editEntryPanel, { autosave: false });
@@ -767,6 +1111,10 @@ export class EditorManager {
         const entryId = btn.getAttribute('data-id');
         const idx = parseInt(btn.getAttribute('data-index'));
         const newState = StorageManager.toggleFavorite(entryId || idx);
+        if (this.showFavoritesOnly && !newState) {
+          this.displayEntries();
+          return;
+        }
         btn.textContent = newState ? '⭐' : '☆';
         btn.classList.toggle('active', newState);
       });
@@ -803,31 +1151,185 @@ export class EditorManager {
    * @returns {string} HTML string for the entry list item
    * @private
    */
-  renderEntryItem(entry) {
+  renderEntryItem(entry, queryTokens = []) {
     const formattedDate = new Date(entry.createdAt || entry.date).toLocaleString();
     const safeId = escapeHtml(String(entry.id || ''));
-    const safeName = escapeHtml(entry.name || 'Untitled');
-    const tagsHtml = (entry.tags || []).length > 0 
-      ? `<span class="entry-tags">${entry.tags.map(t => `<span class="tag-pill">${escapeHtml(String(t))}</span>`).join('')}</span>` 
+    const entryName = entry.name || t('entry.untitled');
+    const highlightedName = this._highlightText(entryName, queryTokens);
+    const previewText = this._buildPreviewText(entry);
+    const previewHtml = previewText
+      ? `<p class="entry-preview">${this._highlightText(previewText, queryTokens)}</p>`
+      : '';
+    const tagsHtml = (entry.tags || []).length > 0
+      ? `<span class="entry-tags">${entry.tags.map(tag => `<span class="tag-pill">${this._highlightText(String(tag), queryTokens)}</span>`).join('')}</span>`
       : '';
     const favoriteClass = entry.favorite ? 'active' : '';
     const favoriteIcon = entry.favorite ? '⭐' : '☆';
+    const wordCount = entry.wordCount || StorageManager.countWords(htmlToText(entry.content || ''));
+    const wordLabel = tPlural('word', wordCount);
     
     return `
       <li data-id="${safeId}" data-index="${entry.__index}" class="entry-item ${entry.favorite ? 'is-favorite' : ''}">
         <div class="entry-item-main">
-          <span class="entry-name-display">${safeName}</span>
+          <div class="entry-item-copy">
+            <span class="entry-name-display">${highlightedName}</span>
+            ${previewHtml}
+          </div>
           ${tagsHtml}
         </div>
         <div class="entry-item-meta">
           <span class="entry-date-display">${formattedDate}</span>
-          <span class="entry-word-count">${entry.wordCount || 0} words</span>
+          <span class="entry-word-count">${wordCount} ${wordLabel}</span>
         </div>
         <div class="entry-item-actions">
           <button class="favorite-btn ${favoriteClass}" data-id="${safeId}" data-index="${entry.__index}">${favoriteIcon}</button>
           <button class="delete-entry" data-id="${safeId}" data-index="${entry.__index}">🗑️</button>
         </div>
       </li>`;
+  }
+
+  /**
+   * Builds a readable preview snippet for an entry.
+   * @param {Object} entry
+   * @returns {string}
+   * @private
+   */
+  _buildPreviewText(entry) {
+    const showPreviews = localStorage.getItem('showEntryPreviews') !== 'false';
+    const compactView = document.body.classList.contains('compact-view');
+    if (!showPreviews || compactView) return '';
+
+    const plainText = htmlToText(entry.content || '');
+    if (!plainText) return '';
+
+    const maxLength = 160;
+    if (!this.searchQuery) {
+      return plainText.length > maxLength ? `${plainText.slice(0, maxLength).trimEnd()}…` : plainText;
+    }
+
+    const lower = plainText.toLowerCase();
+    const matchIndex = this._tokenizeSearchQuery(this.searchQuery.toLowerCase())
+      .map(token => lower.indexOf(token))
+      .find(index => index >= 0);
+
+    if (matchIndex === undefined) {
+      return plainText.length > maxLength ? `${plainText.slice(0, maxLength).trimEnd()}…` : plainText;
+    }
+
+    const start = Math.max(0, matchIndex - 48);
+    const end = Math.min(plainText.length, start + maxLength);
+    const prefix = start > 0 ? '…' : '';
+    const suffix = end < plainText.length ? '…' : '';
+    return `${prefix}${plainText.slice(start, end).trim()}${suffix}`;
+  }
+
+  /**
+   * Highlights active search tokens inside text.
+   * @param {string} text
+   * @param {string[]} queryTokens
+   * @returns {string}
+   * @private
+   */
+  _highlightText(text, queryTokens = []) {
+    const source = escapeHtml(String(text || ''));
+    if (!queryTokens.length) return source;
+
+    const uniqueTokens = [...new Set(queryTokens.map(token => token.trim()).filter(Boolean))];
+    if (!uniqueTokens.length) return source;
+
+    const pattern = new RegExp(`(${uniqueTokens.map(escapeRegExp).join('|')})`, 'gi');
+    return source.replace(pattern, '<mark class="entry-highlight">$1</mark>');
+  }
+
+  /**
+   * Renders active filter chips and clear action.
+   * @private
+   */
+  renderActiveFilters() {
+    if (!this.filterBar || !this.activeFiltersEl) return;
+
+    const filters = [];
+    if (this.searchQuery) {
+      filters.push({
+        key: 'search',
+        label: `${t('journal.filterSearch')}: "${this.searchQuery}"`
+      });
+    }
+    if (this.filterDate) {
+      filters.push({
+        key: 'date',
+        label: `${t('journal.filterDate')}: ${new Date(`${this.filterDate}T00:00:00`).toLocaleDateString(getLocale())}`
+      });
+    }
+    if (this.showFavoritesOnly) {
+      filters.push({
+        key: 'favorites',
+        label: t('journal.filterFavorites')
+      });
+    }
+    this.filterTags.forEach((tag) => {
+      filters.push({
+        key: 'tag',
+        value: tag,
+        label: t('journal.filterTag', { tag })
+      });
+    });
+
+    const dateBtn = document.getElementById('date-picker-btn');
+    if (dateBtn) {
+      dateBtn.classList.toggle('active', Boolean(this.filterDate));
+    }
+
+    const showBar = filters.length > 0;
+    this.filterBar.hidden = !showBar;
+    if (!showBar) {
+      this.activeFiltersEl.innerHTML = '';
+      return;
+    }
+
+    this.activeFiltersEl.innerHTML = filters.map((filter, index) => `
+      <button type="button" class="entry-filter-chip" data-filter-key="${filter.key}" data-filter-value="${escapeHtml(String(filter.value || ''))}" data-filter-index="${index}">
+        <span>${escapeHtml(filter.label)}</span>
+        <span class="entry-filter-chip__close" aria-hidden="true">×</span>
+      </button>
+    `).join('');
+
+    this.activeFiltersEl.querySelectorAll('.entry-filter-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const key = chip.getAttribute('data-filter-key');
+        const value = chip.getAttribute('data-filter-value');
+        this._clearSpecificFilter(key, value);
+      });
+    });
+  }
+
+  /**
+   * Clears an individual filter chip and refreshes the list.
+   * @param {string} key
+   * @param {string} value
+   * @private
+   */
+  _clearSpecificFilter(key, value = '') {
+    if (key === 'search') {
+      this.searchQuery = '';
+      const searchInput = document.getElementById('entry-search');
+      if (searchInput) {
+        searchInput.value = '';
+      }
+    } else if (key === 'date') {
+      this.filterDate = null;
+    } else if (key === 'favorites') {
+      this.showFavoritesOnly = false;
+      const favBtn = document.getElementById('favorites-filter-btn');
+      if (favBtn) {
+        favBtn.classList.remove('active');
+        favBtn.innerHTML = '☆';
+      }
+    } else if (key === 'tag' && value) {
+      this.filterTags = this.filterTags.filter((tag) => tag !== value);
+    }
+
+    this.displayEntries();
   }
 
   /**
@@ -866,7 +1368,7 @@ export class EditorManager {
     }
 
     const name = entry.name ? entry.name.toLowerCase() : '';
-    const content = entry.content ? entry.content.toLowerCase() : '';
+    const content = htmlToText(entry.content || '').toLowerCase();
     const tags = Array.isArray(entry.tags) ? entry.tags : [];
 
     return (
@@ -884,6 +1386,10 @@ export class EditorManager {
    * @public
    */
   showPopup(message) {
+    if (typeof window.showPopup === 'function') {
+      window.showPopup(message);
+      return;
+    }
     const popup = document.getElementById('custom-popup');
     popup.textContent = message;
     
@@ -943,7 +1449,7 @@ export class EditorManager {
         const iso=`${current.getFullYear()}-${String(current.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         if(this.filterDate===iso){cell.classList.add('selected');}
         cell.addEventListener('click',()=>{
-          this.filterDate=iso;
+          this.filterDate = this.filterDate === iso ? null : iso;
           this.displayEntries();
           pop.style.display='none';
         });
@@ -1153,7 +1659,10 @@ export class EditorManager {
     this.searchQuery = '';
     
     const searchInput = document.getElementById('entry-search');
-    if (searchInput) searchInput.value = '';
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.classList.add('collapsed');
+    }
     
     const favBtn = document.getElementById('favorites-filter-btn');
     if (favBtn) {
@@ -1293,6 +1802,7 @@ export class EditorManager {
       this.autosaveRetryCount = 0;
       this.hasUnsavedChanges = false;
       clearDraftBackup(panelId);
+      this._dismissPersistentNotice(`autosave:${panelId}`);
       
     } catch (e) {
       console.error('[Editor Watchdog] Autosave exception:', e);
@@ -1328,8 +1838,29 @@ export class EditorManager {
       }, EDITOR_WATCHDOG_CONFIG.autosaveRetryDelay);
     } else {
       console.error('[Editor Watchdog] Autosave failed after max retries. Draft backed up to localStorage.');
-      // Could show a user notification here
-      this.showPopup('⚠️ Autosave failed. Your work is backed up.');
+      this._showPersistentNotice({
+        id: `autosave:${panel.id}`,
+        title: t('entry.autosaveFailedTitle'),
+        message: t('entry.autosaveFailedBody'),
+        variant: 'warning',
+        actions: [
+          {
+            label: t('entry.retrySave'),
+            className: 'editor-notice-btn--primary',
+            handler: () => {
+              this.autosaveRetryCount = 0;
+              this.performLiveAutosave(panel);
+            }
+          },
+          {
+            label: t('common.dismiss'),
+            handler: () => {
+              this._dismissPersistentNotice(`autosave:${panel.id}`);
+            }
+          }
+        ]
+      });
+      this.showPopup(t('entry.autosaveFailedTitle'));
       this.autosaveRetryCount = 0;
     }
   }
@@ -1347,6 +1878,7 @@ export class EditorManager {
     if (timer) clearTimeout(timer);
     this.liveAutosaveTimers.delete(panelId);
     this.lastAutosaveState.delete(panelId);
+    this._dismissPersistentNotice(`autosave:${panelId}`, { immediate: true });
     
     // Watchdog: Clear draft backup and unsaved flag
     clearDraftBackup(panelId);

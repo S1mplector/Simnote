@@ -35,30 +35,6 @@
   }
 }
 
-@keyframes emojiFloat {
-  0%, 100% {
-    transform: translateY(0) rotate(-5deg);
-  }
-  25% {
-    transform: translateY(-4px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-2px) rotate(5deg);
-  }
-  75% {
-    transform: translateY(-5px) rotate(0deg);
-  }
-}
-
-@keyframes emojiGlow {
-  0%, 100% {
-    filter: drop-shadow(0 0 4px rgba(255, 200, 100, 0.4));
-  }
-  50% {
-    filter: drop-shadow(0 0 12px rgba(255, 200, 100, 0.8));
-  }
-}
-
 @keyframes dateFadeIn {
   0% {
     opacity: 0;
@@ -147,11 +123,6 @@
 /* === Greeting Styles with Animation === */
 .date-header .greeting {
   animation: greetingFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.date-header .greeting .greeting-emoji {
-  display: inline-block;
-  animation: emojiFloat 4s ease-in-out infinite, emojiGlow 3s ease-in-out infinite;
 }
 
 .date-header .current-date {
@@ -315,4 +286,4 @@
   box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.6),
               -20px 0 15px 2px rgba(255, 255, 255, 0.4),
               -40px 0 10px 1px rgba(255, 255, 255, 0.2);
-} 
+}

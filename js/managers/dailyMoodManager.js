@@ -140,8 +140,8 @@ export class DailyMoodManager {
   setupMoodPanel() {
     if (!this.moodPanel) return;
 
-    const showDelayMs = 600;
-    const fallbackMs = 8000;
+    const showDelayMs = 260;
+    const fallbackMs = 2500;
 
     const scheduleShow = () => {
       if (this.hasShownCheckin) return;

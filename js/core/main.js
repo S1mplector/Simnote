@@ -39,7 +39,6 @@ import { AuroraSplashAnimator } from '../animators/auroraSplashAnimator.js';
 import { StorageManager } from '../managers/storageManager.js';
 import { initThemeSelector } from './themeSelector.js';
 import { TEMPLATES } from './templates.js';
-import { MoodEmojiMapper } from '../utils/moodEmojiMapper.js';
 import { PlainSplashAnimator } from '../animators/plainSplashAnimator.js';
 import { PlainDarkSweepSplashAnimator } from '../animators/plainDarkSweepSplashAnimator.js';
 import { PlainLightSweepSplashAnimator } from '../animators/plainLightSweepSplashAnimator.js';
@@ -56,7 +55,7 @@ import { OnboardingManager } from '../managers/onboardingManager.js';
 import { DailyMoodManager, getTodaysMood } from '../managers/dailyMoodManager.js';
 import { MoodAttributesManager } from '../managers/moodAttributesManager.js';
 import { MoodsSmileyAnimator } from '../animators/moodsSmileyAnimator.js';
-import { setLanguage, getLanguage, initI18n } from './i18n.js';
+import { setLanguage, getLanguage, initI18n, t } from './i18n.js';
 import { JournalPenAnimator } from '../animators/journalPenAnimator.js';
 import { EntriesBookAnimator } from '../animators/entriesBookAnimator.js';
 import { lockScreenManager } from '../managers/lockScreenManager.js';
@@ -95,18 +94,32 @@ const logoTextEl = document.querySelector('.logo-text');
 
 // Buttons
 const manualBtn = document.getElementById('manual-btn');
+const chatBtn = document.getElementById('chat-btn');
 const themeSettingsBtn = document.getElementById('theme-settings-btn');
-// Hide utility buttons until splash completes
-manualBtn.style.display = 'none';
-themeSettingsBtn.style.display = 'none';
+const utilityButtons = [manualBtn, chatBtn, themeSettingsBtn].filter(Boolean);
+
+const setUtilityButtonsVisible = (visible) => {
+  utilityButtons.forEach((button) => {
+    button.style.display = visible ? 'inline-flex' : 'none';
+  });
+};
+
+window.setUtilityButtonsVisible = setUtilityButtonsVisible;
+setUtilityButtonsVisible(false);
 
 // Hold off on starting the background animation & intro until the splash finishes
 
 // Preload welcome sound for smooth playback
 const welcomeSound = new Audio('resources/audio/ui/welcome.mp3');
 welcomeSound.preload = 'auto';
+const LAUNCH_EXPERIENCE_KEY = 'simnote_launch_experience_seen';
+let fastLaunchEnabled = false;
 
-function startIntroAnimation() {
+function startIntroAnimation(options = {}) {
+  const { fastStart = false } = options;
+  const logoDelayMs = fastStart ? 80 : 1000;
+  const drawerDelayMs = fastStart ? 120 : 300;
+
   // Kick-off the blur + logo + buttons sequence
   blurOverlay.style.opacity = 1;
   setTimeout(() => {
@@ -114,7 +127,7 @@ function startIntroAnimation() {
     simnoteLogo.style.transform = 'translateY(0)';
 
     // Play welcome sound as logo appears
-    if (window.playSfx) {
+    if (!fastStart && window.playSfx) {
       window.playSfx(welcomeSound);
     }
 
@@ -129,11 +142,10 @@ function startIntroAnimation() {
       const plantScene = document.querySelector('.plant-scene');
       if (plantScene) plantScene.classList.add('visible');
       // Reveal utility buttons together with the main menu
-      manualBtn.style.display = 'block';
-      themeSettingsBtn.style.display = 'block';
+      setUtilityButtonsVisible(true);
       signalMainMenuReady();
-    }, 300);
-  }, 1000);
+    }, drawerDelayMs);
+  }, logoDelayMs);
 }
 
 // Helper to launch appropriate splash animation
@@ -168,6 +180,7 @@ function signalMainMenuReady() {
   if (mainMenuReady) return;
   mainMenuReady = true;
   window.__mainMenuReady = true;
+  localStorage.setItem(LAUNCH_EXPERIENCE_KEY, 'true');
   window.dispatchEvent(new Event('mainMenuReady'));
 }
 
@@ -187,15 +200,16 @@ function isMainMenuVisible() {
   return navStyle.opacity !== '0' && logoStyle.opacity !== '0';
 }
 
-function ensureMainMenuVisible() {
+function ensureMainMenuVisible(options = {}) {
+  const { fastStart = false } = options;
   if (isPanelVisible(moodPanel)) return;
   if (isMainMenuVisible()) return;
-  startIntroAnimation();
+  startIntroAnimation({ fastStart });
   setTimeout(() => {
     if (!isMainMenuVisible()) {
       animateMainPanelBack();
     }
-  }, 1400);
+  }, fastStart ? 280 : 1400);
 }
 
 function startBgAnimator(theme) {
@@ -213,8 +227,9 @@ function startBgAnimator(theme) {
   }
 }
 
-function startMainApp() {
+function startMainApp(options = {}) {
   if (mainMenuStarted) return;
+  const { fastStart = false } = options;
   mainMenuStarted = true;
   // Start appropriate background animation
   const theme = document.body.getAttribute('data-theme');
@@ -225,10 +240,10 @@ function startMainApp() {
   }
   document.body.classList.add('main-menu-active');
   setTimeout(() => {
-    ensureMainMenuVisible();
-  }, 1800);
+    ensureMainMenuVisible({ fastStart });
+  }, fastStart ? 120 : 1800);
   try {
-    startIntroAnimation();
+    startIntroAnimation({ fastStart });
   } catch (err) {
     console.error('[Main] Intro animation failed:', err);
     animateMainPanelBack();
@@ -302,14 +317,12 @@ function refreshDateHeader(){
   // Greeting based on hour
   const hour = new Date().getHours();
   let greeting = 'Hello';
-  let emoji = '👋';
-  if(hour >= 5 && hour < 12){ greeting='Good Morning'; emoji='☀️'; }
-  else if(hour >= 12 && hour < 18){ greeting='Good Afternoon'; emoji='🌤️'; }
-  else if(hour >= 18 && hour < 22){ greeting='Good Evening'; emoji='🌙'; }
-  else { greeting='Good Night'; emoji='🌙'; }
-  
-  // Wrap emoji in span for separate animation
-  greetingEl.innerHTML = `<span class="greeting-emoji">${emoji}</span> ${greeting}.`;
+  if(hour >= 5 && hour < 12){ greeting='Good Morning'; }
+  else if(hour >= 12 && hour < 18){ greeting='Good Afternoon'; }
+  else if(hour >= 18 && hour < 22){ greeting='Good Evening'; }
+  else { greeting='Good Night'; }
+
+  greetingEl.textContent = `${greeting}.`;
 
   // Current date formatted
   const now = new Date();
@@ -426,8 +439,7 @@ function animateDrawerOpen(btn, callback) {
 // New entry button - go directly to blank entry (skip templates)
 newEntryBtn.addEventListener('click', () => {
   animateDrawerOpen(newEntryBtn, () => {
-    manualBtn.style.display = 'none';
-    themeSettingsBtn.style.display = 'none';
+    setUtilityButtonsVisible(false);
 
     window.selectedTemplate = null;
     window.selectedTemplateBackup = null;
@@ -437,8 +449,7 @@ newEntryBtn.addEventListener('click', () => {
 
 loadEntryBtn.addEventListener('click', () => {
   animateDrawerOpen(loadEntryBtn, () => {
-    manualBtn.style.display = 'none';
-    themeSettingsBtn.style.display = 'none';
+    setUtilityButtonsVisible(false);
     document.body.classList.remove('main-menu-active');
     document.body.classList.add('journal-open');
     PanelManager.smoothEntrance(mainPanel, journalPanel, {
@@ -473,8 +484,7 @@ function animateMainPanelBack() {
   if (drawerNav) drawerNav.classList.add('visible');
   const plantScene = document.querySelector('.plant-scene');
   if (plantScene) plantScene.classList.add('visible');
-  manualBtn.style.display = 'block';
-  themeSettingsBtn.style.display = 'block';
+  setUtilityButtonsVisible(true);
   document.body.classList.remove('journal-open');
   document.body.classList.add('main-menu-active');
   signalMainMenuReady();
@@ -916,21 +926,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const allowedThemes = new Set(['plain-dark', 'dracula', 'monokai']);
   const storedTheme = localStorage.getItem('selectedTheme');
   const savedTheme = allowedThemes.has(storedTheme) ? storedTheme : 'plain-dark';
+  fastLaunchEnabled = localStorage.getItem(LAUNCH_EXPERIENCE_KEY) === 'true';
   document.body.setAttribute('data-theme', savedTheme);
   initThemeSelector();
-  launchSplash(savedTheme);
-  setTimeout(() => {
-    if (!mainMenuStarted) {
-      startMainApp();
-    }
-  }, 5200);
-  setTimeout(() => {
-    if (!mainMenuStarted) {
-      startMainApp();
-    } else {
-      ensureMainMenuVisible();
-    }
-  }, 7200);
+  if (fastLaunchEnabled) {
+    setTimeout(() => {
+      if (!mainMenuStarted) {
+        startMainApp({ fastStart: true });
+      }
+    }, 120);
+    setTimeout(() => {
+      if (!mainMenuStarted) {
+        startMainApp({ fastStart: true });
+      } else {
+        ensureMainMenuVisible({ fastStart: true });
+      }
+    }, 900);
+  } else {
+    launchSplash(savedTheme);
+    setTimeout(() => {
+      if (!mainMenuStarted) {
+        startMainApp();
+      }
+    }, 5200);
+    setTimeout(() => {
+      if (!mainMenuStarted) {
+        startMainApp();
+      } else {
+        ensureMainMenuVisible();
+      }
+    }, 7200);
+  }
 
   // Initialize date header immediately to avoid placeholder flicker
   initDateHeader();
@@ -1003,8 +1029,7 @@ document.addEventListener('DOMContentLoaded', () => {
           fadeDuration: 300
         }).then(()=>{
           blurOverlay.style.opacity = 1;
-          manualBtn.style.display = 'block';
-          themeSettingsBtn.style.display = 'block';
+          setUtilityButtonsVisible(true);
           document.body.classList.add('main-menu-active');
         });
       });
@@ -1041,14 +1066,25 @@ if (saveBtn) {
   });
 }
 
+let popupTimer = null;
+
 function showPopup(message) {
   const popup = document.getElementById('custom-popup');
+  if (!popup) return;
+  if (popupTimer) {
+    clearTimeout(popupTimer);
+    popupTimer = null;
+  }
   popup.textContent = message;
+  popup.classList.remove('hide');
   popup.classList.add('visible');
-  setTimeout(() => {
+  popupTimer = setTimeout(() => {
     popup.classList.remove('visible');
-  }, 2000);
+    popupTimer = null;
+  }, 2200);
 }
+
+window.showPopup = showPopup;
 
 /* -------------------------------------
    Manual Popup
@@ -1236,8 +1272,7 @@ function goToEntryPanel() {
       const dateEl = meta.querySelector('.date-stamp');
       if (moodEl) {
         if (currentMood) {
-          const emoji = MoodEmojiMapper.getEmoji(currentMood);
-          moodEl.textContent = emoji ? `${emoji} ${currentMood}` : currentMood;
+          moodEl.textContent = currentMood;
           moodEl.style.display = 'inline-block';
         } else {
           moodEl.style.display = 'none';
@@ -1254,7 +1289,7 @@ function goToEntryPanel() {
         meta.appendChild(attrContainer);
       }
       attrContainer.innerHTML = currentAttributes.map(a => 
-        `<span class="attribute-tag">${escapeHtml(String(a.emoji || ''))} ${escapeHtml(String(a.name || ''))}</span>`
+        `<span class="attribute-tag">${escapeHtml(String(a.name || ''))}</span>`
       ).join('');
     }
     // Guarantee the panel is expanded and content visible on every open
@@ -1308,8 +1343,7 @@ if (moodBackBtn) {
           window.pendingQuoteEntry = null;
         }
         blurOverlay.style.opacity = 1;
-        manualBtn.style.display = 'block';
-        themeSettingsBtn.style.display = 'block';
+        setUtilityButtonsVisible(true);
         document.body.classList.add('main-menu-active');
         if (drawerNav) drawerNav.classList.add('visible');
       }
@@ -1672,53 +1706,17 @@ async function initSecuritySettings() {
 
   // Change passcode button
   if (changeBtn) {
-    changeBtn.addEventListener('click', async () => {
+    changeBtn.addEventListener('click', () => {
       console.log('[Security] Change passcode clicked');
-      const current = prompt('Enter current passcode:');
-      if (!current) return;
-      const newPass = prompt('Enter new passcode (4 digits):');
-      if (!newPass || newPass.length < 4) {
-        alert('Passcode must be at least 4 characters');
-        return;
-      }
-      const confirmPass = prompt('Confirm new passcode:');
-      if (confirmPass !== newPass) {
-        alert('Passcodes do not match');
-        return;
-      }
-      try {
-        const result = await window.electronAPI.security.changePasscode(current, newPass);
-        if (result.success) {
-          alert('Passcode changed successfully');
-        } else {
-          alert(result.error || 'Failed to change passcode');
-        }
-      } catch (err) {
-        console.error('[Security] Change passcode error:', err);
-        alert('Failed to change passcode');
-      }
+      lockScreenManager.openSetupModal('change');
     });
   }
 
   // Disable security button
   if (disableBtn) {
-    disableBtn.addEventListener('click', async () => {
+    disableBtn.addEventListener('click', () => {
       console.log('[Security] Disable security clicked');
-      const passcode = prompt('Enter passcode to disable security:');
-      if (!passcode) return;
-      try {
-        const result = await window.electronAPI.security.disable(passcode);
-        if (result.success) {
-          const newConfig = await window.electronAPI.security.getConfig();
-          updateSecurityUI(newConfig);
-          window.dispatchEvent(new Event('security-config-changed'));
-        } else {
-          alert(result.error || 'Failed to disable security');
-        }
-      } catch (err) {
-        console.error('[Security] Disable security error:', err);
-        alert('Failed to disable security');
-      }
+      lockScreenManager.openDisableModal();
     });
   }
 
@@ -1729,17 +1727,21 @@ async function initSecuritySettings() {
 
   // Touch ID toggle
   touchIdToggle?.addEventListener('change', async () => {
-    if (touchIdToggle.checked) {
-      await window.electronAPI.security.enableTouchId();
-    } else {
-      await window.electronAPI.security.disableTouchId();
+    try {
+      await lockScreenManager.setTouchIdEnabled(touchIdToggle.checked);
+      window.dispatchEvent(new Event('security-config-changed'));
+    } catch (err) {
+      console.error('[Security] Touch ID toggle error:', err);
+      touchIdToggle.checked = !touchIdToggle.checked;
+      showPopup(t('security.touchIdUpdateFailed'));
     }
   });
 
   // Auto-lock select
   autoLockSelect?.addEventListener('change', async () => {
     const minutes = parseInt(autoLockSelect.value, 10);
-    await window.electronAPI.security.setAutoLock(minutes);
+    await lockScreenManager.setAutoLockTimeout(minutes);
+    window.dispatchEvent(new Event('security-config-changed'));
   });
 
   // Listen for setup completion to refresh UI

@@ -43,6 +43,15 @@
           <span class="manual-book__pg manual-book__pg--5"></span>
         </span>
       </button>
+      <!-- Serenity Button -->
+      <button id="chat-btn" class="chat-btn" aria-label="Open Serenity" data-i18n-aria-label="aria.serenity" title="Open Serenity" data-i18n-title="chat.openTitle">
+        <svg class="chat-bubble-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H8l-4.5 2 1.5-4A8.5 8.5 0 1 1 21 11.5z"></path>
+          <path d="M9 11.5h.01"></path>
+          <path d="M12 11.5h.01"></path>
+          <path d="M15 11.5h.01"></path>
+        </svg>
+      </button>
       <!-- Theme Settings Button -->
       <button id="theme-settings-btn" class="theme-settings-btn" aria-label="Settings" data-i18n-aria-label="aria.settings">
         <span class="settings-lines" aria-hidden="true">
@@ -212,42 +221,42 @@
 
       <!-- Security (Electron only) -->
       <div class="settings-section security-settings-section" id="security-settings-section" style="margin-top:20px; display:none;">
-        <h4 style="margin:0 0 8px 0;">Security</h4>
+        <h4 style="margin:0 0 8px 0;" data-i18n="security.title">Security</h4>
         <div class="settings-option" id="passcode-setup-row">
-          <span class="settings-option-label">Passcode Lock</span>
-          <button class="security-btn security-btn--primary" id="setup-passcode-btn">Set Up</button>
+          <span class="settings-option-label" data-i18n="security.passcodeLock">Passcode Lock</span>
+          <button class="security-btn security-btn--primary" id="setup-passcode-btn" data-i18n="security.setUp">Set Up</button>
         </div>
         <div class="settings-option" id="passcode-enabled-row" style="display:none;">
-          <span class="settings-option-label">Passcode Lock</span>
-          <span style="color: var(--accent-color);">Enabled</span>
+          <span class="settings-option-label" data-i18n="security.passcodeLock">Passcode Lock</span>
+          <span style="color: var(--accent-color);" data-i18n="security.enabled">Enabled</span>
         </div>
         <div class="settings-option" id="touch-id-row" style="display:none;">
-          <span class="settings-option-label">Use Touch ID</span>
+          <span class="settings-option-label" data-i18n="security.useTouchId">Use Touch ID</span>
           <label class="toggle-switch">
             <input type="checkbox" id="touch-id-toggle">
             <span class="toggle-slider"></span>
           </label>
         </div>
         <div class="settings-option" id="auto-lock-row" style="display:none;">
-          <span class="settings-option-label">Auto-lock after</span>
+          <span class="settings-option-label" data-i18n="security.autoLockAfter">Auto-lock after</span>
           <select class="security-select" id="auto-lock-select">
-            <option value="0">Never</option>
-            <option value="1">1 minute</option>
-            <option value="5" selected>5 minutes</option>
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
+            <option value="0" data-i18n="security.never">Never</option>
+            <option value="1" data-i18n="security.oneMinute">1 minute</option>
+            <option value="5" selected data-i18n="security.fiveMinutes">5 minutes</option>
+            <option value="15" data-i18n="security.fifteenMinutes">15 minutes</option>
+            <option value="30" data-i18n="security.thirtyMinutes">30 minutes</option>
           </select>
         </div>
         <div id="security-actions" style="display:none; margin-top:12px;">
-          <button class="security-btn" id="change-passcode-btn" style="margin-right:8px;">Change Passcode</button>
-          <button class="security-btn security-btn--danger" id="disable-security-btn">Disable</button>
+          <button class="security-btn" id="change-passcode-btn" style="margin-right:8px;" data-i18n="security.changePasscode">Change Passcode</button>
+          <button class="security-btn security-btn--danger" id="disable-security-btn" data-i18n="security.disable">Disable</button>
         </div>
         <button class="lock-now-btn" id="lock-now-btn" style="display:none; width:auto;">
           <svg viewBox="0 0 24 24" stroke-width="2">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
-          Lock Now
+          <span data-i18n="security.lockNow">Lock Now</span>
         </button>
       </div>
 
@@ -432,6 +441,10 @@
           </div>
           <button id="date-picker-btn" class="calendar-btn" title="Filter by date" data-i18n-title="journal.filterByDate">📅</button>
           <div id="custom-calendar" class="custom-calendar" style="display:none;"></div>
+        </div>
+        <div class="entry-filter-bar" id="entry-filter-bar" hidden>
+          <div class="entry-active-filters" id="entry-active-filters" aria-live="polite"></div>
+          <button id="clear-entry-filters-btn" class="entry-filter-clear" type="button" data-i18n="journal.clearFilters">Clear filters</button>
         </div>
         <div class="entry-list"></div>
         <button class="nav-icon-btn back-to-menu" title="Back to Menu" data-i18n-title="nav.backToMenu">

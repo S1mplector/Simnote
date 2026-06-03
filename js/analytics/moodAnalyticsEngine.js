@@ -1,8 +1,6 @@
 // moodAnalyticsEngine.js
 // Advanced mood processing and analytics engine for comprehensive mood insights
 //
-// ARCHITECTURE OVERVIEW:
-// ----------------------
 // This module provides sophisticated mood analytics including:
 // - Mood trend analysis with statistical significance testing
 // - Multi-dimensional pattern detection (time, day, season, context)
