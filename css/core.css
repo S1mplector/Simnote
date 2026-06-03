@@ -829,9 +829,10 @@ html, body {
 
 /* Close button at bottom of settings panel */
 #theme-settings-close-btn {
-  position: absolute;
+  position: fixed;
   right: 20px;
   bottom: 20px;
+  z-index: 201;
 }
 
 /* ===== Themes ===== */
