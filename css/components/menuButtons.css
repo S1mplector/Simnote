@@ -41,7 +41,6 @@ body.main-menu-active .utility-buttons::before {
 }
 
 .utility-buttons .manual-btn,
-.utility-buttons .chat-btn,
 .utility-buttons .theme-settings-btn {
   position: relative;
   top: 0;
@@ -51,13 +50,6 @@ body.main-menu-active .utility-buttons::before {
   pointer-events: none;
   transform: translateX(-6px) scale(0.92);
   transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
-}
-
-.utility-buttons .chat-btn {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: none;
 }
 
 .utility-buttons:hover .manual-btn,
@@ -78,7 +70,6 @@ body.main-menu-active .utility-buttons:focus-within::before {
 
 @media (hover: none) {
   .utility-buttons .manual-btn,
-  .utility-buttons .chat-btn,
   .utility-buttons .theme-settings-btn {
     opacity: 1;
     visibility: visible;
@@ -105,30 +96,17 @@ body.main-menu-active .utility-buttons:focus-within::before {
 }
 
 .theme-settings-btn,
-.manual-btn,
-.chat-btn {
+.manual-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.chat-bubble-icon {
-  width: 28px;
-  height: 28px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: filter 0.3s ease, transform 0.3s ease;
 }
 
 .theme-settings-btn .settings-lines {
   transition: transform 0.2s ease;
 }
 
-.manual-btn .manual-book,
-.chat-btn .chat-bubble-icon {
+.manual-btn .manual-book {
   transition: filter 0.3s ease, transform 0.3s ease;
 }
 
@@ -141,21 +119,14 @@ body.main-menu-active .utility-buttons:focus-within::before {
   transform: translateY(-1px);
 }
 
-.chat-btn:hover .chat-bubble-icon {
-  filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.24));
-  transform: translateY(-1px);
-}
-
 /* hide when journal panel active */
 body.journal-open .manual-btn,
-body.journal-open .chat-btn,
 body.journal-open .theme-settings-btn{display:none !important;}
 body.journal-open .utility-buttons{opacity:0 !important;pointer-events:none !important;visibility:hidden;}
 body.journal-open .utility-buttons::before{opacity:0;}
 
 /* Fade-in labels for Manual and Settings buttons */
 .manual-btn,
-.chat-btn,
 .theme-settings-btn {
   /* ensure label isn't clipped */
   overflow: visible;
@@ -163,13 +134,11 @@ body.journal-open .utility-buttons::before{opacity:0;}
 }
 
 .manual-btn:hover,
-.chat-btn:hover,
 .theme-settings-btn:hover {
   color: rgba(255, 255, 255, 0.95);
 }
 
 .manual-btn::after,
-.chat-btn::after,
 .theme-settings-btn::after {
   content: ""; /* default, will be overridden per button */
   position: absolute;
@@ -188,16 +157,11 @@ body.journal-open .utility-buttons::before{opacity:0;}
   content: "Manual";
 }
 
-.chat-btn::after {
-  content: "Serenity";
-}
-
 .theme-settings-btn::after {
   content: "Settings";
 }
 
 .manual-btn:hover::after,
-.chat-btn:hover::after,
 .theme-settings-btn:hover::after {
   opacity: 1;
   color: rgba(255, 255, 255, 0.95);
