@@ -829,8 +829,9 @@ html, body {
 
 /* Close button at bottom of settings panel */
 #theme-settings-close-btn {
-  display: block;
-  margin: 40px auto 0 auto;
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
 }
 
 /* ===== Themes ===== */
